@@ -104,6 +104,7 @@ export default function PresidentSpace() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["gouvernance"]);
   const [iastedOpen, setIastedOpen] = useState(false);
+  const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const navigate = useNavigate();
   const theme = useMemo(() => darkMode ? themes.dark : themes.light, [darkMode]);
 
@@ -716,7 +717,7 @@ export default function PresidentSpace() {
             onClick={() => setIastedOpen(true)}
             size="lg"
             voiceListening={false}
-            voiceSpeaking={false}
+            voiceSpeaking={isAgentSpeaking}
             voiceProcessing={false}
             isInterfaceOpen={iastedOpen}
           />
@@ -726,6 +727,7 @@ export default function PresidentSpace() {
         <IAstedInterface 
           isOpen={iastedOpen} 
           onClose={() => setIastedOpen(false)}
+          onSpeakingChange={setIsAgentSpeaking}
           userRole="president"
         />
       </div>
