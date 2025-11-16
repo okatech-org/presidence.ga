@@ -32,6 +32,7 @@ import {
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import { StatCard, CircularProgress, TimelineItem, SectionCard } from "@/components/president/PresidentSpaceComponents";
 import { ActivityItem } from "@/components/president/ActivityItem";
+import IAstedInterface from "@/components/iasted/IAstedInterface";
 
 type ThemeConfig = {
   primary: string;
@@ -102,6 +103,7 @@ export default function PresidentSpace() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["gouvernance"]);
+  const [iastedOpen, setIastedOpen] = useState(false);
   const navigate = useNavigate();
   const theme = useMemo(() => darkMode ? themes.dark : themes.light, [darkMode]);
 
@@ -711,14 +713,21 @@ export default function PresidentSpace() {
           }}
         >
           <IAstedButtonFull
-            onClick={() => navigate("/iasted")}
+            onClick={() => setIastedOpen(true)}
             size="lg"
             voiceListening={false}
             voiceSpeaking={false}
             voiceProcessing={false}
-            isInterfaceOpen={false}
+            isInterfaceOpen={iastedOpen}
           />
         </div>
+        
+        {/* Interface iAsted */}
+        <IAstedInterface 
+          isOpen={iastedOpen} 
+          onClose={() => setIastedOpen(false)}
+          userRole="president"
+        />
       </div>
     </div>
   );

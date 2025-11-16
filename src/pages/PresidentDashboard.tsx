@@ -10,11 +10,14 @@ import { SituationsCritiques } from "@/components/president/SituationsCritiques"
 import { VisionNationale } from "@/components/president/VisionNationale";
 import { ModuleXR7 } from "@/components/president/ModuleXR7";
 import { useToast } from "@/hooks/use-toast";
+import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
+import IAstedInterface from "@/components/iasted/IAstedInterface";
 
 const PresidentDashboard = () => {
   const navigate = useNavigate();
   const { isPresident, loading: roleLoading } = usePresidentRole();
   const [loading, setLoading] = useState(true);
+  const [iastedOpen, setIastedOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -89,6 +92,32 @@ const PresidentDashboard = () => {
           <ModuleXR7 />
         </div>
       </div>
+      
+      {/* Bouton iAsted flottant */}
+      <div
+        style={{
+          position: "fixed",
+          right: 24,
+          bottom: 24,
+          zIndex: 200,
+        }}
+      >
+        <IAstedButtonFull
+          onClick={() => setIastedOpen(true)}
+          size="lg"
+          voiceListening={false}
+          voiceSpeaking={false}
+          voiceProcessing={false}
+          isInterfaceOpen={iastedOpen}
+        />
+      </div>
+      
+      {/* Interface iAsted */}
+      <IAstedInterface 
+        isOpen={iastedOpen} 
+        onClose={() => setIastedOpen(false)}
+        userRole="president"
+      />
     </PresidentLayout>
   );
 };

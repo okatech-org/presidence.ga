@@ -19,12 +19,14 @@ import {
   LogOut,
 } from "lucide-react";
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
+import IAstedInterface from "@/components/iasted/IAstedInterface";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { usePresidentRole } from "@/hooks/usePresidentRole";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [iastedOpen, setIastedOpen] = useState(false);
   const { isPresident } = usePresidentRole();
 
   useEffect(() => {
@@ -131,12 +133,12 @@ const Dashboard = () => {
             
             <div className="flex justify-center">
               <IAstedButtonFull
-                onClick={() => navigate("/iasted")}
+                onClick={() => setIastedOpen(true)}
                 size="lg"
                 voiceListening={false}
                 voiceSpeaking={false}
                 voiceProcessing={false}
-                isInterfaceOpen={false}
+                isInterfaceOpen={iastedOpen}
               />
             </div>
           </div>
@@ -281,6 +283,13 @@ const Dashboard = () => {
           </div>
         </section>
       </main>
+      
+      {/* Interface iAsted */}
+      <IAstedInterface 
+        isOpen={iastedOpen} 
+        onClose={() => setIastedOpen(false)}
+        userRole="minister"
+      />
       </div>
     </DashboardLayout>
   );
