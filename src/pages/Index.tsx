@@ -3,13 +3,6 @@ import { Card } from "@/components/ui/card";
 import { Shield, Lock, Activity, Users, TrendingUp, Globe, CheckCircle, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import commandCenterImage from "@/assets/command-center.jpg";
 import presidentialPalaceImage from "@/assets/presidential-palace.jpg";
 import collaborationImage from "@/assets/collaboration.jpg";
