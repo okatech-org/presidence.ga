@@ -50,6 +50,16 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
     onVoiceModeChange?.(isActive);
   }, [isActive, onVoiceModeChange]);
 
+  // Auto-activer la conversation si autoActivate est true
+  useEffect(() => {
+    if (autoActivate && !isActive) {
+      console.log('[VoiceConversationPanel] 🚀 Auto-activation de la conversation (autoActivate=true)');
+      setTimeout(() => {
+        startConversation();
+      }, 300); // Petit délai pour laisser le modal s'ouvrir
+    }
+  }, [autoActivate]); // Ne se déclenche qu'une fois quand autoActivate devient true
+
   // Exposer la fonction de toggle pour permettre de basculer depuis l'extérieur
   useImperativeHandle(ref, () => ({
     toggleVoiceMode: handleToggle,
