@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Volume2, Settings as SettingsIcon, Sparkles } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
 import { VoiceSettings } from './VoiceSettings';
-import { useDirectVoiceAgent } from '@/hooks/useDirectVoiceAgent';
+import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,16 +30,20 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   const { toast } = useToast();
   
   const {
-    isConnected,
+    voiceState,
+    isActive,
+    isListening,
     isSpeaking,
-    isRecording,
-    isProcessing,
+    isThinking,
     startConversation,
     stopConversation,
-  } = useDirectVoiceAgent({ userRole, onSpeakingChange });
-
-  const isActive = isConnected;
-  const isListening = isRecording;
+    audioLevel,
+  } = useVoiceInteraction({ 
+    onSpeakingChange,
+    silenceDuration: 2000,
+    silenceThreshold: 10,
+    continuousMode: false,
+  });
 
   // Notifier le parent quand le mode vocal change
   useEffect(() => {
@@ -97,14 +101,14 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
             </CardTitle>
             <CardDescription>
               {isActive
-                ? isProcessing
+                ? isThinking
                   ? "⚙️ Traitement en cours..."
                   : isSpeaking
                   ? "🗣️ iAsted parle..."
-                  : isRecording
+                  : isListening
                   ? "🎤 Vous pouvez parler, je vous écoute..."
                   : "⏳ En attente..."
-                : "Conversation vocale directe avec GPT + ElevenLabs"}
+                : "Assistant vocal intelligent avec GPT + ElevenLabs"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -167,7 +171,7 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
 
             {/* Indicateurs d'état */}
             <div className="flex justify-center gap-4 text-sm text-muted-foreground">
-              {isProcessing && (
+              {isThinking && (
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
                   <span>Traitement...</span>
@@ -185,7 +189,7 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
                   <span>iAsted parle</span>
                 </div>
               )}
-              {isActive && !isListening && !isSpeaking && !isProcessing && (
+              {isActive && !isListening && !isSpeaking && !isThinking && (
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-green-500 rounded-full" />
                   <span>Prêt</span>
