@@ -27,6 +27,7 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   onVoiceModeChange,
 }, ref) => {
   const [pushToTalk, setPushToTalk] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   
   const {
     isActive,
@@ -38,6 +39,7 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
     userRole,
     onSpeakingChange,
     pushToTalk,
+    focusMode,
   });
 
   // Notifier le parent quand le mode vocal change
@@ -58,8 +60,9 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
     }
   };
 
-  const handleSettingsChange = (settings: { pushToTalk: boolean }) => {
+  const handleSettingsChange = (settings: { pushToTalk: boolean; focusMode: boolean }) => {
     setPushToTalk(settings.pushToTalk);
+    setFocusMode(settings.focusMode);
   };
 
   return (
