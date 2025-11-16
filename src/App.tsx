@@ -12,6 +12,7 @@ import Demo from "./pages/Demo";
 import AdminDashboard from "./pages/AdminDashboard";
 import IAsted from "./pages/IAsted";
 import PresidentDashboard from "./pages/PresidentDashboard";
+import PresidentSpace from "./pages/PresidentSpace";
 import NotFound from "./pages/NotFound";
 import { LoadingScreen } from "@/components/ErrorBoundary";
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/president" element={<PresidentDashboard />} />
+            <Route path="/president-space" element={<PresidentSpace />} />
             <Route path="/iasted" element={<IAsted />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

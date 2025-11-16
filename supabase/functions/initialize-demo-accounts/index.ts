@@ -93,10 +93,28 @@ Deno.serve(async (req) => {
         }
 
         const userExists = existingUsers.users.some(u => u.email === account.email);
+        const existingUser = existingUsers.users.find(u => u.email === account.email);
 
         if (userExists) {
           console.log(`User already exists: ${account.email}`);
           results.existing.push(account.email);
+          // Ensure user_roles contains president/admin when applicable
+          if (account.email === 'president@presidence.ga' && existingUser) {
+            const { error: upsertErr } = await supabaseAdmin
+              .from('user_roles')
+              .upsert({ user_id: existingUser.id, role: 'president' as any }, { onConflict: 'user_id,role', ignoreDuplicates: true });
+            if (upsertErr) {
+              console.error(`Error upserting role for ${account.email}:`, upsertErr);
+              results.errors.push({ email: account.email, error: upsertErr.message });
+            }
+            const { error: upsertAdminErr } = await supabaseAdmin
+              .from('user_roles')
+              .upsert({ user_id: existingUser.id, role: 'admin' as any }, { onConflict: 'user_id,role', ignoreDuplicates: true });
+            if (upsertAdminErr) {
+              console.error(`Error upserting admin role for ${account.email}:`, upsertAdminErr);
+              results.errors.push({ email: account.email, error: upsertAdminErr.message });
+            }
+          }
           continue;
         }
 
@@ -118,6 +136,24 @@ Deno.serve(async (req) => {
 
         console.log(`Successfully created user: ${account.email}`);
         results.created.push(account.email);
+
+        // Grant president and admin roles in user_roles for the president account
+        if (account.email === 'president@presidence.ga' && newUser?.user?.id) {
+          const { error: upsertErr } = await supabaseAdmin
+            .from('user_roles')
+            .upsert({ user_id: newUser.user.id, role: 'president' as any }, { onConflict: 'user_id,role', ignoreDuplicates: true });
+          if (upsertErr) {
+            console.error(`Error upserting role for ${account.email}:`, upsertErr);
+            results.errors.push({ email: account.email, error: upsertErr.message });
+          }
+          const { error: upsertAdminErr } = await supabaseAdmin
+            .from('user_roles')
+            .upsert({ user_id: newUser.user.id, role: 'admin' as any }, { onConflict: 'user_id,role', ignoreDuplicates: true });
+          if (upsertAdminErr) {
+            console.error(`Error upserting admin role for ${account.email}:`, upsertAdminErr);
+            results.errors.push({ email: account.email, error: upsertAdminErr.message });
+          }
+        }
 
       } catch (error) {
         console.error(`Unexpected error for ${account.email}:`, error);

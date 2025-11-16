@@ -20,19 +20,26 @@ import {
 } from "lucide-react";
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import emblemGabon from "@/assets/emblem_gabon.png";
+import { usePresidentRole } from "@/hooks/usePresidentRole";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const { isPresident } = usePresidentRole();
 
   useEffect(() => {
     checkUser();
-  }, []);
+  }, [isPresident]);
 
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth");
+      return;
+    }
+    if (isPresident) {
+      navigate("/president-space");
+      return;
     }
     setLoading(false);
   };
