@@ -2,29 +2,81 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/StatCard";
 import { AlertTriangle, TrendingUp, CheckCircle, DollarSign } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import type { NationalKPITrend, RegionData } from "@/types/analytics";
+import RegionHeatmap from "./RegionHeatmap";
 
 export const VueEnsemble = () => {
   const [kpis, setKpis] = useState<any>(null);
+  const [trend, setTrend] = useState<NationalKPITrend[]>([]);
+  const [regions, setRegions] = useState<RegionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchKPIs();
+    fetchAll();
   }, []);
 
-  const fetchKPIs = async () => {
+  const fetchAll = async () => {
     try {
-      const { data } = await supabase
+      setError(null);
+      // Dernier KPI (vue cartes)
+      const { data: lastKpi, error: kpiErr } = await supabase
         .from('national_kpis')
         .select('*')
         .order('date', { ascending: false })
         .limit(1)
         .maybeSingle();
-      
-      setKpis(data);
+      if (kpiErr) throw kpiErr;
+      setKpis(lastKpi);
+
+      // Tendances 12 derniers mois
+      const { data: trendRows, error: trendErr } = await supabase
+        .from('national_kpis')
+        .select('date, signalements_totaux, taux_resolution')
+        .order('date', { ascending: false })
+        .limit(12);
+      if (trendErr) throw trendErr;
+      const parsedTrend: NationalKPITrend[] = (trendRows || [])
+        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .map((row: any) => {
+          const d = new Date(row.date);
+          const monthLabel = d.toLocaleDateString('fr-FR', { month: 'short' });
+          return {
+            monthLabel,
+            signalements_totaux: Number(row.signalements_totaux ?? 0),
+            taux_resolution: Number(row.taux_resolution ?? 0),
+          };
+        });
+      setTrend(parsedTrend);
+
+      // Signalements par province (agrégation client simple)
+      const { data: sigRows, error: sigErr } = await supabase
+        .from('signalements')
+        .select('province');
+      if (sigErr) throw sigErr;
+      const counts = new Map<string, number>();
+      const provinces = [
+        "Estuaire", "Haut-Ogooué", "Moyen-Ogooué", "Ngounié", "Nyanga",
+        "Ogooué-Ivindo", "Ogooué-Lolo", "Ogooué-Maritime", "Woleu-Ntem"
+      ];
+      provinces.forEach(p => counts.set(p, 0));
+      (sigRows || []).forEach((r: any) => {
+        const p = r.province || "Estuaire";
+        counts.set(p, (counts.get(p) || 0) + 1);
+      });
+      const max = Math.max(...Array.from(counts.values()));
+      const regionData: RegionData[] = provinces.map((p) => {
+        const count = counts.get(p) || 0;
+        const score = max > 0 ? Math.round((count / max) * 100) : 0;
+        return { province: p, count, score };
+      });
+      setRegions(regionData);
     } catch (error) {
-      console.error("Error fetching KPIs:", error);
+      console.error("Error fetching data:", error);
+      setError("Impossible de récupérer les données.");
     } finally {
       setLoading(false);
     }
@@ -32,6 +84,9 @@ export const VueEnsemble = () => {
 
   if (loading) {
     return <div className="text-center py-8">Chargement des données...</div>;
+  }
+  if (error) {
+    return <div className="text-center py-8 text-destructive">{error}</div>;
   }
 
   return (
@@ -87,27 +142,17 @@ export const VueEnsemble = () => {
         </CardContent>
       </Card>
 
-      {/* Situation par Région */}
+      {/* Situation par Région (Heatmap) */}
       <Card className="shadow-neo-md hover:shadow-neo-lg transition-all duration-300">
         <CardHeader className="pb-4">
           <CardTitle className="text-foreground">Situation par Région (Heatmap)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            {["Estuaire", "Haut-Ogooué", "Moyen-Ogooué", "Ngounié", "Nyanga", "Ogooué-Ivindo", "Ogooué-Lolo", "Ogooué-Maritime", "Woleu-Ntem"].map((region) => (
-              <div key={region} className="p-4 rounded-xl bg-card shadow-neo-sm hover:shadow-neo-md transition-all duration-300 cursor-pointer">
-                <p className="font-semibold text-sm text-foreground">{region}</p>
-                <p className="text-xs text-muted-foreground mb-2">15 signalements</p>
-                <div className="p-1 rounded-lg bg-background shadow-neo-inset">
-                  <Progress value={Math.random() * 100} className="h-2" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <RegionHeatmap data={regions} />
         </CardContent>
       </Card>
 
-      {/* Évolution Mensuelle */}
+      {/* Évolution Mensuelle (Recharts) */}
       <Card className="shadow-neo-md hover:shadow-neo-lg transition-all duration-300">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-foreground">
@@ -118,26 +163,26 @@ export const VueEnsemble = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-end justify-around gap-2">
-            {[65, 78, 85, 92, 88, 95, 102, 110, 98, 105, 115, 120].map((val, idx) => (
-              <div key={idx} className="flex-1 bg-primary rounded-t" style={{ height: `${(val / 120) * 100}%` }}>
-                <div className="text-xs text-center text-primary-foreground pt-1">{val}</div>
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            <span>Jan</span>
-            <span>Fév</span>
-            <span>Mar</span>
-            <span>Avr</span>
-            <span>Mai</span>
-            <span>Juin</span>
-            <span>Juil</span>
-            <span>Août</span>
-            <span>Sep</span>
-            <span>Oct</span>
-            <span>Nov</span>
-            <span>Déc</span>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trend}>
+                <XAxis dataKey="monthLabel" />
+                <YAxis />
+                <Tooltip
+                  formatter={(value: any, name: any) => {
+                    if (name === 'signalements_totaux') {
+                      return [`${value} cas`, 'Signalements'];
+                    }
+                    if (name === 'taux_resolution') {
+                      return [`${value}%`, 'Taux de résolution'];
+                    }
+                    return [value, name];
+                  }}
+                />
+                <Line type="monotone" dataKey="signalements_totaux" stroke="#0EA5E9" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="taux_resolution" stroke="#22C55E" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
