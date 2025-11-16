@@ -1,14 +1,9 @@
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Settings, History } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
 import { useVoiceInteraction, VoiceSettings as VoiceSettingsType } from '@/hooks/useVoiceInteraction';
 import IAstedButtonFull from '@/components/iasted/IAstedButtonFull';
 import IAstedListeningOverlay from '@/components/iasted/IAstedListeningOverlay';
 import IAstedVoiceControls from '@/components/iasted/IAstedVoiceControls';
-import ChatDock from '@/components/iasted/ChatDock';
-import VoiceSettings from '@/components/iasted/VoiceSettings';
-import ConversationHistory from '@/components/iasted/ConversationHistory';
-import VoicePresets from '@/components/iasted/VoicePresets';
+import IAstedModal from '@/components/iasted/IAstedModal';
 
 const IAsted = () => {
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettingsType>({
@@ -17,6 +12,9 @@ const IAsted = () => {
     silenceThreshold: 10,
     continuousMode: false,
   });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     voiceState,
@@ -28,6 +26,22 @@ const IAsted = () => {
     stopListening,
   } = useVoiceInteraction(voiceSettings);
 
+  const handleButtonClick = useCallback(() => {
+    if (clickTimeoutRef.current) {
+      // Double clic détecté - ouvrir le modal
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+      setIsModalOpen(true);
+    } else {
+      // Premier clic - attendre pour voir si double clic
+      clickTimeoutRef.current = setTimeout(() => {
+        // Simple clic confirmé - lancer l'interaction vocale
+        handleInteraction();
+        clickTimeoutRef.current = null;
+      }, 250);
+    }
+  }, [handleInteraction]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-4">
       <div className="max-w-7xl mx-auto">
@@ -38,6 +52,9 @@ const IAsted = () => {
           </h1>
           <p className="text-muted-foreground text-lg">
             Assistant Vocal Intelligent de la Présidence
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            1 clic pour parler • 2 clics pour ouvrir l'interface
           </p>
         </div>
 
@@ -52,64 +69,26 @@ const IAsted = () => {
           onRestart={newQuestion}
         />
 
-        {/* Tabs */}
-        <Tabs defaultValue="chat" className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
-            <TabsTrigger value="chat" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
-              Chat
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
-              <History className="w-4 h-4" />
-              Historique
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2">
-              <Settings className="w-4 h-4" />
-              Paramètres
-            </TabsTrigger>
-          </TabsList>
+        {/* Bouton Principal */}
+        <div className="flex justify-center">
+          <IAstedButtonFull
+            onClick={handleButtonClick}
+            size="lg"
+            voiceListening={voiceState === 'listening'}
+            voiceSpeaking={voiceState === 'speaking'}
+            voiceProcessing={voiceState === 'thinking'}
+            isInterfaceOpen={isModalOpen}
+          />
+        </div>
 
-          <TabsContent value="chat" className="mt-6">
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Main Chat Area */}
-              <div className="lg:col-span-2 space-y-6">
-                <div className="flex justify-center">
-                  <IAstedButtonFull
-                    onClick={handleInteraction}
-                    size="lg"
-                    voiceListening={voiceState === 'listening'}
-                    voiceSpeaking={voiceState === 'speaking'}
-                    voiceProcessing={voiceState === 'thinking'}
-                    isInterfaceOpen={true}
-                  />
-                </div>
-              </div>
-
-              {/* Chat Dock */}
-              <div className="lg:col-span-1">
-                <ChatDock messages={messages} />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="history" className="mt-6">
-            <ConversationHistory />
-          </TabsContent>
-
-          <TabsContent value="settings" className="mt-6">
-            <div className="max-w-2xl mx-auto space-y-6">
-              <VoicePresets
-                currentSettings={voiceSettings}
-                onLoadPreset={setVoiceSettings}
-              />
-              
-              <VoiceSettings
-                settings={voiceSettings}
-                onSettingsChange={setVoiceSettings}
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+        {/* Modal avec Tabs */}
+        <IAstedModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          messages={messages}
+          voiceSettings={voiceSettings}
+          onSettingsChange={setVoiceSettings}
+        />
       </div>
     </div>
   );
