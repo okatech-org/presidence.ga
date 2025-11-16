@@ -95,17 +95,20 @@ Répondez de manière claire et professionnelle.`;
       });
     },
     onMessage: (message) => {
-      if (message.type === 'user_transcript' && message.message) {
+      console.log('Message received:', message);
+      
+      // L'API @11labs/react envoie des messages avec source: 'user' ou 'ai'
+      if (message.source === 'user' && message.message) {
         setMessages(prev => [...prev, { role: 'user', content: message.message }]);
-      } else if (message.type === 'agent_response' && message.message) {
+      } else if (message.source === 'ai' && message.message) {
         setMessages(prev => [...prev, { role: 'assistant', content: message.message }]);
       }
     },
-    onError: (error) => {
-      console.error('Conversation error:', error);
+    onError: (message) => {
+      console.error('Conversation error:', message);
       toast({
         title: "Erreur de conversation",
-        description: error.message || "Une erreur est survenue",
+        description: typeof message === 'string' ? message : "Une erreur est survenue",
         variant: "destructive",
       });
     },
@@ -126,7 +129,9 @@ Répondez de manière claire et professionnelle.`;
       }
 
       // Démarrer la conversation
-      const id = await conversation.startSession({ url: data.signedUrl });
+      const id = await conversation.startSession({ 
+        signedUrl: data.signedUrl 
+      });
       setConversationId(id);
       setMessages([]);
 
