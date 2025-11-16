@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { z } from 'zod';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -13,6 +14,13 @@ interface UseVoiceConversationProps {
   pushToTalk?: boolean;
   focusMode?: boolean;
 }
+
+const messageSchema = z.object({
+  content: z.string()
+    .trim()
+    .min(1, 'Le message ne peut pas être vide')
+    .max(5000, 'Le message ne peut pas dépasser 5000 caractères'),
+});
 
 export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = false, focusMode = false }: UseVoiceConversationProps) => {
   const { toast } = useToast();
@@ -110,6 +118,16 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
 
       const userMessage = transcription.text;
       console.log('Transcription:', userMessage);
+
+      // Validation du message
+      try {
+        messageSchema.parse({ content: userMessage });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          console.error('Message validation failed:', error.errors[0].message);
+          return;
+        }
+      }
 
       // Ajouter le message utilisateur avec type explicite
       const newUserMessage: Message = { role: 'user' as const, content: userMessage };

@@ -4,6 +4,7 @@ import { AlertTriangle, Shield, Lock } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from 'zod';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +18,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+const xr7Schema = z.object({
+  motif: z.string()
+    .trim()
+    .min(5, 'Le motif doit contenir au moins 5 caractères')
+    .max(500, 'Le motif ne peut pas dépasser 500 caractères'),
+  pinCode: z.string().length(4, 'Le code PIN doit contenir 4 chiffres'),
+});
+
 export const ModuleXR7 = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pinCode, setPinCode] = useState("");
@@ -25,6 +34,20 @@ export const ModuleXR7 = () => {
   const { toast } = useToast();
 
   const activerProtocoleXR7 = async () => {
+    // Validation avec zod
+    try {
+      xr7Schema.parse({ motif, pinCode });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Erreur de validation",
+          description: error.errors[0].message,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     // Validation du code PIN (dans un vrai système, ce serait plus sécurisé)
     if (pinCode !== "2417") {
       toast({

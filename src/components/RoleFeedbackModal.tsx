@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Upload, X, FileText, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from 'zod';
 
 interface RoleFeedbackModalProps {
   isOpen: boolean;
@@ -14,6 +15,22 @@ interface RoleFeedbackModalProps {
   roleName: string;
   userEmail: string;
 }
+
+const feedbackSchema = z.object({
+  roleDescription: z.string()
+    .trim()
+    .min(10, 'La description du rôle doit contenir au moins 10 caractères')
+    .max(1000, 'La description du rôle ne peut pas dépasser 1000 caractères'),
+  workDescription: z.string()
+    .trim()
+    .min(10, 'La description du travail doit contenir au moins 10 caractères')
+    .max(2000, 'La description du travail ne peut pas dépasser 2000 caractères'),
+  implementationSuggestions: z.string()
+    .trim()
+    .max(2000, 'Les suggestions ne peuvent pas dépasser 2000 caractères')
+    .optional(),
+  userEmail: z.string().email('Email invalide'),
+});
 
 export const RoleFeedbackModal = ({ isOpen, onClose, roleName, userEmail }: RoleFeedbackModalProps) => {
   const { toast } = useToast();
@@ -60,6 +77,25 @@ export const RoleFeedbackModal = ({ isOpen, onClose, roleName, userEmail }: Role
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation avec zod
+    try {
+      feedbackSchema.parse({
+        ...formData,
+        userEmail
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Erreur de validation",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+    }
+    
     setLoading(true);
 
     try {
