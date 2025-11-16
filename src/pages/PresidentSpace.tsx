@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Users,
   Building2,
@@ -170,6 +171,7 @@ export default function PresidentSpace() {
   }, []);
 
   const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut();
     navigate("/auth");
   }, [navigate]);
 
@@ -523,6 +525,7 @@ export default function PresidentSpace() {
               </button>
 
               <button
+                onClick={handleLogout}
                 style={{
                   width: "100%",
                   display: "flex",
