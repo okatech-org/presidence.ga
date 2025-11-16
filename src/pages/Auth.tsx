@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Lock } from "lucide-react";
+import { Shield, Lock, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,6 +46,16 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary via-primary/90 to-secondary p-4">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        className="fixed top-6 left-6 text-white hover:bg-white/10 z-50"
+        onClick={() => navigate("/")}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Retour à l'accueil
+      </Button>
+
       <div className="w-full max-w-md">
         {/* Header with Republic emblem */}
         <div className="text-center mb-8">
