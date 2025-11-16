@@ -138,13 +138,92 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
     }
   }, [messages, toast]);
 
+  // Convertir le texte en audio et le jouer
+  const speakText = useCallback(async (text: string) => {
+    try {
+      console.log('[speakText] Starting TTS for text:', text.substring(0, 50) + '...');
+      const audioCtx = initAudioContext();
+
+      // Appeler l'edge function text-to-speech qui retourne un stream audio
+      console.log('[speakText] Calling text-to-speech function...');
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ text, userRole }),
+        }
+      );
+
+      console.log('[speakText] TTS response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[speakText] TTS failed:', errorText);
+        throw new Error('Text-to-speech failed');
+      }
+
+      // Créer un blob à partir du stream audio
+      console.log('[speakText] Creating audio blob...');
+      const audioBlob = await response.blob();
+      console.log('[speakText] Audio blob size:', audioBlob.size, 'type:', audioBlob.type);
+      
+      // Créer et jouer l'audio
+      const audio = new Audio();
+      currentAudioRef.current = audio;
+
+      // Convertir le blob en URL
+      const url = URL.createObjectURL(audioBlob);
+      audio.src = url;
+      console.log('[speakText] Audio URL created, preparing to play...');
+
+      audio.onended = () => {
+        console.log('[speakText] Audio playback ended');
+        setIsSpeaking(false);
+        onSpeakingChange?.(false);
+        URL.revokeObjectURL(url);
+        
+        // Reprendre l'écoute automatiquement seulement en mode continu
+        if (isActive && !pushToTalk) {
+          setTimeout(() => startListening(), 500);
+        }
+      };
+
+      audio.onerror = (e) => {
+        console.error('[speakText] Audio playback error:', e);
+        setIsSpeaking(false);
+        onSpeakingChange?.(false);
+        URL.revokeObjectURL(url);
+      };
+
+      console.log('[speakText] Starting audio playback...');
+      await audio.play();
+      console.log('[speakText] Audio is playing');
+
+    } catch (error) {
+      console.error('[speakText] Error:', error);
+      toast({
+        title: "Erreur de synthèse vocale",
+        description: "Impossible de lire la réponse audio",
+        variant: "destructive",
+      });
+      setIsSpeaking(false);
+      onSpeakingChange?.(false);
+    }
+  }, [userRole, toast, onSpeakingChange, isActive, pushToTalk, startListening, initAudioContext]);
+
   // Obtenir la réponse de l'IA et la convertir en audio
   const getAIResponse = useCallback(async (conversationMessages: Message[]) => {
     try {
+      console.log('[getAIResponse] Starting AI response generation...');
       setIsSpeaking(true);
       onSpeakingChange?.(true);
 
       // Appeler l'IA via edge function (streaming)
+      console.log('[getAIResponse] Calling chat-iasted function...');
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-iasted`,
         {
@@ -164,9 +243,11 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
       );
 
       if (!response.ok) {
+        console.error('[getAIResponse] AI response failed:', response.status);
         throw new Error('AI response failed');
       }
 
+      console.log('[getAIResponse] Streaming response...');
       // Lire le stream
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -199,10 +280,12 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
         }
       }
 
-      console.log('AI Response:', fullText);
+      console.log('[getAIResponse] AI Response received:', fullText.substring(0, 100) + '...');
+      console.log('[getAIResponse] Full text length:', fullText.length);
 
       // Ajouter la réponse aux messages
-      setMessages(prev => [...prev, { role: 'assistant', content: fullText }]);
+      const assistantMessage: Message = { role: 'assistant' as const, content: fullText };
+      setMessages(prev => [...prev, assistantMessage]);
 
       // Sauvegarder la réponse en DB si on a une session
       if (sessionId) {
@@ -230,10 +313,12 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
       }
 
       // Convertir en audio avec ElevenLabs
+      console.log('[getAIResponse] Calling speakText...');
       await speakText(fullText);
+      console.log('[getAIResponse] speakText completed');
 
     } catch (error) {
-      console.error('Error getting AI response:', error);
+      console.error('[getAIResponse] Error:', error);
       toast({
         title: "Erreur de réponse",
         description: "Impossible d'obtenir une réponse de l'IA",
@@ -242,72 +327,7 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
       setIsSpeaking(false);
       onSpeakingChange?.(false);
     }
-  }, [userRole, toast, onSpeakingChange]);
-
-  // Convertir le texte en audio et le jouer
-  const speakText = useCallback(async (text: string) => {
-    try {
-      const audioCtx = initAudioContext();
-
-      // Appeler l'edge function text-to-speech qui retourne un stream audio
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ text, userRole }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Text-to-speech failed');
-      }
-
-      // Créer un blob à partir du stream audio
-      const audioBlob = await response.blob();
-      
-      // Créer et jouer l'audio
-      const audio = new Audio();
-      currentAudioRef.current = audio;
-
-      // Convertir le blob en URL
-      const url = URL.createObjectURL(audioBlob);
-      audio.src = url;
-
-      audio.onended = () => {
-        setIsSpeaking(false);
-        onSpeakingChange?.(false);
-        URL.revokeObjectURL(url);
-        
-        // Reprendre l'écoute automatiquement seulement en mode continu
-        if (isActive && !pushToTalk) {
-          setTimeout(() => startListening(), 500);
-        }
-      };
-
-      audio.onerror = () => {
-        setIsSpeaking(false);
-        onSpeakingChange?.(false);
-        URL.revokeObjectURL(url);
-      };
-
-      await audio.play();
-      console.log('Playing audio response');
-
-    } catch (error) {
-      console.error('Error speaking text:', error);
-      toast({
-        title: "Erreur de synthèse vocale",
-        description: "Impossible de lire la réponse audio",
-        variant: "destructive",
-      });
-      setIsSpeaking(false);
-      onSpeakingChange?.(false);
-    }
-  }, [userRole, toast, onSpeakingChange, isActive, startListening, initAudioContext]);
+  }, [userRole, toast, onSpeakingChange, focusMode, focusTopic, sessionId, speakText]);
 
   // Créer ou charger une session de conversation
   const initializeSession = useCallback(async () => {
