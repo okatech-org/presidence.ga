@@ -28,16 +28,9 @@ export const useIastedAgent = () => {
 
       if (configError) throw configError;
 
-      // Si l'agent n'existe pas, demander à l'utilisateur de le configurer
+      // Si l'agent n'existe pas, on ne bloque pas mais on log
       if (!configData.agent_id) {
-        console.warn('No agent ID configured. Please configure an agent in Settings.');
-        toast({
-          title: "Configuration requise",
-          description: "Veuillez configurer un agent ElevenLabs dans les paramètres",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+        console.warn('No agent ID configured.');
       }
 
       setConfig({

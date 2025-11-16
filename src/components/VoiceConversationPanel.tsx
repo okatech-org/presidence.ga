@@ -1,13 +1,15 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2, Settings as SettingsIcon } from 'lucide-react';
+import { Mic, MicOff, Volume2, Settings as SettingsIcon, Sparkles } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
 import { VoiceSettings } from './VoiceSettings';
 import { useContinuousConversation } from '@/hooks/useContinuousConversation';
 import { useIastedAgent } from '@/hooks/useIastedAgent';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export interface VoiceConversationHandle {
   toggleVoiceMode: () => void;
@@ -26,7 +28,9 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   autoActivate = false,
   onVoiceModeChange,
 }, ref) => {
+  const { toast } = useToast();
   const { config, isLoading: isLoadingConfig } = useIastedAgent();
+  const [isCreatingAgent, setIsCreatingAgent] = useState(false);
   
   const {
     status,
@@ -63,6 +67,60 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
 
   const handleSettingsChange = (settings: { pushToTalk: boolean; focusMode: boolean }) => {
     console.log('Settings changed:', settings);
+  };
+
+  const handleCreateAgent = async () => {
+    setIsCreatingAgent(true);
+    try {
+      // Créer l'agent via l'edge function
+      const { data, error } = await supabase.functions.invoke('create-elevenlabs-agent', {
+        body: {
+          agentName: 'iAsted',
+          presidentVoiceId: config?.presidentVoiceId || '9BWtsMINqrJLrRacOk9x',
+          ministerVoiceId: config?.ministerVoiceId || 'EXAVITQu4vr4xnSDxMaL',
+          defaultVoiceId: config?.defaultVoiceId || 'Xb7hH8MSUJpSbSDYk0k2',
+        }
+      });
+
+      if (error) throw error;
+
+      // Récupérer l'ID de la config existante
+      const { data: existingConfig } = await supabase
+        .from('iasted_config')
+        .select('id')
+        .single();
+
+      if (!existingConfig) throw new Error('Config not found');
+
+      // Mettre à jour la config dans la DB
+      const { error: updateError } = await supabase
+        .from('iasted_config')
+        .update({
+          agent_id: data.agentId,
+          agent_name: data.agentName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingConfig.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Agent créé",
+        description: "L'agent iAsted a été créé avec succès",
+      });
+
+      // Recharger la page pour obtenir la nouvelle config
+      window.location.reload();
+    } catch (error) {
+      console.error('Error creating agent:', error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible de créer l'agent",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingAgent(false);
+    }
   };
 
   return (
@@ -140,7 +198,7 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
             </div>
             
             {/* Contrôles */}
-            <div className="flex justify-center gap-3">
+            <div className="flex flex-col items-center gap-3">
               {(!isLoadingConfig && config?.agentId) ? (
                 <VoiceButton
                   isActive={isActive}
@@ -148,18 +206,35 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
                   isSpeaking={isSpeaking}
                   onToggle={handleToggle}
                 />
+              ) : !isLoadingConfig ? (
+                <>
+                  <Button 
+                    onClick={handleCreateAgent}
+                    disabled={isCreatingAgent}
+                    className="gap-2"
+                  >
+                    {isCreatingAgent ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Création en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Créer l'agent iAsted automatiquement
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-center text-sm text-muted-foreground max-w-md">
+                    Aucun agent configuré. Cliquez pour créer automatiquement un agent ElevenLabs.
+                  </p>
+                </>
               ) : (
                 <Button disabled variant="outline">
-                  {isLoadingConfig ? "Chargement..." : "Agent non configuré"}
+                  Chargement...
                 </Button>
               )}
             </div>
-            
-            {!config?.agentId && !isLoadingConfig && (
-              <p className="text-center text-sm text-muted-foreground">
-                Veuillez configurer un agent ElevenLabs dans les paramètres
-              </p>
-            )}
 
             {/* Indicateurs d'état */}
             <div className="flex justify-center gap-4 text-sm text-muted-foreground">
