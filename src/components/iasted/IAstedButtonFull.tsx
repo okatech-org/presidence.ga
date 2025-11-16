@@ -1173,14 +1173,18 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
     if (clickCount.current === 1) {
       // Premier clic - attendre pour voir s'il y a un double clic
       clickTimer.current = setTimeout(() => {
-        // Simple clic confirmé - activer la conversation vocale
-        if (onVoiceClick) {
+        // Simple clic confirmé
+        if (isInterfaceOpen && onVoiceClick) {
+          // Modal déjà ouvert : juste activer/désactiver le mode vocal
+          onVoiceClick();
+        } else if (onVoiceClick) {
+          // Modal fermé : activer le mode vocal pur (sans ouvrir le modal visuellement)
           onVoiceClick();
         }
         clickCount.current = 0;
       }, 300); // Délai de 300ms pour détecter le double clic
     } else if (clickCount.current === 2) {
-      // Double clic - ouvrir le modal
+      // Double clic - ouvrir le modal de chat texte
       if (clickTimer.current) {
         clearTimeout(clickTimer.current);
       }

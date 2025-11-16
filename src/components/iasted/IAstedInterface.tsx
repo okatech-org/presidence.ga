@@ -24,8 +24,9 @@ interface IAstedInterfaceProps {
   userRole?: 'president' | 'minister' | 'default';
   elevenLabsAgentId?: string;
   onSpeakingChange?: (isSpeaking: boolean) => void;
-  activateVoiceMode?: boolean; // Prop pour activer le mode vocal depuis l'extérieur
-  onVoiceModeChange?: (isActive: boolean) => void; // Callback quand le mode vocal change
+  voiceModeToggleTimestamp?: number; // Timestamp pour déclencher le basculement du mode vocal
+  onVoiceModeChange?: (isActive: boolean) => void;
+  voiceOnlyMode?: boolean; // Mode vocal pur sans afficher le modal visuel
 }
 
 const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
@@ -34,8 +35,9 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   userRole = 'default',
   elevenLabsAgentId: elevenLabsAgentIdProp,
   onSpeakingChange,
-  activateVoiceMode = false,
-  onVoiceModeChange
+  voiceModeToggleTimestamp = 0,
+  onVoiceModeChange,
+  voiceOnlyMode = false
 }) => {
   const [elevenLabsAgentId, setElevenLabsAgentId] = useState<string | undefined>(elevenLabsAgentIdProp);
 
@@ -86,6 +88,14 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   useEffect(() => {
     onVoiceModeChange?.(isContinuousMode);
   }, [isContinuousMode, onVoiceModeChange]);
+
+  // Arrêter la conversation si on ferme l'interface en mode vocal
+  useEffect(() => {
+    if (!isOpen && isContinuousMode) {
+      stopContinuousMode();
+      setIsContinuousMode(false);
+    }
+  }, [isOpen, isContinuousMode]);
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -150,10 +160,11 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
 
   // Activer le mode vocal automatiquement si demandé (après la définition de handleModeToggle)
   useEffect(() => {
-    if (activateVoiceMode && !isContinuousMode && elevenLabsAgentId) {
-      handleModeToggle(true);
+    if (voiceModeToggleTimestamp > 0 && elevenLabsAgentId) {
+      // Basculer le mode vocal à chaque changement de timestamp
+      handleModeToggle(!isContinuousMode);
     }
-  }, [activateVoiceMode, isContinuousMode, elevenLabsAgentId]);
+  }, [voiceModeToggleTimestamp, elevenLabsAgentId]);
 
   // Gérer le volume
   const handleVolumeChange = async (newVolume: number[]) => {
@@ -310,6 +321,11 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
         return 'iAsted - Assistant Intelligent';
     }
   };
+
+  // En mode vocal pur, ne pas afficher le modal mais gérer la connexion en arrière-plan
+  if (voiceOnlyMode) {
+    return null;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
