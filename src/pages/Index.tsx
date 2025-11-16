@@ -22,17 +22,28 @@ const Index = () => {
   const [activeSection, setActiveSection] = useState(0);
 
   const sections = [
-    { id: 0, title: "Pourquoi Cette Application Est Cruciale ?" },
-    { id: 1, title: "Fonctionnalités Clés" },
-    { id: 2, title: "Impact Mesurable" },
+    { id: 0, title: "Pourquoi Cette Application Est Cruciale ?", anchor: "pourquoi" },
+    { id: 1, title: "Fonctionnalités Clés", anchor: "fonctionnalites" },
+    { id: 2, title: "Impact Mesurable", anchor: "impact" },
   ];
 
+  const scrollToSection = (sectionId: number) => {
+    setActiveSection(sectionId);
+    const anchor = sections[sectionId].anchor;
+    const element = document.getElementById(anchor);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   const handlePrevSection = () => {
-    setActiveSection((prev) => (prev > 0 ? prev - 1 : sections.length - 1));
+    const newSection = activeSection > 0 ? activeSection - 1 : sections.length - 1;
+    scrollToSection(newSection);
   };
 
   const handleNextSection = () => {
-    setActiveSection((prev) => (prev < sections.length - 1 ? prev + 1 : 0));
+    const newSection = activeSection < sections.length - 1 ? activeSection + 1 : 0;
+    scrollToSection(newSection);
   };
 
   const features = [
@@ -151,7 +162,7 @@ const Index = () => {
               {sections.map((section) => (
                 <button
                   key={section.id}
-                  onClick={() => setActiveSection(section.id)}
+                  onClick={() => scrollToSection(section.id)}
                   className={`px-6 py-3 rounded-full whitespace-nowrap transition-all ${
                     activeSection === section.id
                       ? "bg-primary text-primary-foreground font-bold"
@@ -174,6 +185,7 @@ const Index = () => {
           </div>
 
           {/* Section Content */}
+          <div id="pourquoi">
           {activeSection === 0 && (
             <div className="animate-fade-in">
               <div className="max-w-4xl mx-auto text-center mb-16">
@@ -254,7 +266,9 @@ const Index = () => {
           </div>
             </div>
           )}
+          </div>
 
+          <div id="fonctionnalites">
           {activeSection === 1 && (
             <div className="animate-fade-in">
               <div className="max-w-4xl mx-auto text-center mb-16">
@@ -280,7 +294,9 @@ const Index = () => {
           </div>
             </div>
           )}
+          </div>
 
+          <div id="impact">
           {activeSection === 2 && (
             <div className="animate-fade-in">
               <div className="max-w-4xl mx-auto">
@@ -299,6 +315,7 @@ const Index = () => {
               </div>
             </div>
           )}
+          </div>
         </div>
       </section>
 
