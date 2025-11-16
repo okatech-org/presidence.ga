@@ -23,13 +23,15 @@ interface IAstedInterfaceProps {
   onClose: () => void;
   userRole?: 'president' | 'minister' | 'default';
   elevenLabsAgentId?: string;
+  onSpeakingChange?: (isSpeaking: boolean) => void;
 }
 
 const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   isOpen, 
   onClose, 
   userRole = 'default',
-  elevenLabsAgentId: elevenLabsAgentIdProp
+  elevenLabsAgentId: elevenLabsAgentIdProp,
+  onSpeakingChange
 }) => {
   const [elevenLabsAgentId, setElevenLabsAgentId] = useState<string | undefined>(elevenLabsAgentIdProp);
 
@@ -70,6 +72,11 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
     stopContinuousMode,
     setVolume: setAgentVolume,
   } = useContinuousConversation(userRole, elevenLabsAgentId || '');
+
+  // Notifier le parent quand l'agent parle
+  useEffect(() => {
+    onSpeakingChange?.(isAgentSpeaking);
+  }, [isAgentSpeaking, onSpeakingChange]);
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
