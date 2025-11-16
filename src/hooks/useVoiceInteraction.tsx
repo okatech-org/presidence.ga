@@ -171,24 +171,20 @@ export const useVoiceInteraction = (settings: VoiceSettings) => {
     await logAnalytics('voice_processing');
 
     try {
-      // Transcription avec Whisper
+      // Transcription avec Whisper via edge function
       const formData = new FormData();
       formData.append('file', audioBlob, 'audio.webm');
-      formData.append('model', 'whisper-1');
 
-      const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY || ''}`,
-        },
+      const { data: transcriptionData, error: transcriptionError } = await supabase.functions.invoke('transcribe-audio', {
         body: formData,
       });
 
-      if (!transcriptionResponse.ok) {
+      if (transcriptionError) {
+        console.error('Transcription error:', transcriptionError);
         throw new Error('Transcription failed');
       }
 
-      const { text: transcript } = await transcriptionResponse.json();
+      const transcript = transcriptionData.text;
       console.log('Transcript:', transcript);
 
       const userMessage: VoiceMessage = {
