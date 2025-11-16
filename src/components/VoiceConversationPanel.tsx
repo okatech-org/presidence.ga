@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2, User, Bot, Settings as SettingsIcon, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Volume2, Settings as SettingsIcon } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
 import { VoiceSettings } from './VoiceSettings';
-import { useVoiceConversation } from '@/hooks/useVoiceConversation';
+import { useContinuousConversation } from '@/hooks/useContinuousConversation';
+import { useIastedAgent } from '@/hooks/useIastedAgent';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -26,21 +26,17 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   autoActivate = false,
   onVoiceModeChange,
 }, ref) => {
-  const [pushToTalk, setPushToTalk] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
+  const { config, isLoading: isLoadingConfig } = useIastedAgent();
   
   const {
-    isActive,
+    status,
     isSpeaking,
-    isListening,
-    startConversation,
-    stopConversation,
-  } = useVoiceConversation({
-    userRole,
-    onSpeakingChange,
-    pushToTalk,
-    focusMode,
-  });
+    startContinuousMode,
+    stopContinuousMode,
+  } = useContinuousConversation(userRole, config?.agentId || '');
+
+  const isActive = status === 'connected';
+  const isListening = status === 'connected' && !isSpeaking;
 
   // Notifier le parent quand le mode vocal change
   useEffect(() => {
@@ -53,16 +49,20 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   }));
 
   const handleToggle = async () => {
+    if (!config?.agentId) {
+      console.error('No agent ID configured');
+      return;
+    }
+    
     if (isActive) {
-      stopConversation();
+      stopContinuousMode();
     } else {
-      await startConversation();
+      await startContinuousMode();
     }
   };
 
   const handleSettingsChange = (settings: { pushToTalk: boolean; focusMode: boolean }) => {
-    setPushToTalk(settings.pushToTalk);
-    setFocusMode(settings.focusMode);
+    console.log('Settings changed:', settings);
   };
 
   return (
@@ -83,7 +83,11 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
               Conversation Vocale avec iAsted
             </CardTitle>
             <CardDescription>
-              {isActive
+              {isLoadingConfig
+                ? "⏳ Chargement de la configuration..."
+                : !config?.agentId
+                ? "⚠️ Agent non configuré - Allez dans les paramètres"
+                : isActive
                 ? isSpeaking
                   ? "🗣️ iAsted parle..."
                   : "🎤 Vous pouvez parler, je vous écoute..."
@@ -137,13 +141,25 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
             
             {/* Contrôles */}
             <div className="flex justify-center gap-3">
-              <VoiceButton
-                isActive={isActive}
-                isListening={isListening}
-                isSpeaking={isSpeaking}
-                onToggle={handleToggle}
-              />
+              {(!isLoadingConfig && config?.agentId) ? (
+                <VoiceButton
+                  isActive={isActive}
+                  isListening={isListening}
+                  isSpeaking={isSpeaking}
+                  onToggle={handleToggle}
+                />
+              ) : (
+                <Button disabled variant="outline">
+                  {isLoadingConfig ? "Chargement..." : "Agent non configuré"}
+                </Button>
+              )}
             </div>
+            
+            {!config?.agentId && !isLoadingConfig && (
+              <p className="text-center text-sm text-muted-foreground">
+                Veuillez configurer un agent ElevenLabs dans les paramètres
+              </p>
+            )}
 
             {/* Indicateurs d'état */}
             <div className="flex justify-center gap-4 text-sm text-muted-foreground">
