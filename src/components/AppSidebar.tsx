@@ -199,9 +199,6 @@ export function AppSidebar() {
                             <>
                               <div className="flex flex-col flex-1 min-w-0">
                                 <span className="text-sm font-semibold truncate text-destructive">{item.title}</span>
-                                <span className="text-xs text-muted-foreground truncate">
-                                  {item.description}
-                                </span>
                               </div>
                               {item.badge && (
                                 <Badge variant="destructive" className="shrink-0 h-6 min-w-[24px] flex items-center justify-center rounded-full text-[10px] px-2 font-bold">
@@ -244,9 +241,6 @@ export function AppSidebar() {
                           {open && (
                             <div className="flex flex-col flex-1 min-w-0">
                               <span className="text-sm font-medium truncate text-foreground">{item.title}</span>
-                              <span className="text-xs text-muted-foreground truncate">
-                                {item.description}
-                              </span>
                             </div>
                           )}
                         </div>
@@ -283,9 +277,6 @@ export function AppSidebar() {
                           {open && (
                             <div className="flex flex-col flex-1 min-w-0">
                               <span className="text-sm font-medium truncate text-foreground">{item.title}</span>
-                              <span className="text-xs text-muted-foreground truncate">
-                                {item.description}
-                              </span>
                             </div>
                           )}
                         </div>
@@ -326,9 +317,6 @@ export function AppSidebar() {
                             <>
                               <div className="flex flex-col flex-1 min-w-0">
                                 <span className="text-sm font-medium truncate text-foreground">{item.title}</span>
-                                <span className="text-xs text-muted-foreground truncate">
-                                  {item.description}
-                                </span>
                               </div>
                               {item.badge && (
                                 <Badge className="shrink-0 h-6 min-w-[24px] flex items-center justify-center rounded-full text-[10px] px-2 font-bold bg-primary/10 text-primary border-0 shadow-neo-sm">
@@ -375,9 +363,6 @@ export function AppSidebar() {
                         {open && (
                           <div className="flex flex-col flex-1 min-w-0">
                             <span className="text-sm font-medium truncate text-foreground">{item.title}</span>
-                            <span className="text-xs text-muted-foreground truncate">
-                              {item.description}
-                            </span>
                           </div>
                         )}
                       </NavLink>
@@ -406,9 +391,6 @@ export function AppSidebar() {
                       {open && (
                         <div className="flex flex-col flex-1 min-w-0">
                           <span className="text-sm font-medium truncate text-foreground">Administration</span>
-                          <span className="text-xs text-muted-foreground truncate">
-                            Gestion système
-                          </span>
                         </div>
                       )}
                     </NavLink>
