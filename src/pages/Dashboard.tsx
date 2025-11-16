@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   LogOut,
 } from "lucide-react";
+import emblemGabon from "@/assets/emblem_gabon.png";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -57,8 +58,12 @@ const Dashboard = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="p-2 rounded-lg bg-accent">
-                <Shield className="h-8 w-8 text-accent-foreground" />
+              <div className="p-2 rounded-full bg-white">
+                <img 
+                  src={emblemGabon} 
+                  alt="Emblème de la République Gabonaise" 
+                  className="h-12 w-12 object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Présidence de la République</h1>
