@@ -69,34 +69,38 @@ export const VueEnsemble = () => {
       </div>
 
       {/* Indice National de Transparence */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Indice National de Transparence</CardTitle>
+      <Card className="shadow-neo-md hover:shadow-neo-lg transition-all duration-300">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-foreground">Indice National de Transparence</CardTitle>
           <p className="text-sm text-muted-foreground">Objectif 2025 : 85/100</p>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span>Score actuel</span>
-              <span className="font-bold">{kpis?.indice_transparence || 0}/100</span>
+              <span className="text-muted-foreground">Score actuel</span>
+              <span className="font-bold text-primary text-lg">{kpis?.indice_transparence || 0}/100</span>
             </div>
-            <Progress value={kpis?.indice_transparence || 0} className="h-3" />
+            <div className="p-2 rounded-xl bg-background shadow-neo-inset">
+              <Progress value={kpis?.indice_transparence || 0} className="h-3" />
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Situation par Région */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Situation par Région (Heatmap)</CardTitle>
+      <Card className="shadow-neo-md hover:shadow-neo-lg transition-all duration-300">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-foreground">Situation par Région (Heatmap)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
             {["Estuaire", "Haut-Ogooué", "Moyen-Ogooué", "Ngounié", "Nyanga", "Ogooué-Ivindo", "Ogooué-Lolo", "Ogooué-Maritime", "Woleu-Ntem"].map((region) => (
-              <div key={region} className="p-4 border rounded-lg">
-                <p className="font-semibold text-sm">{region}</p>
-                <p className="text-xs text-muted-foreground">15 signalements</p>
-                <Progress value={Math.random() * 100} className="h-2 mt-2" />
+              <div key={region} className="p-4 rounded-xl bg-card shadow-neo-sm hover:shadow-neo-md transition-all duration-300 cursor-pointer">
+                <p className="font-semibold text-sm text-foreground">{region}</p>
+                <p className="text-xs text-muted-foreground mb-2">15 signalements</p>
+                <div className="p-1 rounded-lg bg-background shadow-neo-inset">
+                  <Progress value={Math.random() * 100} className="h-2" />
+                </div>
               </div>
             ))}
           </div>
@@ -104,10 +108,12 @@ export const VueEnsemble = () => {
       </Card>
 
       {/* Évolution Mensuelle */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+      <Card className="shadow-neo-md hover:shadow-neo-lg transition-all duration-300">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <div className="p-2 rounded-xl bg-background shadow-neo-inset">
+              <TrendingUp className="h-5 w-5 text-primary" />
+            </div>
             Évolution Mensuelle des Signalements
           </CardTitle>
         </CardHeader>

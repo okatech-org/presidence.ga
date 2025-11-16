@@ -8,64 +8,66 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Couleurs institutionnelles gabonaises */
-    --background: 0 0% 98%;
-    --foreground: 215 25% 15%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
-
+    /* === DESIGN NEOMORPHIQUE ASTED === */
+    /* Arrière-plans neomorphiques */
+    --background: 220 14% 91%;
+    --foreground: 222 47% 11%;
+    
+    --card: 220 14% 96%;
+    --card-foreground: 222 47% 11%;
+    
+    --popover: 220 14% 96%;
+    --popover-foreground: 222 47% 11%;
+    
     /* Bleu marine institutionnel (couleur principale) */
-    --primary: 215 75% 25%;
+    --primary: 215 85% 47%;
     --primary-foreground: 0 0% 100%;
     
     /* Vert du drapeau gabonais */
     --secondary: 150 60% 35%;
     --secondary-foreground: 0 0% 100%;
-
+    
     /* Jaune/Or du drapeau */
     --accent: 45 95% 55%;
-    --accent-foreground: 215 25% 15%;
+    --accent-foreground: 222 47% 11%;
     
-    --muted: 215 15% 92%;
-    --muted-foreground: 215 15% 45%;
-
+    --muted: 220 14% 86%;
+    --muted-foreground: 222 23% 46%;
+    
     /* Rouge pour alertes critiques */
-    --destructive: 0 85% 50%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
     /* Orange pour alertes moyennes */
-    --warning: 35 95% 55%;
-    --warning-foreground: 215 25% 15%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
     
     /* Vert pour statut OK */
-    --success: 150 60% 45%;
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-
-    --border: 215 20% 88%;
-    --input: 215 20% 88%;
-    --ring: 215 75% 25%;
-
-    --radius: 0.5rem;
-
+    
+    --border: 220 14% 86%;
+    --input: 220 14% 82%;
+    --ring: 215 85% 47%;
+    
+    --radius: 1rem;
+    
+    /* === OMBRES NEOMORPHIQUES === */
+    --neo-shadow-sm: 4px 4px 8px rgba(197, 199, 202, 0.4), -4px -4px 8px rgba(255, 255, 255, 0.8);
+    --neo-shadow-md: 8px 8px 16px rgba(197, 199, 202, 0.5), -8px -8px 16px rgba(255, 255, 255, 0.9);
+    --neo-shadow-lg: 12px 12px 24px rgba(197, 199, 202, 0.6), -12px -12px 24px rgba(255, 255, 255, 1);
+    --neo-shadow-inset: inset 4px 4px 8px rgba(197, 199, 202, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+    --neo-shadow-inset-lg: inset 8px 8px 16px rgba(197, 199, 202, 0.5), inset -8px -8px 16px rgba(255, 255, 255, 0.9);
+    
     /* Gradients institutionnels */
-    --gradient-primary: linear-gradient(135deg, hsl(215 75% 25%), hsl(215 75% 35%));
+    --gradient-primary: linear-gradient(135deg, hsl(215 85% 47%), hsl(215 85% 57%));
     --gradient-secondary: linear-gradient(135deg, hsl(150 60% 35%), hsl(150 60% 45%));
     --gradient-gold: linear-gradient(135deg, hsl(45 95% 55%), hsl(45 95% 65%));
-    
-    /* Ombres élégantes */
-    --shadow-sm: 0 2px 4px hsla(215, 25%, 15%, 0.05);
-    --shadow-md: 0 4px 12px hsla(215, 25%, 15%, 0.1);
-    --shadow-lg: 0 8px 24px hsla(215, 25%, 15%, 0.15);
-    --shadow-xl: 0 16px 48px hsla(215, 25%, 15%, 0.2);
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-
+    
     --sidebar-background: 215 75% 25%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 100%;
@@ -149,8 +151,40 @@ All colors MUST be HSL.
     background: var(--gradient-gold);
   }
   
-  .shadow-elegant {
-    box-shadow: var(--shadow-lg);
+  /* === CLASSES NEOMORPHIQUES === */
+  .neo-card {
+    background: hsl(var(--card));
+    box-shadow: var(--neo-shadow-md);
+    border-radius: var(--radius);
+    transition: var(--transition-smooth);
+  }
+  
+  .neo-card:hover {
+    box-shadow: var(--neo-shadow-lg);
+  }
+  
+  .neo-button {
+    background: hsl(var(--card));
+    box-shadow: var(--neo-shadow-sm);
+    transition: var(--transition-fast);
+  }
+  
+  .neo-button:hover {
+    box-shadow: var(--neo-shadow-md);
+  }
+  
+  .neo-button:active {
+    box-shadow: var(--neo-shadow-inset);
+  }
+  
+  .neo-input {
+    background: hsl(var(--background));
+    box-shadow: var(--neo-shadow-inset);
+    border: none;
+  }
+  
+  .neo-elevated {
+    box-shadow: var(--neo-shadow-lg);
   }
   
   .transition-smooth {

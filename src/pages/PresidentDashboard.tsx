@@ -68,10 +68,10 @@ const PresidentDashboard = () => {
         {/* Header Présidentiel */}
         <PresidentHeader />
 
-        <main className="container mx-auto px-6 py-6">
+        <main className="container mx-auto px-6 py-8">
           {/* Titre du Tableau de Bord Stratégique */}
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold mb-2">Console de Pilotage Stratégique</h2>
+          <div className="mb-8 p-6 rounded-2xl bg-card shadow-neo-md">
+            <h2 className="text-3xl font-bold mb-2 text-foreground">Console de Pilotage Stratégique</h2>
             <p className="text-muted-foreground text-lg">
               Tolérance Zéro, Transparence Totale - Interface de Commandement Présidentielle
             </p>

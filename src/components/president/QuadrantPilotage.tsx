@@ -5,10 +5,12 @@ import { Users, TrendingUp, Briefcase, Calendar, AlertCircle } from "lucide-reac
 
 const QuadrantPilotage = () => {
   return (
-    <Card className="border-primary/50 shadow-lg">
-      <CardHeader className="bg-primary/10">
-        <CardTitle className="flex items-center gap-2 text-primary">
-          <Users className="h-6 w-6" />
+    <Card className="shadow-neo-md hover:shadow-neo-lg transition-all duration-300">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3 text-foreground">
+          <div className="p-3 rounded-xl bg-background shadow-neo-inset">
+            <Users className="h-6 w-6 text-primary" />
+          </div>
           PILOTAGE GOUVERNEMENTAL
         </CardTitle>
         <p className="text-sm text-muted-foreground">L'Exécutif</p>
@@ -20,9 +22,9 @@ const QuadrantPilotage = () => {
             <Calendar className="h-5 w-5 text-primary" />
             <span className="font-semibold">Conseil des Ministres</span>
           </div>
-          <div className="ml-7 space-y-3">
-            <div className="p-3 bg-primary/5 rounded-lg">
-              <p className="text-sm font-medium">Prochain Conseil</p>
+            <div className="ml-7 space-y-3">
+            <div className="p-4 rounded-xl bg-card shadow-neo-sm">
+              <p className="text-sm font-medium text-muted-foreground">Prochain Conseil</p>
               <p className="text-lg font-bold text-primary">Mercredi 20 Nov. à 10h00</p>
             </div>
             <div>
@@ -57,20 +59,20 @@ const QuadrantPilotage = () => {
             <span className="font-semibold">Performance Économique & Financière</span>
           </div>
           <div className="ml-7 grid grid-cols-2 gap-3">
-            <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800 cursor-pointer hover:bg-green-100 dark:hover:bg-green-950/30 transition-colors">
-              <p className="text-xs text-muted-foreground">Trésorerie de l'État</p>
-              <p className="text-xl font-bold text-green-600">842M FCFA</p>
-              <p className="text-xs text-muted-foreground mt-1">Temps réel • Min. Finances</p>
+            <div className="p-4 rounded-xl bg-card shadow-neo-sm hover:shadow-neo-md cursor-pointer transition-all duration-300">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Trésorerie de l'État</p>
+              <p className="text-xl font-bold text-success mt-1">842M FCFA</p>
+              <p className="text-xs text-muted-foreground mt-2">Temps réel • Min. Finances</p>
             </div>
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-950/30 transition-colors">
-              <p className="text-xs text-muted-foreground">Inflation</p>
-              <p className="text-xl font-bold text-blue-600">2.4%</p>
-              <p className="text-xs text-muted-foreground mt-1">Oct. 2024 • Min. Économie</p>
+            <div className="p-4 rounded-xl bg-card shadow-neo-sm hover:shadow-neo-md cursor-pointer transition-all duration-300">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Inflation</p>
+              <p className="text-xl font-bold text-primary mt-1">2.4%</p>
+              <p className="text-xs text-muted-foreground mt-2">Oct. 2024 • Min. Économie</p>
             </div>
-            <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800 col-span-2 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors">
-              <p className="text-xs text-muted-foreground">Réserves de Change</p>
-              <p className="text-xl font-bold text-orange-600">184 jours</p>
-              <p className="text-xs text-muted-foreground mt-1">Min. Finances</p>
+            <div className="p-4 rounded-xl bg-card shadow-neo-sm hover:shadow-neo-md col-span-2 cursor-pointer transition-all duration-300">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Réserves de Change</p>
+              <p className="text-xl font-bold text-warning mt-1">184 jours</p>
+              <p className="text-xs text-muted-foreground mt-2">Min. Finances</p>
             </div>
           </div>
         </div>

@@ -24,12 +24,12 @@ export const StatCard = ({ label, value, trend, trendValue, icon }: StatCardProp
   };
 
   return (
-    <Card className="p-6">
-      <div className="flex items-start justify-between mb-2">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        {icon && <div className="text-primary">{icon}</div>}
+    <Card className="p-6 bg-card hover:shadow-neo-lg transition-all duration-300">
+      <div className="flex items-start justify-between mb-3">
+        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+        {icon && <div className="text-primary p-2 rounded-xl bg-background shadow-neo-inset">{icon}</div>}
       </div>
-      <p className="text-3xl font-bold mb-2">{value}</p>
+      <p className="text-3xl font-bold mb-3 text-foreground">{value}</p>
       {trend && trendValue && (
         <div className="flex items-center gap-1 text-sm">
           {getTrendIcon()}
