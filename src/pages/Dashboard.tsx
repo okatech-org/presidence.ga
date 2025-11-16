@@ -39,8 +39,9 @@ const Dashboard = () => {
       navigate("/auth");
       return;
     }
+    // Redirection immédiate pour les présidents sans afficher le contenu
     if (isPresident) {
-      navigate("/president-space");
+      navigate("/president-space", { replace: true });
       return;
     }
     setLoading(false);
@@ -51,7 +52,8 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
-  if (loading) {
+  // Ne rien afficher pendant la vérification ou si c'est un président (évite le flash)
+  if (loading || isPresident) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

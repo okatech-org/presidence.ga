@@ -9,7 +9,6 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Demo from "./pages/Demo";
 import AdminDashboard from "./pages/AdminDashboard";
-import PresidentDashboard from "./pages/PresidentDashboard";
 import PresidentSpace from "./pages/PresidentSpace";
 import IAstedConfig from "./pages/IAstedConfig";
 import NotFound from "./pages/NotFound";
@@ -30,7 +29,6 @@ const App = () => (
             <Route path="/demo" element={<Demo />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            <Route path="/president" element={<PresidentDashboard />} />
             <Route path="/president-space" element={<PresidentSpace />} />
             <Route path="/iasted-config" element={<IAstedConfig />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
