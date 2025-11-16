@@ -182,85 +182,73 @@ const Index = () => {
                 </p>
               </div>
 
-          <Carousel className="w-full max-w-7xl mx-auto">
-            <CarouselContent>
-              <CarouselItem className="md:basis-1/2">
-                <Card className="p-8 shadow-elegant hover:shadow-xl transition-smooth h-full">
-                  <img 
-                    src={commandCenterImage} 
-                    alt="Centre de commandement moderne" 
-                    className="w-full h-64 object-cover rounded-lg mb-6"
-                  />
-                  <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <Activity className="h-8 w-8 text-primary" />
-                    Centralisation des Données
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Tous les ministères et institutions transmettent leurs données en temps réel vers une plateforme unique. 
-                    Plus besoin de multiplier les rapports papier ou les réunions : l'information est accessible instantanément, 
-                    standardisée et analysée automatiquement.
-                  </p>
-                </Card>
-              </CarouselItem>
+          <div className="grid md:grid-cols-2 gap-8 mb-16">
+            <Card className="p-8 shadow-elegant hover:shadow-xl transition-smooth">
+              <img 
+                src={commandCenterImage} 
+                alt="Centre de commandement moderne" 
+                className="w-full h-64 object-cover rounded-lg mb-6"
+              />
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
+                <Activity className="h-8 w-8 text-primary" />
+                Centralisation des Données
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Tous les ministères et institutions transmettent leurs données en temps réel vers une plateforme unique. 
+                Plus besoin de multiplier les rapports papier ou les réunions : l'information est accessible instantanément, 
+                standardisée et analysée automatiquement.
+              </p>
+            </Card>
 
-              <CarouselItem className="md:basis-1/2">
-                <Card className="p-8 shadow-elegant hover:shadow-xl transition-smooth h-full">
-                  <img 
-                    src={securityImage} 
-                    alt="Sécurité des données" 
-                    className="w-full h-64 object-cover rounded-lg mb-6"
-                  />
-                  <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <Lock className="h-8 w-8 text-primary" />
-                    Sécurité & Confidentialité
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Les données sensibles de l'État sont protégées par un chiffrement de niveau militaire. 
-                    Chaque utilisateur dispose d'un accès personnalisé selon son rôle, garantissant que seules 
-                    les personnes autorisées peuvent consulter les informations stratégiques.
-                  </p>
-                </Card>
-              </CarouselItem>
+            <Card className="p-8 shadow-elegant hover:shadow-xl transition-smooth">
+              <img 
+                src={securityImage} 
+                alt="Sécurité des données" 
+                className="w-full h-64 object-cover rounded-lg mb-6"
+              />
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
+                <Lock className="h-8 w-8 text-primary" />
+                Sécurité & Confidentialité
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Les données sensibles de l'État sont protégées par un chiffrement de niveau militaire. 
+                Chaque utilisateur dispose d'un accès personnalisé selon son rôle, garantissant que seules 
+                les personnes autorisées peuvent consulter les informations stratégiques.
+              </p>
+            </Card>
 
-              <CarouselItem className="md:basis-1/2">
-                <Card className="p-8 shadow-elegant hover:shadow-xl transition-smooth h-full">
-                  <img 
-                    src={collaborationImage} 
-                    alt="Collaboration gouvernementale" 
-                    className="w-full h-64 object-cover rounded-lg mb-6"
-                  />
-                  <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <Users className="h-8 w-8 text-primary" />
-                    Coordination Optimale
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    L'application facilite la coordination entre tous les acteurs de l'État : du Vice-Président 
-                    du Gouvernement aux ministres, en passant par les institutions judiciaires et législatives. 
-                    Les blocages interministériels sont identifiés et résolus rapidement.
-                  </p>
-                </Card>
-              </CarouselItem>
+            <Card className="p-8 shadow-elegant hover:shadow-xl transition-smooth">
+              <img 
+                src={collaborationImage} 
+                alt="Collaboration gouvernementale" 
+                className="w-full h-64 object-cover rounded-lg mb-6"
+              />
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
+                <Users className="h-8 w-8 text-primary" />
+                Coordination Optimale
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                L'application facilite la coordination entre tous les acteurs de l'État : du Vice-Président 
+                du Gouvernement aux ministres, en passant par les institutions judiciaires et législatives. 
+                Les blocages interministériels sont identifiés et résolus rapidement.
+              </p>
+            </Card>
 
-              <CarouselItem className="md:basis-1/2">
-                <Card className="p-8 shadow-elegant hover:shadow-xl transition-smooth bg-gradient-to-br from-primary/5 to-secondary/5 h-full">
-                  <div className="flex items-center justify-center h-64 mb-6">
-                    <TrendingUp className="h-32 w-32 text-primary animate-pulse" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <CheckCircle className="h-8 w-8 text-success" />
-                    Décisions Éclairées
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Grâce aux tableaux de bord synthétiques et aux alertes en temps réel, le Président peut 
-                    prendre des décisions basées sur des données concrètes et actualisées, anticiper les crises 
-                    et saisir les opportunités au bon moment.
-                  </p>
-                </Card>
-              </CarouselItem>
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex" />
-            <CarouselNext className="hidden md:flex" />
-          </Carousel>
+            <Card className="p-8 shadow-elegant hover:shadow-xl transition-smooth bg-gradient-to-br from-primary/5 to-secondary/5">
+              <div className="flex items-center justify-center h-64 mb-6">
+                <TrendingUp className="h-32 w-32 text-primary animate-pulse" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
+                <CheckCircle className="h-8 w-8 text-success" />
+                Décisions Éclairées
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Grâce aux tableaux de bord synthétiques et aux alertes en temps réel, le Président peut 
+                prendre des décisions basées sur des données concrètes et actualisées, anticiper les crises 
+                et saisir les opportunités au bon moment.
+              </p>
+            </Card>
+          </div>
             </div>
           )}
 
