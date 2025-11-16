@@ -213,17 +213,6 @@ const Demo = () => {
                 {account.description}
               </div>
 
-              <div className="space-y-3 mb-4">
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Email</p>
-                  <p className="text-sm font-mono">{account.email}</p>
-                </div>
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Mot de passe</p>
-                  <p className="text-sm font-mono">{account.password}</p>
-                </div>
-              </div>
-
               <div className="flex gap-2">
                 <Button
                   variant="outline"
