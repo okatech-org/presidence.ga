@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const usePresidentRole = () => {
@@ -6,11 +6,7 @@ export const usePresidentRole = () => {
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
-  useEffect(() => {
-    checkPresidentRole();
-  }, []);
-
-  const checkPresidentRole = async () => {
+  const checkPresidentRole = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -21,30 +17,23 @@ export const usePresidentRole = () => {
         return;
       }
 
-      // Vérifier le rôle president/admin dans user_roles
-      const { data: rolePresident } = await supabase
+      // Une seule requête avec OR pour optimiser
+      const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .eq('role', 'president')
-        .maybeSingle();
-      const { data: roleAdmin } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+        .in('role', ['president', 'admin']);
 
       // Métadonnées (fallback)
       const metaRole = (user.user_metadata?.role as string | undefined) || '';
       const metaLooksPresident = /président/i.test(metaRole);
       const metaLooksSuperAdmin = /super[- ]?admin/i.test(metaRole);
 
-      const hasPresident = !!rolePresident || metaLooksPresident;
-      const hasAdmin = !!roleAdmin || metaLooksSuperAdmin;
+      const hasPresidentRole = roles?.some(r => r.role === 'president') || metaLooksPresident;
+      const hasAdminRole = roles?.some(r => r.role === 'admin') || metaLooksSuperAdmin;
 
-      setIsPresident(hasPresident || hasAdmin);
-      setIsSuperAdmin(hasAdmin);
+      setIsPresident(hasPresidentRole || hasAdminRole);
+      setIsSuperAdmin(hasAdminRole);
       setLoading(false);
     } catch (error) {
       console.error("Error checking president role:", error);
@@ -52,7 +41,11 @@ export const usePresidentRole = () => {
       setIsSuperAdmin(false);
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkPresidentRole();
+  }, [checkPresidentRole]);
 
   return { isPresident, isSuperAdmin, loading };
 };

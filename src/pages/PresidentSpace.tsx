@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -30,6 +30,8 @@ import {
   DollarSign,
 } from "lucide-react";
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
+import { StatCard, CircularProgress, TimelineItem, SectionCard } from "@/components/president/PresidentSpaceComponents";
+import { ActivityItem } from "@/components/president/ActivityItem";
 
 type ThemeConfig = {
   primary: string;
@@ -95,167 +97,15 @@ const themes: Record<"light" | "dark", ThemeConfig> = {
   },
 };
 
-type StatCardProps = {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ComponentType<any>;
-  color: string;
-  trend?: string;
-  theme: ThemeConfig;
-};
-
-const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon: Icon, color, trend, theme }) => {
-  return (
-    <div
-      style={{
-        position: "relative",
-        backgroundColor: theme.bgCard,
-        border: `1px solid ${theme.border}`,
-        borderRadius: "16px",
-        padding: "24px",
-        boxShadow: theme.shadow,
-        transition: "all 0.3s ease",
-        cursor: "pointer",
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-4px)")}
-      onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-    >
-      <div style={{ position: "absolute", top: 16, right: 16, width: 40, height: 40, borderRadius: 12, backgroundColor: `${color}20`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon size={20} />
-      </div>
-      <p style={{ color: theme.textSecondary, fontSize: "14px", marginBottom: "8px", fontWeight: 500 }}>{title}</p>
-      <h2 style={{ color: theme.text, fontSize: "32px", fontWeight: 700, marginBottom: "4px" }}>{value}</h2>
-      {subtitle && <p style={{ color: theme.textTertiary, fontSize: "13px" }}>{subtitle}</p>}
-      {trend && (
-        <div style={{ display: "flex", alignItems: "center", marginTop: "8px", gap: "4px" }}>
-          <TrendingUpIcon size={16} style={{ color: theme.success }} />
-          <span style={{ color: theme.success, fontSize: "13px", fontWeight: 500 }}>{trend}</span>
-        </div>
-      )}
-    </div>
-  );
-};
-
-type CircularProgressProps = {
-  percentage: number;
-  label: string;
-  color: string;
-  theme: ThemeConfig;
-};
-
-const CircularProgress: React.FC<CircularProgressProps> = ({ percentage, label, color, theme }) => {
-  const radius = 80;
-  const strokeWidth = 12;
-  const normalizedRadius = radius - strokeWidth * 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <div style={{ textAlign: "center" }}>
-      <svg height={radius * 2} width={radius * 2} style={{ transform: "rotate(-90deg)" }}>
-        <circle stroke={theme.border} fill="transparent" strokeWidth={strokeWidth} r={normalizedRadius} cx={radius} cy={radius} />
-        <circle
-          stroke={color}
-          fill="transparent"
-          strokeWidth={strokeWidth}
-          strokeDasharray={`${circumference} ${circumference}`}
-          style={{ strokeDashoffset, transition: "stroke-dashoffset 0.5s ease" }}
-          r={normalizedRadius}
-          cx={radius}
-          cy={radius}
-        />
-      </svg>
-      <div style={{ marginTop: "-100px", paddingTop: "35px" }}>
-        <div style={{ fontSize: "28px", fontWeight: 700, color: theme.text }}>{percentage}%</div>
-        <div style={{ fontSize: "14px", color: theme.textSecondary, marginTop: "4px" }}>{label}</div>
-      </div>
-    </div>
-  );
-};
-
-type ActivityItemProps = {
-  type: "decree" | "meeting" | "nomination" | "other";
-  title: string;
-  time: string;
-  status: "completed" | "pending" | "urgent" | "info";
-  theme: ThemeConfig;
-};
-
-const ActivityItem: React.FC<ActivityItemProps> = ({ type, title, time, status, theme }) => {
-  const getIcon = () => {
-    switch (type) {
-      case "decree":
-        return <FileText size={16} />;
-      case "meeting":
-        return <Users size={16} />;
-      case "nomination":
-        return <Award size={16} />;
-      default:
-        return <Activity size={16} />;
-    }
-  };
-
-  const getStatusColor = () => {
-    switch (status) {
-      case "completed":
-        return theme.success;
-      case "pending":
-        return theme.warning;
-      case "urgent":
-        return theme.danger;
-      default:
-        return theme.info;
-    }
-  };
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        padding: "12px 16px",
-        backgroundColor: theme.bgSecondary,
-        borderRadius: "8px",
-        marginBottom: "8px",
-        transition: "all 0.2s ease",
-        cursor: "pointer",
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.bgTertiary)}
-      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.bgSecondary)}
-    >
-      <div
-        style={{
-          width: "32px",
-          height: "32px",
-          borderRadius: "8px",
-          backgroundColor: `${getStatusColor()}20`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginRight: "12px",
-        }}
-      >
-        {React.cloneElement(getIcon(), { style: { color: getStatusColor() } })}
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ color: theme.text, fontSize: "14px", fontWeight: 500 }}>{title}</div>
-        <div style={{ color: theme.textTertiary, fontSize: "12px", marginTop: "2px" }}>{time}</div>
-      </div>
-      <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: getStatusColor() }} />
-    </div>
-  );
-};
-
 export default function PresidentSpace() {
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["gouvernance"]);
   const navigate = useNavigate();
-  const theme = darkMode ? themes.dark : themes.light;
+  const theme = useMemo(() => darkMode ? themes.dark : themes.light, [darkMode]);
 
-  const stats = {
+  const stats = useMemo(() => ({
     population: 2341179,
     ministeres: 42,
     projetsActifs: 127,
@@ -264,9 +114,9 @@ export default function PresidentSpace() {
     tauxChomage: 19.8,
     decretsSemaine: 7,
     reunionsPrevues: 12,
-  };
+  }), []);
 
-  const navigationItems = [
+  const navigationItems = useMemo(() => [
     { id: "dashboard", label: "Tableau de Bord", icon: Home, badge: null as string | null },
     {
       id: "gouvernance",
@@ -305,11 +155,15 @@ export default function PresidentSpace() {
     { id: "international", label: "Relations Internationales", icon: Globe, badge: "3" },
     { id: "securite", label: "Sécurité & Défense", icon: Shield },
     { id: "agenda", label: "Agenda Présidentiel", icon: Calendar, badge: "8" },
-  ];
+  ], []);
 
-  const toggleMenu = (menuId: string) => {
+  const toggleMenu = useCallback((menuId: string) => {
     setExpandedMenus((prev) => (prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [...prev, menuId]));
-  };
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    navigate("/auth");
+  }, [navigate]);
 
   return (
       <div
@@ -866,37 +720,6 @@ export default function PresidentSpace() {
           />
         </div>
       </div>
-    </div>
-  );
-}
-
-// Section helpers
-function SectionCard({
-  title,
-  children,
-  theme,
-  right,
-}: {
-  title: string;
-  children: React.ReactNode;
-  theme: ThemeConfig;
-  right?: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        backgroundColor: "#FFFFFF",
-        border: `1px solid ${theme.border}`,
-        borderRadius: "16px",
-        padding: "24px",
-        boxShadow: theme.shadow,
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-        <h3 style={{ fontSize: "18px", fontWeight: 600, color: theme.text }}>{title}</h3>
-        {right}
-      </div>
-      {children}
     </div>
   );
 }
