@@ -45,7 +45,7 @@ const IAsted = () => {
 
   return (
     <DashboardLayout>
-      <div className="fixed inset-0 bg-gradient-to-br from-background to-secondary/20 flex items-center justify-center p-4">
+      <div className="relative min-h-screen bg-gradient-to-br from-background to-secondary/20 flex items-center justify-center p-4">
       {/* Listening Overlay */}
       <IAstedListeningOverlay voiceState={voiceState} audioLevel={audioLevel} />
 
