@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Shield, FileText, Download, Eye } from "lucide-react";
+import { ArrowLeft, Shield, FileText, Download, Eye, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import emblemGabon from "@/assets/emblem_gabon.png";
@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { FeedbackDocumentsViewer } from "@/components/FeedbackDocumentsViewer";
 
 interface Feedback {
   id: string;
@@ -25,6 +26,7 @@ interface Feedback {
   implementation_suggestions: string | null;
   created_at: string;
   status: string | null;
+  document_paths: string[];
 }
 
 const AdminDashboard = () => {
@@ -32,6 +34,8 @@ const AdminDashboard = () => {
   const { toast } = useToast();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+  const [showDocuments, setShowDocuments] = useState(false);
 
   useEffect(() => {
     fetchFeedbacks();
@@ -66,6 +70,11 @@ const AdminDashboard = () => {
       default:
         return <Badge variant="outline">Nouveau</Badge>;
     }
+  };
+
+  const handleViewDocuments = (feedback: Feedback) => {
+    setSelectedFeedback(feedback);
+    setShowDocuments(true);
   };
 
   return (
@@ -166,6 +175,7 @@ const AdminDashboard = () => {
                     <TableHead>Description du rôle</TableHead>
                     <TableHead>Description du travail</TableHead>
                     <TableHead>Suggestions</TableHead>
+                    <TableHead>Documents</TableHead>
                     <TableHead>Statut</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -186,6 +196,20 @@ const AdminDashboard = () => {
                       <TableCell className="max-w-xs truncate">
                         {feedback.implementation_suggestions || "-"}
                       </TableCell>
+                      <TableCell>
+                        {feedback.document_paths && feedback.document_paths.length > 0 ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewDocuments(feedback)}
+                          >
+                            <Paperclip className="h-4 w-4 mr-2" />
+                            {feedback.document_paths.length}
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>{getStatusBadge(feedback.status)}</TableCell>
                     </TableRow>
                   ))}
@@ -195,6 +219,19 @@ const AdminDashboard = () => {
           )}
         </Card>
       </main>
+
+      {/* Documents Viewer Modal */}
+      {selectedFeedback && (
+        <FeedbackDocumentsViewer
+          isOpen={showDocuments}
+          onClose={() => {
+            setShowDocuments(false);
+            setSelectedFeedback(null);
+          }}
+          documentPaths={selectedFeedback.document_paths || []}
+          feedbackId={selectedFeedback.id}
+        />
+      )}
     </div>
   );
 };
