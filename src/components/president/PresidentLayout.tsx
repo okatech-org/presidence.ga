@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import emblemGabon from "@/assets/emblem_gabon.png";
+import { IAstedStatusIndicator } from "@/components/IAstedStatusIndicator";
 
 interface PresidentLayoutProps {
   children: ReactNode;
@@ -42,17 +43,22 @@ export function PresidentLayout({ children }: PresidentLayoutProps) {
               </div>
             </div>
             
-            {/* Bouton déconnexion */}
-            <Button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                window.location.href = "/auth";
-              }}
-              className="bg-background shadow-neo-sm hover:shadow-neo-md transition-all duration-300 text-foreground border-0 px-6"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Déconnexion
-            </Button>
+            {/* Status indicators et actions */}
+            <div className="flex items-center gap-3">
+              <IAstedStatusIndicator />
+              
+              {/* Bouton déconnexion */}
+              <Button
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  window.location.href = "/auth";
+                }}
+                className="bg-background shadow-neo-sm hover:shadow-neo-md transition-all duration-300 text-foreground border-0 px-6"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Déconnexion
+              </Button>
+            </div>
           </header>
           
           <div className="px-6 pb-6 flex gap-6 flex-1">
