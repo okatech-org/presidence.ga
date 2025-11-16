@@ -36,13 +36,15 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   // Charger la config iAsted
   useEffect(() => {
     const loadIAstedConfig = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('iasted_config')
         .select('agent_id')
         .limit(1)
         .single();
       
-      if (data?.agent_id) {
+      if (error) {
+        console.error('Error loading iAsted config:', error);
+      } else if (data?.agent_id) {
         setElevenLabsAgentId(data.agent_id);
       }
     };
@@ -87,9 +89,18 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   const handleModeToggle = async (enabled: boolean) => {
     if (!elevenLabsAgentId) {
       toast({
-        title: "Configuration requise",
-        description: "Veuillez configurer un agent ElevenLabs dans les paramètres",
+        title: "Agent non configuré",
+        description: "Créez d'abord un agent ElevenLabs dans la configuration iAsted.",
         variant: "destructive",
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.location.href = '/iasted-config'}
+          >
+            Configurer
+          </Button>
+        ),
       });
       return;
     }
@@ -97,9 +108,27 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
     setIsContinuousMode(enabled);
     
     if (enabled) {
-      await startContinuousMode();
+      try {
+        await startContinuousMode();
+        toast({
+          title: "Mode vocal activé",
+          description: "Vous pouvez maintenant parler avec iAsted.",
+        });
+      } catch (error) {
+        console.error('Error starting continuous mode:', error);
+        setIsContinuousMode(false);
+        toast({
+          title: "Erreur",
+          description: error instanceof Error ? error.message : "Impossible de démarrer le mode vocal.",
+          variant: "destructive",
+        });
+      }
     } else {
       await stopContinuousMode();
+      toast({
+        title: "Mode vocal désactivé",
+        description: "Vous êtes revenu au mode texte.",
+      });
     }
   };
 
