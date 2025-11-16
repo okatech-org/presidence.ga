@@ -27,6 +27,103 @@ const styles = `
     to { transform: rotate(360deg); }
   }
 
+  @keyframes float-particle {
+    0%, 100% { 
+      transform: translate(0, 0) scale(1);
+      opacity: 0.6;
+    }
+    25% { 
+      transform: translate(8px, -12px) scale(1.2);
+      opacity: 0.9;
+    }
+    50% { 
+      transform: translate(-6px, -20px) scale(0.8);
+      opacity: 0.4;
+    }
+    75% { 
+      transform: translate(-12px, -8px) scale(1.1);
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes orbit-particle {
+    0% { 
+      transform: rotate(0deg) translateX(24px) rotate(0deg);
+      opacity: 0.5;
+    }
+    25% { 
+      opacity: 0.9;
+    }
+    50% { 
+      transform: rotate(180deg) translateX(24px) rotate(-180deg);
+      opacity: 0.5;
+    }
+    75% { 
+      opacity: 0.3;
+    }
+    100% { 
+      transform: rotate(360deg) translateX(24px) rotate(-360deg);
+      opacity: 0.5;
+    }
+  }
+
+  .iasted-particles-container {
+    position: absolute;
+    inset: -20px;
+    pointer-events: none;
+  }
+
+  .iasted-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: radial-gradient(circle, rgba(6, 182, 212, 1) 0%, rgba(6, 182, 212, 0) 70%);
+    border-radius: 50%;
+    filter: blur(0.5px);
+  }
+
+  .iasted-particle-float-1 {
+    top: 50%;
+    left: 50%;
+    animation: float-particle 3s ease-in-out infinite;
+  }
+
+  .iasted-particle-float-2 {
+    top: 50%;
+    left: 50%;
+    animation: float-particle 3.5s ease-in-out infinite 0.5s;
+  }
+
+  .iasted-particle-float-3 {
+    top: 50%;
+    left: 50%;
+    animation: float-particle 4s ease-in-out infinite 1s;
+  }
+
+  .iasted-particle-orbit-1 {
+    top: 50%;
+    left: 50%;
+    animation: orbit-particle 4s linear infinite;
+  }
+
+  .iasted-particle-orbit-2 {
+    top: 50%;
+    left: 50%;
+    animation: orbit-particle 5s linear infinite 1s;
+  }
+
+  .iasted-particle-orbit-3 {
+    top: 50%;
+    left: 50%;
+    animation: orbit-particle 4.5s linear infinite 2s;
+  }
+
+  .iasted-particle-orbit-4 {
+    top: 50%;
+    left: 50%;
+    animation: orbit-particle 5.5s linear infinite 2.5s;
+  }
+
   .iasted-mini-orb {
     position: relative;
     width: 36px;
@@ -184,11 +281,23 @@ export const IAstedStatusIndicator: React.FC = () => {
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center gap-2">
-                <div className="iasted-mini-orb">
-                  <div className="iasted-mini-orb-wave" />
-                  <div className="iasted-mini-orb-wave" />
-                  <div className="iasted-mini-orb-wave" />
-                  <Brain className="h-5 w-5 text-white relative z-10" />
+                <div className="relative">
+                  <div className="iasted-mini-orb">
+                    <div className="iasted-mini-orb-wave" />
+                    <div className="iasted-mini-orb-wave" />
+                    <div className="iasted-mini-orb-wave" />
+                    <Brain className="h-5 w-5 text-white relative z-10" />
+                  </div>
+                  {/* Particules flottantes et en orbite */}
+                  <div className="iasted-particles-container">
+                    <div className="iasted-particle iasted-particle-float-1" />
+                    <div className="iasted-particle iasted-particle-float-2" />
+                    <div className="iasted-particle iasted-particle-float-3" />
+                    <div className="iasted-particle iasted-particle-orbit-1" />
+                    <div className="iasted-particle iasted-particle-orbit-2" />
+                    <div className="iasted-particle iasted-particle-orbit-3" />
+                    <div className="iasted-particle iasted-particle-orbit-4" />
+                  </div>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs font-bold" style={{ color: '#06B6D4' }}>
