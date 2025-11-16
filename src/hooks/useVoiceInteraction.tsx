@@ -175,15 +175,21 @@ export const useVoiceInteraction = (settings: VoiceSettings) => {
       const formData = new FormData();
       formData.append('file', audioBlob, 'audio.webm');
 
-      const { data: transcriptionData, error: transcriptionError } = await supabase.functions.invoke('transcribe-audio', {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
         body: formData,
       });
 
-      if (transcriptionError) {
-        console.error('Transcription error:', transcriptionError);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Transcription error:', errorText);
         throw new Error('Transcription failed');
       }
 
+      const transcriptionData = await response.json();
       const transcript = transcriptionData.text;
       console.log('Transcript:', transcript);
 
