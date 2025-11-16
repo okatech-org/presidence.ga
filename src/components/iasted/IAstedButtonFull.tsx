@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, MessageCircle, Brain } from 'lucide-react';
 
 interface IAstedButtonProps {
-  onClick?: () => void; // Double clic ou clic pour ouvrir le modal
-  onVoiceClick?: () => void; // Simple clic pour activer la conversation vocale
+  onSingleClick: () => void; // Simple clic : activer mode vocal pur OU basculer vocal si modal ouvert
+  onDoubleClick: () => void; // Double clic : ouvrir modal en mode texte
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   voiceListening?: boolean;
@@ -274,20 +274,51 @@ const styles = `
   75% { transform: scale3d(1.12, 1.15, 1.1) rotate(2deg); border-radius: 40% 60% 58% 42% / 54% 46% 56% 44%; filter: brightness(1.4) saturate(2.5); }
 }
 
-/* Intensification du heartbeat pendant la parole */
+/* Intensification du heartbeat pendant la parole - ANIMATIONS MAXIMALES */
 .thick-matter-button.voice-speaking {
   animation: 
-    global-heartbeat-speaking 0.5s cubic-bezier(0.68, -0.2, 0.265, 1.55) infinite,
-    shadow-pulse-intense 0.5s cubic-bezier(0.68, -0.2, 0.265, 1.55) infinite;
+    global-heartbeat-speaking 0.4s cubic-bezier(0.68, -0.2, 0.265, 1.55) infinite,
+    shadow-pulse-speaking 0.4s cubic-bezier(0.68, -0.2, 0.265, 1.55) infinite,
+    speaking-glow 0.4s ease-in-out infinite;
 }
 
 @keyframes global-heartbeat-speaking {
-  0% { transform: scale3d(1, 1, 1) rotate(0deg); border-radius: 50%; filter: brightness(1.1) saturate(1.9); }
-  20% { transform: scale3d(1.2, 1.22, 1.18) rotate(4deg); border-radius: 32% 68% 65% 35% / 62% 38% 64% 36%; filter: brightness(1.6) saturate(3); }
-  40% { transform: scale3d(1.1, 1.08, 1.12) rotate(-3deg); border-radius: 42% 58% 55% 45% / 52% 48% 54% 46%; filter: brightness(1.3) saturate(2.4); }
-  60% { transform: scale3d(1.15, 1.18, 1.14) rotate(3deg); border-radius: 38% 62% 58% 42% / 56% 44% 58% 42%; filter: brightness(1.5) saturate(2.7); }
-  80% { transform: scale3d(1.05, 1.03, 1.08) rotate(-2deg); border-radius: 46% 54% 48% 52% / 48% 52% 47% 53%; filter: brightness(1.2) saturate(2.1); }
-  100% { transform: scale3d(1, 1, 1) rotate(0deg); border-radius: 50%; filter: brightness(1.1) saturate(1.9); }
+  0% { transform: scale3d(1, 1, 1) rotate(0deg); border-radius: 50%; filter: brightness(1.2) saturate(2); }
+  20% { transform: scale3d(1.25, 1.28, 1.22) rotate(5deg); border-radius: 28% 72% 70% 30% / 68% 32% 70% 30%; filter: brightness(1.8) saturate(3.5); }
+  40% { transform: scale3d(1.15, 1.12, 1.18) rotate(-4deg); border-radius: 38% 62% 60% 40% / 58% 42% 60% 40%; filter: brightness(1.4) saturate(2.8); }
+  60% { transform: scale3d(1.22, 1.25, 1.2) rotate(4deg); border-radius: 32% 68% 65% 35% / 62% 38% 64% 36%; filter: brightness(1.7) saturate(3.2); }
+  80% { transform: scale3d(1.12, 1.1, 1.15) rotate(-3deg); border-radius: 42% 58% 55% 45% / 52% 48% 54% 46%; filter: brightness(1.35) saturate(2.6); }
+  100% { transform: scale3d(1, 1, 1) rotate(0deg); border-radius: 50%; filter: brightness(1.2) saturate(2); }
+}
+
+@keyframes shadow-pulse-speaking {
+  0%, 100% {
+    box-shadow: 
+      0 0 50px rgba(0, 170, 255, 0.8), 
+      0 0 100px rgba(0, 170, 255, 0.6), 
+      0 0 150px rgba(0, 170, 255, 0.4),
+      0 0 200px rgba(0, 170, 255, 0.3),
+      0 12px 30px rgba(0, 102, 255, 0.4),
+      inset 0 0 30px rgba(0, 170, 255, 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 0 80px rgba(0, 170, 255, 1), 
+      0 0 150px rgba(0, 170, 255, 0.8), 
+      0 0 220px rgba(0, 170, 255, 0.6),
+      0 0 300px rgba(0, 170, 255, 0.4),
+      0 16px 40px rgba(0, 102, 255, 0.6),
+      inset 0 0 50px rgba(0, 170, 255, 0.5);
+  }
+}
+
+@keyframes speaking-glow {
+  0%, 100% { 
+    filter: brightness(1.2) saturate(2) drop-shadow(0 0 20px rgba(0, 170, 255, 0.6));
+  }
+  50% { 
+    filter: brightness(1.6) saturate(3) drop-shadow(0 0 40px rgba(0, 170, 255, 0.9));
+  }
 }
 
 .organic-membrane {
@@ -918,7 +949,7 @@ const styles = `
   75% { transform: scale(1.05) rotate(270deg); filter: hue-rotate(270deg) brightness(1.1); }
 }
 
-/* Badge de mode vocal */
+/* Badge de mode vocal avec animation pulse améliorée */
 .voice-mode-badge {
   position: absolute;
   top: -8px;
@@ -935,7 +966,7 @@ const styles = `
     0 0 20px rgba(16, 185, 129, 0.3),
     inset 0 1px 2px rgba(255, 255, 255, 0.3);
   z-index: 10;
-  animation: badge-pulse 2s ease-in-out infinite;
+  animation: badge-pulse 1.5s ease-in-out infinite;
   border: 2px solid rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(4px);
 }
@@ -945,6 +976,7 @@ const styles = `
   height: 16px;
   color: white;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  animation: icon-pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes badge-pulse {
@@ -956,11 +988,21 @@ const styles = `
       inset 0 1px 2px rgba(255, 255, 255, 0.3);
   }
   50% { 
-    transform: scale(1.1);
+    transform: scale(1.15);
     box-shadow: 
-      0 6px 16px rgba(16, 185, 129, 0.6),
-      0 0 30px rgba(16, 185, 129, 0.5),
-      inset 0 1px 2px rgba(255, 255, 255, 0.4);
+      0 6px 18px rgba(16, 185, 129, 0.6),
+      0 0 35px rgba(16, 185, 129, 0.5),
+      0 0 50px rgba(16, 185, 129, 0.3),
+      inset 0 1px 3px rgba(255, 255, 255, 0.5);
+  }
+}
+
+@keyframes icon-pulse {
+  0%, 100% { 
+    transform: scale(1);
+  }
+  50% { 
+    transform: scale(1.2);
   }
 }
 
@@ -1082,8 +1124,8 @@ const styles = `
 `;
 
 export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({ 
-  onClick, 
-  onVoiceClick,
+  onSingleClick, 
+  onDoubleClick,
   className = '', 
   size = 'md', 
   voiceListening = false, 
@@ -1167,30 +1209,22 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
       setIsProcessing(false);
     }, 3000);
     
-    // Gestion des clics simples vs doubles
+    // Gestion des clics simples vs doubles avec délai de 300ms
     clickCount.current += 1;
     
     if (clickCount.current === 1) {
       // Premier clic - attendre pour voir s'il y a un double clic
       clickTimer.current = setTimeout(() => {
         // Simple clic confirmé
-        if (isInterfaceOpen && onVoiceClick) {
-          // Modal déjà ouvert : juste activer/désactiver le mode vocal
-          onVoiceClick();
-        } else if (onVoiceClick) {
-          // Modal fermé : activer le mode vocal pur (sans ouvrir le modal visuellement)
-          onVoiceClick();
-        }
+        onSingleClick();
         clickCount.current = 0;
       }, 300); // Délai de 300ms pour détecter le double clic
     } else if (clickCount.current === 2) {
-      // Double clic - ouvrir le modal de chat texte
+      // Double clic détecté - ouvrir le modal de chat texte
       if (clickTimer.current) {
         clearTimeout(clickTimer.current);
       }
-      if (onClick) {
-        onClick();
-      }
+      onDoubleClick();
       clickCount.current = 0;
     }
   };

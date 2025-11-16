@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -34,6 +34,7 @@ import { StatCard, CircularProgress, TimelineItem, SectionCard } from "@/compone
 import { ActivityItem } from "@/components/president/ActivityItem";
 import { VoiceConversationPanel } from "@/components/VoiceConversationPanel";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 type ThemeConfig = {
   primary: string;
@@ -106,6 +107,9 @@ export default function PresidentSpace() {
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["gouvernance"]);
   const [iastedOpen, setIastedOpen] = useState(false);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+  const [voiceOnlyMode, setVoiceOnlyMode] = useState(false);
+  const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
+  const voiceConversationRef = useRef<any>(null);
   const navigate = useNavigate();
   const theme = useMemo(() => darkMode ? themes.dark : themes.light, [darkMode]);
 
@@ -715,27 +719,48 @@ export default function PresidentSpace() {
           }}
         >
           <IAstedButtonFull
-            onClick={() => {
-              setIastedOpen(true);
+            onSingleClick={() => {
+              if (voiceOnlyMode) {
+                // Mode vocal pur actif : fermer
+                setIastedOpen(false);
+                setVoiceOnlyMode(false);
+              } else if (iastedOpen && !voiceOnlyMode) {
+                // Modal déjà ouvert en mode texte : basculer le mode vocal
+                voiceConversationRef.current?.toggleVoiceMode();
+              } else {
+                // Modal fermé : activer le mode vocal pur
+                setVoiceOnlyMode(true);
+                setIastedOpen(true);
+              }
             }}
-            onVoiceClick={() => {
+            onDoubleClick={() => {
+              // Ouvrir le modal en mode texte
+              setVoiceOnlyMode(false);
               setIastedOpen(true);
             }}
             size="lg"
             voiceListening={false}
             voiceSpeaking={isAgentSpeaking}
             voiceProcessing={false}
-            isInterfaceOpen={iastedOpen}
-            isVoiceModeActive={isAgentSpeaking}
+            isInterfaceOpen={iastedOpen && !voiceOnlyMode}
+            isVoiceModeActive={isVoiceModeActive}
           />
         </div>
         
         {/* Interface iAsted avec conversation vocale */}
-        <Dialog open={iastedOpen} onOpenChange={setIastedOpen}>
-          <DialogContent className="max-w-3xl">
+        <Dialog open={iastedOpen} onOpenChange={(open) => {
+          setIastedOpen(open);
+          if (!open) {
+            setVoiceOnlyMode(false);
+          }
+        }}>
+          <DialogContent className={cn("max-w-3xl", voiceOnlyMode && "opacity-0 pointer-events-none absolute")}>
             <VoiceConversationPanel 
+              ref={voiceConversationRef}
               userRole="president"
               onSpeakingChange={setIsAgentSpeaking}
+              autoActivate={voiceOnlyMode}
+              onVoiceModeChange={setIsVoiceModeActive}
             />
           </DialogContent>
         </Dialog>

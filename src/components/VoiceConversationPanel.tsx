@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -9,15 +9,23 @@ import { useVoiceConversation } from '@/hooks/useVoiceConversation';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+export interface VoiceConversationHandle {
+  toggleVoiceMode: () => void;
+}
+
 interface VoiceConversationPanelProps {
   userRole: 'president' | 'minister' | 'default';
   onSpeakingChange?: (isSpeaking: boolean) => void;
+  autoActivate?: boolean;
+  onVoiceModeChange?: (isActive: boolean) => void;
 }
 
-export const VoiceConversationPanel: React.FC<VoiceConversationPanelProps> = ({
+export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceConversationPanelProps>(({
   userRole,
   onSpeakingChange,
-}) => {
+  autoActivate = false,
+  onVoiceModeChange,
+}, ref) => {
   const [pushToTalk, setPushToTalk] = useState(false);
   
   const {
@@ -30,6 +38,23 @@ export const VoiceConversationPanel: React.FC<VoiceConversationPanelProps> = ({
     startListening,
     stopListening,
   } = useVoiceConversation({ userRole, onSpeakingChange, pushToTalk });
+
+  // Notifier le parent quand le mode vocal change
+  useEffect(() => {
+    onVoiceModeChange?.(isActive);
+  }, [isActive, onVoiceModeChange]);
+
+  // Auto-activer la conversation vocale au montage si demandé
+  useEffect(() => {
+    if (autoActivate && !isActive) {
+      startConversation();
+    }
+  }, [autoActivate]); // Ne dépend que de autoActivate pour s'exécuter une seule fois
+
+  // Exposer la fonction de toggle pour permettre de basculer depuis l'extérieur
+  useImperativeHandle(ref, () => ({
+    toggleVoiceMode: handleToggle,
+  }));
 
   const handleToggle = () => {
     if (isActive) {
@@ -226,4 +251,4 @@ export const VoiceConversationPanel: React.FC<VoiceConversationPanelProps> = ({
       </TabsContent>
     </Tabs>
   );
-};
+});
