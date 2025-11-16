@@ -1,1 +1,4 @@
 project_id = "bwnaradkspqapdoiadco"
+
+[functions.initialize-demo-accounts]
+verify_jwt = false

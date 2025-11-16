@@ -39,6 +39,7 @@ const Demo = () => {
   const [adminClicks, setAdminClicks] = useState(0);
   const [showAdminDialog, setShowAdminDialog] = useState(false);
   const [adminCode, setAdminCode] = useState("");
+  const [initializingAccounts, setInitializingAccounts] = useState(false);
 
   const demoAccounts: DemoAccount[] = [
     {
@@ -165,6 +166,39 @@ const Demo = () => {
     setFeedbackModalOpen(true);
   };
 
+  const handleInitializeDemoAccounts = async () => {
+    setInitializingAccounts(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('initialize-demo-accounts', {
+        body: {},
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const results = data?.results;
+      
+      toast({
+        title: "Comptes démo initialisés",
+        description: `Créés: ${results?.created?.length || 0}, Existants: ${results?.existing?.length || 0}, Erreurs: ${results?.errors?.length || 0}`,
+      });
+
+      console.log('Initialization results:', data);
+
+    } catch (error) {
+      console.error('Error initializing demo accounts:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'initialiser les comptes démo",
+        variant: "destructive",
+      });
+    } finally {
+      setInitializingAccounts(false);
+    }
+  };
+
   const handleAdminClick = () => {
     const newClicks = adminClicks + 1;
     setAdminClicks(newClicks);
@@ -244,11 +278,22 @@ const Demo = () => {
             Explorez l'application avec différents rôles et niveaux d'accès. Chaque compte offre 
             une vue et des fonctionnalités spécifiques selon les responsabilités du poste.
           </p>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-warning/10 text-warning-foreground rounded-lg border border-warning/20">
-            <Lock className="h-4 w-4" />
-            <p className="text-sm">
-              Ces comptes sont uniquement pour la démonstration. Les données sont fictives.
-            </p>
+          <div className="flex flex-col gap-3 items-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-warning/10 text-warning-foreground rounded-lg border border-warning/20">
+              <Lock className="h-4 w-4" />
+              <p className="text-sm">
+                Ces comptes sont uniquement pour la démonstration. Les données sont fictives.
+              </p>
+            </div>
+            <Button
+              onClick={handleInitializeDemoAccounts}
+              disabled={initializingAccounts}
+              variant="outline"
+              className="gap-2"
+            >
+              <Shield className="h-4 w-4" />
+              {initializingAccounts ? "Initialisation..." : "Initialiser les comptes démo"}
+            </Button>
           </div>
         </div>
 
