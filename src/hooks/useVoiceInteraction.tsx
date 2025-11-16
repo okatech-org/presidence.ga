@@ -219,9 +219,34 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
 
       // Vérifier le routage
       if (data.route?.category === 'voice_command') {
+        console.log('🎙️ Commande vocale détectée:', data.route.command);
         handleVoiceCommand(data.route.command, data.route.args);
+        
+        // Mode continu - relancer l'écoute si non-pause
+        if (continuousMode && !isPaused) {
+          setTimeout(() => {
+            startListening();
+          }, 500);
+        } else {
+          setVoiceState('idle');
+        }
         return;
       }
+
+      // Si demande de résumé
+      if (data.route?.category === 'ask_resume') {
+        console.log('📋 Demande de résumé détectée');
+        toast({
+          title: "Résumé de session",
+          description: "Génération du résumé en cours...",
+        });
+        // TODO: Appeler debrief-session
+        setVoiceState('idle');
+        return;
+      }
+
+      // Réponses normales (query ou small_talk)
+      console.log('💬 Réponse:', data.answer);
 
       // Jouer l'audio
       if (data.audioContent) {
@@ -284,20 +309,64 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     
     switch (command) {
       case 'stop_listening':
+        console.log('⏹️ Commande: Arrêter l\'écoute');
         stopConversation();
+        toast({
+          title: "Écoute arrêtée",
+          description: "Conversation terminée",
+        });
         break;
+        
       case 'pause':
+        console.log('⏸️ Commande: Pause');
         setIsPaused(true);
+        setVoiceState('idle');
+        toast({
+          title: "Pause activée",
+          description: "Dites 'continue' pour reprendre",
+        });
         break;
+        
       case 'resume':
+        console.log('▶️ Commande: Reprendre');
         setIsPaused(false);
         startListening();
+        toast({
+          title: "Reprise",
+          description: "Je vous écoute à nouveau",
+        });
         break;
+        
       case 'new_question':
+        console.log('🔄 Commande: Nouvelle question');
+        if (currentAudioRef.current) {
+          currentAudioRef.current.pause();
+        }
         startListening();
+        toast({
+          title: "Nouvelle question",
+          description: "Je vous écoute",
+        });
         break;
+        
+      case 'show_history':
+        console.log('📜 Commande: Afficher historique');
+        toast({
+          title: "Historique",
+          description: "Cette fonctionnalité arrive bientôt",
+        });
+        break;
+        
+      case 'change_voice':
+        console.log('🎵 Commande: Changer de voix');
+        toast({
+          title: "Changement de voix",
+          description: "Utilisez les paramètres pour changer de voix",
+        });
+        break;
+        
       default:
-        console.warn('Commande non reconnue:', command);
+        console.warn('⚠️ Commande non reconnue:', command);
     }
   };
 
