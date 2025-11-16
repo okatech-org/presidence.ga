@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Volume2, User, Bot, Settings as SettingsIcon } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
 import { VoiceSettings } from './VoiceSettings';
-import { useVoiceConversation } from '@/hooks/useVoiceConversation';
+import { useContinuousConversation } from '@/hooks/useContinuousConversation';
+import { useIastedAgent } from '@/hooks/useIastedAgent';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -27,17 +28,20 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   onVoiceModeChange,
 }, ref) => {
   const [pushToTalk, setPushToTalk] = useState(false);
+  const { config: agentConfig, isLoading: isLoadingAgent } = useIastedAgent();
   
   const {
     isActive,
-    isListening,
     isSpeaking,
     messages,
-    startConversation,
-    stopConversation,
-    startListening,
-    stopListening,
-  } = useVoiceConversation({ userRole, onSpeakingChange, pushToTalk });
+    startContinuousMode,
+    stopContinuousMode,
+  } = useContinuousConversation(
+    userRole,
+    agentConfig?.agentId || ''
+  );
+
+  const isListening = isActive && !isSpeaking;
 
   // Notifier le parent quand le mode vocal change
   useEffect(() => {
@@ -46,21 +50,25 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
 
   // Auto-activer la conversation vocale au montage si demandé
   useEffect(() => {
-    if (autoActivate && !isActive) {
-      startConversation();
+    if (autoActivate && !isActive && agentConfig?.agentId) {
+      startContinuousMode();
     }
-  }, [autoActivate]); // Ne dépend que de autoActivate pour s'exécuter une seule fois
+  }, [autoActivate, agentConfig]); // Ne dépend que de autoActivate pour s'exécuter une seule fois
 
   // Exposer la fonction de toggle pour permettre de basculer depuis l'extérieur
   useImperativeHandle(ref, () => ({
     toggleVoiceMode: handleToggle,
   }));
 
-  const handleToggle = () => {
+  const handleToggle = async () => {
+    if (!agentConfig?.agentId) {
+      return;
+    }
+    
     if (isActive) {
-      stopConversation();
+      stopContinuousMode();
     } else {
-      startConversation();
+      await startContinuousMode();
     }
   };
 
@@ -68,25 +76,25 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
     setPushToTalk(settings.pushToTalk);
   };
 
-  // Gestion du push-to-talk
-  const handleMouseDown = () => {
-    if (isActive && pushToTalk && !isListening && !isSpeaking) {
-      startListening();
-    }
-  };
+  if (isLoadingAgent) {
+    return (
+      <Card className="w-full border-0 shadow-none">
+        <CardContent className="flex items-center justify-center py-8">
+          <p className="text-muted-foreground">Chargement de l'agent iAsted...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const handleMouseUp = () => {
-    if (isActive && pushToTalk && isListening) {
-      stopListening();
-    }
-  };
-
-  // Empêcher la sélection de texte pendant le push-to-talk
-  const handleMouseLeave = () => {
-    if (isActive && pushToTalk && isListening) {
-      stopListening();
-    }
-  };
+  if (!agentConfig?.agentId) {
+    return (
+      <Card className="w-full border-0 shadow-none">
+        <CardContent className="flex items-center justify-center py-8">
+          <p className="text-muted-foreground">Agent iAsted non disponible</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Tabs defaultValue="conversation" className="w-full">
@@ -174,52 +182,13 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
 
             {/* Bouton de contrôle */}
             <div className="flex justify-center">
-              {pushToTalk && isActive ? (
-                <Button
-                  onMouseDown={handleMouseDown}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseLeave}
-                  onTouchStart={handleMouseDown}
-                  onTouchEnd={handleMouseUp}
-                  variant={isListening ? "default" : "outline"}
-                  size="lg"
-                  className={cn(
-                    "relative rounded-full w-20 h-20 transition-all duration-300",
-                    isListening && "ring-4 ring-primary/50 scale-110",
-                    isSpeaking && "opacity-50 cursor-not-allowed"
-                  )}
-                  disabled={isSpeaking}
-                >
-                  {isSpeaking ? (
-                    <Volume2 className="w-8 h-8" />
-                  ) : isListening ? (
-                    <div className="relative">
-                      <Mic className="w-8 h-8" />
-                      <div className="absolute inset-0 animate-ping">
-                        <Mic className="w-8 h-8 opacity-75" />
-                      </div>
-                    </div>
-                  ) : (
-                    <Mic className="w-8 h-8" />
-                  )}
-                </Button>
-              ) : (
-                <VoiceButton
-                  isActive={isActive}
-                  isListening={isListening}
-                  isSpeaking={isSpeaking}
-                  onToggle={handleToggle}
-                />
-              )}
+              <VoiceButton
+                isActive={isActive}
+                isListening={isListening}
+                isSpeaking={isSpeaking}
+                onToggle={handleToggle}
+              />
             </div>
-
-            {/* Instructions pour push-to-talk */}
-            {pushToTalk && isActive && (
-              <div className="text-center text-sm text-muted-foreground">
-                <p className="font-medium">Maintenez le bouton enfoncé pour parler</p>
-                <p className="text-xs mt-1">Relâchez pour que iAsted réponde</p>
-              </div>
-            )}
 
             {/* Indicateurs d'état */}
             <div className="flex justify-center gap-4 text-sm text-muted-foreground">
