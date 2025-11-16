@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import React, { Suspense } from "react";
 import Index from "./pages/Index";
+import IndexFallback from "./pages/IndexFallback";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Demo from "./pages/Demo";
