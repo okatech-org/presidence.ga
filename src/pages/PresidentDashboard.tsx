@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { DashboardLayout } from "@/components/DashboardLayout";
-import { Activity, LogOut } from "lucide-react";
-import emblemGabon from "@/assets/emblem_gabon.png";
+import { PresidentLayout } from "@/components/president/PresidentLayout";
+import { PresidentHeader } from "@/components/president/PresidentHeader";
+import { Activity } from "lucide-react";
 import { usePresidentRole } from "@/hooks/usePresidentRole";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VueEnsemble } from "@/components/president/VueEnsemble";
 import { OpinionPublique } from "@/components/president/OpinionPublique";
 import { SituationsCritiques } from "@/components/president/SituationsCritiques";
@@ -65,81 +63,44 @@ const PresidentDashboard = () => {
   }
 
   return (
-    <DashboardLayout>
+    <PresidentLayout>
       <div className="min-h-screen bg-background">
         {/* Header Présidentiel */}
-        <header className="gradient-primary text-primary-foreground shadow-lg">
-          <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-2 rounded-full bg-white">
-                <img 
-                  src={emblemGabon} 
-                  alt="Emblème de la République Gabonaise" 
-                  className="h-14 w-14 object-contain"
-                />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">Présidence de la République</h1>
-                <p className="text-sm text-primary-foreground/80">
-                  S.E. le Président de la République - Chef de l'État, Chef du Gouvernement
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              className="bg-transparent border-primary-foreground/20 hover:bg-primary-foreground/10"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Déconnexion
-            </Button>
-          </div>
-        </div>
-      </header>
+        <PresidentHeader />
 
-      <main className="container mx-auto px-6 py-6">
-        {/* Titre du Tableau de Bord Stratégique */}
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold mb-2">Console de Pilotage Stratégique</h2>
-          <p className="text-muted-foreground text-lg">
-            Tolérance Zéro, Transparence Totale - Interface de Commandement Présidentielle
-          </p>
-        </div>
+        <main className="container mx-auto px-6 py-6">
+          {/* Titre du Tableau de Bord Stratégique */}
+          <div className="mb-6">
+            <h2 className="text-3xl font-bold mb-2">Console de Pilotage Stratégique</h2>
+            <p className="text-muted-foreground text-lg">
+              Tolérance Zéro, Transparence Totale - Interface de Commandement Présidentielle
+            </p>
+          </div>
 
         {/* Les 4 Piliers de l'Interface Présidentielle */}
-        <Tabs defaultValue="vue-ensemble" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="vue-ensemble">Vue d'Ensemble</TabsTrigger>
-            <TabsTrigger value="opinion-publique">Opinion Publique</TabsTrigger>
-            <TabsTrigger value="situations-critiques">Situations Critiques</TabsTrigger>
-            <TabsTrigger value="vision-nationale">Vision Nationale</TabsTrigger>
-          </TabsList>
+        <div id="vue-ensemble" className="scroll-mt-16 mb-8">
+          <VueEnsemble />
+        </div>
 
-          <TabsContent value="vue-ensemble" className="space-y-6">
-            <VueEnsemble />
-          </TabsContent>
+        <div id="opinion-publique" className="scroll-mt-16 mb-8">
+          <OpinionPublique />
+        </div>
 
-          <TabsContent value="opinion-publique" className="space-y-6">
-            <OpinionPublique />
-          </TabsContent>
+        <div id="situations-critiques" className="scroll-mt-16 mb-8">
+          <SituationsCritiques />
+        </div>
 
-          <TabsContent value="situations-critiques" className="space-y-6">
-            <SituationsCritiques />
-          </TabsContent>
-
-          <TabsContent value="vision-nationale" className="space-y-6">
-            <VisionNationale />
-          </TabsContent>
-        </Tabs>
+        <div id="vision-nationale" className="scroll-mt-16 mb-8">
+          <VisionNationale />
+        </div>
 
         {/* Module XR-7 - PROTOCOLE D'ÉTAT (Toujours visible) */}
-        <div className="mt-8">
+        <div id="module-xr7" className="scroll-mt-16 mb-8">
           <ModuleXR7 />
         </div>
       </main>
       </div>
-    </DashboardLayout>
+    </PresidentLayout>
   );
 };
 
