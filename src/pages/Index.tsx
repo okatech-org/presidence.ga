@@ -100,9 +100,9 @@ const Index = () => {
                 size="lg" 
                 variant="outline" 
                 className="border-white/30 bg-white/10 text-white hover:bg-white/20 text-lg px-8 py-6"
-                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => navigate("/demo")}
               >
-                Découvrir
+                Comptes Démo
               </Button>
             </div>
           </div>
