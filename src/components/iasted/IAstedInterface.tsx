@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Mic, MicOff, Send, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { useAudioRecording } from '@/hooks/useAudioRecording';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -25,9 +26,9 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { isRecording, isTranscribing, startRecording, stopRecording } = useAudioRecording();
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -149,12 +150,19 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
     }
   };
 
-  const toggleVoice = () => {
-    setIsListening(!isListening);
-    toast({
-      title: "Fonctionnalité vocale",
-      description: "La reconnaissance vocale sera disponible prochainement",
-    });
+  const toggleVoice = async () => {
+    if (isRecording) {
+      try {
+        const transcribedText = await stopRecording();
+        if (transcribedText.trim()) {
+          setInput(transcribedText);
+        }
+      } catch (error) {
+        console.error('Erreur arrêt enregistrement:', error);
+      }
+    } else {
+      await startRecording();
+    }
   };
 
   const getRoleTitle = () => {
@@ -228,26 +236,33 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
         <div className="p-6 border-t border-border bg-background">
           <div className="flex gap-2">
             <Button
-              variant={isListening ? "default" : "outline"}
+              variant={isRecording ? "default" : "outline"}
               size="icon"
               onClick={toggleVoice}
-              disabled={isLoading}
+              disabled={isLoading || isTranscribing}
+              className={isRecording ? "animate-pulse" : ""}
             >
-              {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+              {isTranscribing ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : isRecording ? (
+                <Mic className="w-5 h-5" />
+              ) : (
+                <MicOff className="w-5 h-5" />
+              )}
             </Button>
             
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Posez votre question à iAsted..."
+              placeholder={isRecording ? "Parlez maintenant..." : isTranscribing ? "Transcription en cours..." : "Posez votre question à iAsted..."}
               className="min-h-[60px] resize-none"
-              disabled={isLoading}
+              disabled={isLoading || isRecording || isTranscribing}
             />
             
             <Button
               onClick={handleSend}
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || isRecording || isTranscribing}
               size="icon"
               className="self-end"
             >
@@ -260,7 +275,12 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
           </div>
           
           <p className="text-xs text-muted-foreground mt-2">
-            Appuyez sur Entrée pour envoyer, Shift+Entrée pour une nouvelle ligne
+            {isRecording 
+              ? "🎙️ Enregistrement en cours - Cliquez à nouveau pour terminer" 
+              : isTranscribing
+              ? "⏳ Transcription en cours..."
+              : "Cliquez sur le micro pour parler, ou tapez votre message (Entrée pour envoyer)"
+            }
           </p>
         </div>
       </DialogContent>
