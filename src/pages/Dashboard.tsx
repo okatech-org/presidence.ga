@@ -17,7 +17,7 @@ import {
   AlertTriangle,
   LogOut,
 } from "lucide-react";
-import IAstedButtonAdvanced from "@/components/iasted/IAstedButtonAdvanced";
+import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import emblemGabon from "@/assets/emblem_gabon.png";
 
 const Dashboard = () => {
@@ -121,11 +121,13 @@ const Dashboard = () => {
             </div>
             
             <div className="flex justify-center">
-              <IAstedButtonAdvanced
-                voiceState="idle"
-                audioLevel={0}
+              <IAstedButtonFull
                 onClick={() => navigate("/iasted")}
-                continuousMode={false}
+                size="lg"
+                voiceListening={false}
+                voiceSpeaking={false}
+                voiceProcessing={false}
+                isInterfaceOpen={false}
               />
             </div>
           </div>
