@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Copy, Shield, Users, Lock, FileText, Calendar, Mail, UserCheck } from "lucide-react";
+import { ArrowLeft, Copy, Shield, Users, Lock, FileText, Calendar, Mail, UserCheck, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import emblemGabon from "@/assets/emblem_gabon.png";
 
 interface DemoAccount {
@@ -10,7 +12,6 @@ interface DemoAccount {
   level: string;
   email: string;
   password: string;
-  description: string;
   icon: React.ReactNode;
   color: string;
 }
@@ -18,6 +19,7 @@ interface DemoAccount {
 const Demo = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [loadingAccount, setLoadingAccount] = useState<string | null>(null);
 
   const demoAccounts: DemoAccount[] = [
     {
@@ -25,7 +27,6 @@ const Demo = () => {
       level: "Super-Admin",
       email: "president@presidence.ga",
       password: "President2025!",
-      description: "Accès total et illimité à toutes les synthèses, indicateurs et bases de connaissances. Vue 'Le Gabon en un coup d'œil'.",
       icon: <Shield className="h-6 w-6" />,
       color: "from-accent to-accent/80",
     },
@@ -34,7 +35,6 @@ const Demo = () => {
       level: "Opérations",
       email: "directeur.cabinet@presidence.ga",
       password: "Cabinet2025!",
-      description: "Gestion de l'action gouvernementale. Accès total axé sur l'exécution. Prépare l'ordre du jour du Conseil des Ministres.",
       icon: <Users className="h-6 w-6" />,
       color: "from-primary to-primary/80",
     },
@@ -43,7 +43,6 @@ const Demo = () => {
       level: "Privé & Confidentiel",
       email: "cabinet.prive@presidence.ga",
       password: "Prive2025!",
-      description: "Gestion de l'agenda personnel et des audiences privées du Président. Messagerie cryptée pour affaires réservées.",
       icon: <Lock className="h-6 w-6" />,
       color: "from-secondary to-secondary/80",
     },
@@ -52,7 +51,6 @@ const Demo = () => {
       level: "Légal & Administratif",
       email: "secretariat.general@presidence.ga",
       password: "SecGen2025!",
-      description: "Le Greffe de la République. Gestion du circuit de signature, Journal Officiel, archives des lois et décrets.",
       icon: <FileText className="h-6 w-6" />,
       color: "from-primary/80 to-primary/60",
     },
@@ -61,7 +59,6 @@ const Demo = () => {
       level: "Renseignement Stratégique",
       email: "dgss@presidence.ga",
       password: "DGSS2025!",
-      description: "Tableau de bord des menaces. Analyse des menaces internes/externes. Accès aux bases de données de sécurité.",
       icon: <Shield className="h-6 w-6" />,
       color: "from-destructive to-destructive/80",
     },
@@ -70,7 +67,6 @@ const Demo = () => {
       level: "Agenda & Cérémonial",
       email: "protocole@presidence.ga",
       password: "Proto2025!",
-      description: "Gestion de l'agenda officiel et des visites d'État. Organisation logistique des cérémonies.",
       icon: <Calendar className="h-6 w-6" />,
       color: "from-secondary/80 to-secondary/60",
     },
@@ -79,7 +75,6 @@ const Demo = () => {
       level: "GED - Entrée",
       email: "courriers@presidence.ga",
       password: "Courrier2025!",
-      description: "Gestion électronique des documents. Scanner, indexer et dispatcher le courrier entrant vers les services compétents.",
       icon: <Mail className="h-6 w-6" />,
       color: "from-muted to-muted/80",
     },
@@ -88,11 +83,46 @@ const Demo = () => {
       level: "Accueil & Accréditation",
       email: "reception@presidence.ga",
       password: "Reception2025!",
-      description: "Gestion des visiteurs. Enregistrement et accréditation. Gestion des demandes d'audience.",
       icon: <UserCheck className="h-6 w-6" />,
       color: "from-muted to-muted/80",
     },
   ];
+
+  const handleLogin = async (email: string, password: string) => {
+    setLoadingAccount(email);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast({
+          title: "Erreur de connexion",
+          description: "Identifiants incorrects ou compte non créé. Veuillez contacter l'administrateur.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.session) {
+        toast({
+          title: "Connexion réussie",
+          description: `Bienvenue !`,
+        });
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la connexion.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingAccount(null);
+    }
+  };
 
   const copyCredentials = (email: string, password: string) => {
     const credentials = `Email: ${email}\nMot de passe: ${password}`;
@@ -170,10 +200,6 @@ const Demo = () => {
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                {account.description}
-              </p>
-
               <div className="space-y-3 mb-4">
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground mb-1">Email</p>
@@ -196,9 +222,11 @@ const Demo = () => {
                 </Button>
                 <Button
                   className="flex-1 gradient-primary text-primary-foreground"
-                  onClick={() => navigate("/auth")}
+                  onClick={() => handleLogin(account.email, account.password)}
+                  disabled={loadingAccount === account.email}
                 >
-                  Se connecter
+                  <LogIn className="h-4 w-4 mr-2" />
+                  {loadingAccount === account.email ? "Connexion..." : "Se connecter"}
                 </Button>
               </div>
             </Card>
