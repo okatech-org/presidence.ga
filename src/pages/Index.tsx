@@ -275,33 +275,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 gradient-primary text-primary-foreground">
-        <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Prêt à Transformer la Gouvernance ?
-            </h2>
-            <p className="text-xl mb-10 text-primary-foreground/90">
-              Rejoignez la nouvelle ère de l'administration publique gabonaise avec des outils 
-              technologiques de pointe au service de l'efficacité gouvernementale.
-            </p>
-            <Button 
-              size="lg" 
-              className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg px-10 py-6 hover:scale-105 transition-smooth"
-              onClick={() => navigate("/auth")}
-            >
-              <img 
-                src={emblemGabon} 
-                alt="Emblème" 
-                className="mr-2 h-5 w-5 object-contain"
-              />
-              Accéder à la Plateforme Sécurisée
-            </Button>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="py-8 border-t bg-muted/30">
         <div className="container mx-auto px-6">
