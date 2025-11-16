@@ -8,13 +8,15 @@ interface Message {
   content: string;
 }
 
+type Language = 'en' | 'fr' | 'es' | 'de' | 'it' | 'pt' | 'pl' | 'nl' | 'sv' | 'cs';
+
 interface ConversationOverrides {
   agent?: {
     prompt?: {
       prompt: string;
     };
     firstMessage?: string;
-    language?: string;
+    language?: Language;
   };
 }
 
@@ -76,7 +78,7 @@ Répondez de manière claire et professionnelle.`;
         prompt: getRolePrompt(userRole),
       },
       firstMessage: getFirstMessage(userRole),
-      language: 'fr',
+      language: 'fr' as Language,
     },
   };
 
