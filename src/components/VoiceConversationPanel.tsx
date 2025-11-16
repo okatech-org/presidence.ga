@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Volume2, User, Bot, Settings as SettingsIcon, Loader2 } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
 import { VoiceSettings } from './VoiceSettings';
-import { useOpenAIWebRTC } from '@/hooks/useOpenAIWebRTC';
+import { useVoiceConversation } from '@/hooks/useVoiceConversation';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -29,18 +29,16 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   const [pushToTalk, setPushToTalk] = useState(false);
   
   const {
-    isConnected,
+    isActive,
     isSpeaking,
     isListening,
     startConversation,
     stopConversation,
-  } = useOpenAIWebRTC({
+  } = useVoiceConversation({
     userRole,
     onSpeakingChange,
-    autoStart: autoActivate,
+    pushToTalk,
   });
-
-  const isActive = isConnected;
 
   // Notifier le parent quand le mode vocal change
   useEffect(() => {
