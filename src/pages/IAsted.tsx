@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, Settings, History } from 'lucide-react';
 import { useVoiceInteraction, VoiceSettings as VoiceSettingsType } from '@/hooks/useVoiceInteraction';
-import IAstedButton from '@/components/iasted/IAstedButton';
+import IAstedButtonAdvanced from '@/components/iasted/IAstedButtonAdvanced';
 import IAstedListeningOverlay from '@/components/iasted/IAstedListeningOverlay';
 import IAstedVoiceControls from '@/components/iasted/IAstedVoiceControls';
 import ChatDock from '@/components/iasted/ChatDock';
@@ -74,7 +74,7 @@ const IAsted = () => {
               {/* Main Chat Area */}
               <div className="lg:col-span-2 space-y-6">
                 <div className="flex justify-center">
-                  <IAstedButton
+                  <IAstedButtonAdvanced
                     voiceState={voiceState}
                     audioLevel={audioLevel}
                     onClick={handleInteraction}
