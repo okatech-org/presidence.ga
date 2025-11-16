@@ -16,16 +16,24 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY not configured');
     }
 
-    const formData = await req.formData();
-    const audioFile = formData.get('file') as File;
+    // Lire le JSON avec le base64
+    const { audio } = await req.json();
     
-    if (!audioFile) {
-      throw new Error('No audio file provided');
+    if (!audio) {
+      throw new Error('No audio data provided');
     }
 
-    // Créer un nouveau FormData pour OpenAI
+    // Décoder le base64
+    const binaryString = atob(audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    // Créer un Blob et un FormData pour OpenAI
+    const audioBlob = new Blob([bytes], { type: 'audio/webm' });
     const openaiFormData = new FormData();
-    openaiFormData.append('file', audioFile, 'audio.webm');
+    openaiFormData.append('file', audioBlob, 'audio.webm');
     openaiFormData.append('model', 'whisper-1');
 
     const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
