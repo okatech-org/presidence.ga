@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, MessageCircle, Brain } from 'lucide-react';
 
 interface IAstedButtonProps {
-  onClick?: () => void;
+  onClick?: () => void; // Double clic ou clic pour ouvrir le modal
+  onVoiceClick?: () => void; // Simple clic pour activer la conversation vocale
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   voiceListening?: boolean;
@@ -1007,7 +1008,16 @@ const styles = `
 }
 `;
 
-export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({ onClick, className = '', size = 'md', voiceListening = false, voiceSpeaking = false, voiceProcessing = false, isInterfaceOpen = false }) => {
+export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({ 
+  onClick, 
+  onVoiceClick,
+  className = '', 
+  size = 'md', 
+  voiceListening = false, 
+  voiceSpeaking = false, 
+  voiceProcessing = false, 
+  isInterfaceOpen = false 
+}) => {
   const [shockwaves, setShockwaves] = useState<Shockwave[]>([]);
   const [isClicked, setIsClicked] = useState(false);
   const [isActive, setIsActive] = useState(false);
@@ -1018,6 +1028,8 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({ onClick, classNa
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartPos = useRef<Position>({ x: 0, y: 0 });
   const buttonPosition = useRef<Position>({ x: 0, y: 0 });
+  const clickTimer = useRef<NodeJS.Timeout | null>(null);
+  const clickCount = useRef(0);
 
   useEffect(() => {
     // Restaurer la position sauvegardée ou utiliser la position par défaut
@@ -1081,8 +1093,27 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({ onClick, classNa
       setIsProcessing(false);
     }, 3000);
     
-    if (onClick) {
-      onClick();
+    // Gestion des clics simples vs doubles
+    clickCount.current += 1;
+    
+    if (clickCount.current === 1) {
+      // Premier clic - attendre pour voir s'il y a un double clic
+      clickTimer.current = setTimeout(() => {
+        // Simple clic confirmé - activer la conversation vocale
+        if (onVoiceClick) {
+          onVoiceClick();
+        }
+        clickCount.current = 0;
+      }, 300); // Délai de 300ms pour détecter le double clic
+    } else if (clickCount.current === 2) {
+      // Double clic - ouvrir le modal
+      if (clickTimer.current) {
+        clearTimeout(clickTimer.current);
+      }
+      if (onClick) {
+        onClick();
+      }
+      clickCount.current = 0;
     }
   };
 
