@@ -307,15 +307,15 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   // Jouer la réponse audio
   const playAudioResponse = async (audioBase64: string) => {
     try {
-      console.log('🔊 Lecture de la réponse...');
+      console.log('🔊 Lecture de la réponse audio...');
       setVoiceState('speaking');
       onSpeakingChange?.(true);
 
-      const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
+      const audio = new Audio(`data:audio/mpeg;base64,${audioBase64}`);
       currentAudioRef.current = audio;
 
       audio.onended = () => {
-        console.log('✅ Lecture terminée');
+        console.log('✅ Lecture audio terminée');
         setVoiceState('idle');
         onSpeakingChange?.(false);
       };
@@ -326,11 +326,18 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
         onSpeakingChange?.(false);
       };
 
+      console.log('▶️ Démarrage lecture audio...');
       await audio.play();
+      console.log('🎵 Audio en cours de lecture');
     } catch (error) {
       console.error('❌ Erreur playback:', error);
       setVoiceState('idle');
       onSpeakingChange?.(false);
+      toast({
+        title: "Erreur audio",
+        description: "Impossible de lire l'audio",
+        variant: "destructive",
+      });
     }
   };
 
@@ -410,8 +417,12 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       const newSessionId = await createSession();
       setSessionId(newSessionId);
 
-      // Message de bienvenue
-      const welcomeMessage = "Bonjour, je suis iAsted, votre assistant vocal. Comment puis-je vous aider ?";
+      // Message de bienvenue contextuel
+      const hour = new Date().getHours();
+      const greeting = hour < 18 ? "Bonjour" : "Bonsoir";
+      const welcomeMessage = `${greeting} Excellence, je suis iAsted, votre assistant vocal intelligent. Comment puis-je vous être utile ?`;
+
+      console.log('🎙️ Génération du message de bienvenue:', welcomeMessage);
 
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: {
@@ -420,10 +431,20 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erreur text-to-speech:', error);
+        throw error;
+      }
+
+      console.log('✅ Audio généré, data:', data);
 
       // Jouer le message de bienvenue
-      await playAudioResponse(data.audioContent);
+      if (data?.audioContent) {
+        await playAudioResponse(data.audioContent);
+      } else {
+        console.error('❌ Pas de audioContent dans la réponse:', data);
+        throw new Error('Pas d\'audio dans la réponse');
+      }
 
       // Démarrer l'écoute après le message de bienvenue
       setTimeout(() => {

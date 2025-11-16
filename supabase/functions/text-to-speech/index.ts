@@ -69,13 +69,24 @@ serve(async (req) => {
     // Récupérer l'audio complet
     const audioBuffer = await response.arrayBuffer();
     
-    // Retourner l'audio
-    return new Response(audioBuffer, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'audio/mpeg',
-      },
-    });
+    // Convertir en base64
+    const audioArray = new Uint8Array(audioBuffer);
+    const base64Audio = btoa(String.fromCharCode(...audioArray));
+    
+    // Retourner le JSON avec audioContent
+    return new Response(
+      JSON.stringify({ 
+        audioContent: base64Audio,
+        voiceId: selectedVoiceId,
+        text: text 
+      }), 
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
   } catch (error) {
     console.error('Error in text-to-speech:', error);
