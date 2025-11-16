@@ -31,6 +31,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   const [silenceTimeRemaining, setSilenceTimeRemaining] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState<string>('');
   const [continuousModePaused, setContinuousModePaused] = useState(false);
+  const [conversationMessages, setConversationMessages] = useState<Array<{ role: 'user' | 'assistant'; text: string; timestamp: Date }>>([]);
 
   // Refs pour l'enregistrement audio
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -229,6 +230,23 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       if (error) throw error;
 
       console.log('✅ Réponse reçue:', data);
+
+      // Ajouter les messages à l'historique de la conversation
+      if (data.transcript) {
+        setConversationMessages(prev => [...prev, { 
+          role: 'user', 
+          text: data.transcript, 
+          timestamp: new Date() 
+        }]);
+      }
+      
+      if (data.answer) {
+        setConversationMessages(prev => [...prev, { 
+          role: 'assistant', 
+          text: data.answer, 
+          timestamp: new Date() 
+        }]);
+      }
 
       // Vérifier le routage
       if (data.route?.category === 'voice_command') {
@@ -520,6 +538,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     liveTranscript,
     continuousMode,
     continuousModePaused,
+    conversationMessages,
     
     // Getters
     isIdle: voiceState === 'idle',
@@ -538,5 +557,6 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     toggleContinuousPause,
     setSelectedVoiceId,
     togglePause: () => setIsPaused(prev => !prev),
+    clearMessages: () => setConversationMessages([]),
   };
 }
