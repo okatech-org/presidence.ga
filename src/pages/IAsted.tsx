@@ -43,31 +43,32 @@ const IAsted = () => {
   }, [handleInteraction]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="fixed inset-0 bg-gradient-to-br from-background to-secondary/20 flex items-center justify-center p-4">
+      {/* Listening Overlay */}
+      <IAstedListeningOverlay voiceState={voiceState} audioLevel={audioLevel} />
+
+      {/* Voice Controls */}
+      <IAstedVoiceControls
+        voiceState={voiceState}
+        onStop={stopListening}
+        onCancel={cancelInteraction}
+        onRestart={newQuestion}
+      />
+
+      {/* Contenu principal */}
+      <div className="w-full max-w-7xl mx-auto text-center">
         {/* Header */}
-        <div className="text-center mb-8 mt-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <div className="mb-12">
+          <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             iAsted
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-xl mb-2">
             Assistant Vocal Intelligent de la Présidence
           </p>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-sm text-muted-foreground">
             1 clic pour parler • 2 clics pour ouvrir l'interface
           </p>
         </div>
-
-        {/* Listening Overlay */}
-        <IAstedListeningOverlay voiceState={voiceState} audioLevel={audioLevel} />
-
-        {/* Voice Controls */}
-        <IAstedVoiceControls
-          voiceState={voiceState}
-          onStop={stopListening}
-          onCancel={cancelInteraction}
-          onRestart={newQuestion}
-        />
 
         {/* Bouton Principal */}
         <div className="flex justify-center">
@@ -81,15 +82,26 @@ const IAsted = () => {
           />
         </div>
 
-        {/* Modal avec Tabs */}
-        <IAstedModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          messages={messages}
-          voiceSettings={voiceSettings}
-          onSettingsChange={setVoiceSettings}
-        />
+        {/* État vocal */}
+        {voiceState !== 'idle' && !isModalOpen && (
+          <div className="mt-8 animate-fade-in">
+            <p className="text-lg font-semibold">
+              {voiceState === 'listening' && 'Je vous écoute, Monsieur le Président...'}
+              {voiceState === 'thinking' && 'Analyse en cours...'}
+              {voiceState === 'speaking' && 'iAsted parle...'}
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Modal avec Tabs */}
+      <IAstedModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        messages={messages}
+        voiceSettings={voiceSettings}
+        onSettingsChange={setVoiceSettings}
+      />
     </div>
   );
 };
