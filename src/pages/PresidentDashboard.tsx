@@ -103,7 +103,8 @@ const PresidentDashboard = () => {
         }}
       >
         <IAstedButtonFull
-          onClick={() => setIastedOpen(true)}
+          onSingleClick={() => setIastedOpen(true)}
+          onDoubleClick={() => setIastedOpen(true)}
           size="lg"
           voiceListening={false}
           voiceSpeaking={false}
