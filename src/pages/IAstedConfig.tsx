@@ -76,36 +76,38 @@ const IAstedConfig: React.FC = () => {
     }
   };
 
-  const handleCreateAgent = async () => {
-    setCreating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-elevenlabs-agent', {
-        body: {
-          agentName: config.agentName,
-          presidentVoiceId: config.presidentVoiceId,
-          ministerVoiceId: config.ministerVoiceId,
-          defaultVoiceId: config.defaultVoiceId,
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.agentId) {
-        setConfig(prev => ({ ...prev, agentId: data.agentId }));
-        
-        toast({
-          title: "Agent créé",
-          description: `L'agent ${config.agentName} a été créé avec succès`,
-        });
-
-        // Sauvegarder automatiquement
-        await handleSave(data.agentId);
-      }
-    } catch (error) {
-      console.error('Error creating agent:', error);
+  const handleValidateAgent = async () => {
+    if (!config.agentId || config.agentId.trim() === '') {
       toast({
         title: "Erreur",
-        description: "Impossible de créer l'agent ElevenLabs",
+        description: "Veuillez entrer un ID d'agent valide",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreating(true);
+    try {
+      // Vérifier que l'agent existe en tentant d'obtenir une URL signée
+      const { error: verifyError } = await supabase.functions.invoke('elevenlabs-signed-url', {
+        body: { agentId: config.agentId }
+      });
+
+      if (verifyError) {
+        throw new Error("L'ID d'agent n'est pas valide ou l'agent n'existe pas");
+      }
+
+      await handleSave();
+      
+      toast({
+        title: "Succès",
+        description: "Agent configuré avec succès",
+      });
+    } catch (error) {
+      console.error('Error validating agent:', error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible de valider l'agent",
         variant: "destructive",
       });
     } finally {
@@ -180,7 +182,7 @@ const IAstedConfig: React.FC = () => {
             <CardHeader>
               <CardTitle>Agent ElevenLabs</CardTitle>
               <CardDescription>
-                Configuration de l'agent conversationnel intelligent
+                Configurez votre agent conversationnel créé depuis le dashboard ElevenLabs
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -196,29 +198,40 @@ const IAstedConfig: React.FC = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="agentId">ID de l'agent</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="agentId"
-                    value={config.agentId}
-                    onChange={(e) => setConfig(prev => ({ ...prev, agentId: e.target.value }))}
-                    placeholder="Entrez l'ID de l'agent ou créez-en un nouveau"
-                  />
-                  <Button
-                    onClick={handleCreateAgent}
-                    disabled={creating}
-                    variant="secondary"
-                  >
-                    {creating ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      'Créer un nouvel agent'
-                    )}
-                  </Button>
-                </div>
+                <Input
+                  id="agentId"
+                  value={config.agentId}
+                  onChange={(e) => setConfig(prev => ({ ...prev, agentId: e.target.value }))}
+                  placeholder="Collez l'ID de votre agent ElevenLabs"
+                />
                 <p className="text-xs text-muted-foreground">
-                  Créez un nouvel agent ou utilisez un ID d'agent ElevenLabs existant
+                  Créez un agent sur{' '}
+                  <a 
+                    href="https://elevenlabs.io/app/conversational-ai" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    elevenlabs.io/app/conversational-ai
+                  </a>
+                  {' '}et collez son ID ici
                 </p>
               </div>
+
+              <Button 
+                onClick={handleValidateAgent}
+                disabled={creating || !config.agentId}
+                className="w-full"
+              >
+                {creating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Validation...
+                  </>
+                ) : (
+                  "Valider l'agent"
+                )}
+              </Button>
             </CardContent>
           </Card>
 
