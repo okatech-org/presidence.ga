@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Copy, Shield, Users, Lock, FileText, Calendar, Mail, UserCheck, LogIn } from "lucide-react";
+import { ArrowLeft, LogIn, Shield, Users, Lock, FileText, Calendar, Mail, UserCheck, Lightbulb } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { RoleFeedbackModal } from "@/components/RoleFeedbackModal";
 import emblemGabon from "@/assets/emblem_gabon.png";
 
 interface DemoAccount {
@@ -21,6 +22,8 @@ const Demo = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loadingAccount, setLoadingAccount] = useState<string | null>(null);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<{ role: string; email: string } | null>(null);
 
   const demoAccounts: DemoAccount[] = [
     {
@@ -142,6 +145,11 @@ const Demo = () => {
     });
   };
 
+  const handleOpenFeedback = (role: string, email: string) => {
+    setSelectedAccount({ role, email });
+    setFeedbackModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/5">
       {/* Header */}
@@ -217,10 +225,10 @@ const Demo = () => {
                 <Button
                   variant="outline"
                   className="flex-1"
-                  onClick={() => copyCredentials(account.email, account.password)}
+                  onClick={() => handleOpenFeedback(account.role, account.email)}
                 >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copier
+                  <Lightbulb className="h-4 w-4 mr-2" />
+                  Contribuer
                 </Button>
                 <Button
                   className="flex-1 gradient-primary text-primary-foreground"
@@ -266,6 +274,16 @@ const Demo = () => {
           </ol>
         </div>
       </main>
+
+      {/* Feedback Modal */}
+      {selectedAccount && (
+        <RoleFeedbackModal
+          isOpen={feedbackModalOpen}
+          onClose={() => setFeedbackModalOpen(false)}
+          roleName={selectedAccount.role}
+          userEmail={selectedAccount.email}
+        />
+      )}
     </div>
   );
 };
