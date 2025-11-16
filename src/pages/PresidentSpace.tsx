@@ -105,8 +105,9 @@ export default function PresidentSpace() {
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["gouvernance"]);
   const [iastedOpen, setIastedOpen] = useState(false);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
-  const [voiceModeRequested, setVoiceModeRequested] = useState(false);
+  const [voiceModeToggleTimestamp, setVoiceModeToggleTimestamp] = useState(0);
   const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
+  const [voiceOnlyMode, setVoiceOnlyMode] = useState(false);
   const navigate = useNavigate();
   const theme = useMemo(() => darkMode ? themes.dark : themes.light, [darkMode]);
 
@@ -716,16 +717,31 @@ export default function PresidentSpace() {
           }}
         >
           <IAstedButtonFull
-            onClick={() => setIastedOpen(true)}
-            onVoiceClick={() => {
+            onClick={() => {
+              // Double clic : ouvrir le modal en mode texte
+              setVoiceOnlyMode(false);
               setIastedOpen(true);
-              setVoiceModeRequested(true);
+            }}
+            onVoiceClick={() => {
+              if (iastedOpen && voiceOnlyMode) {
+                // Mode vocal pur actif : fermer
+                setIastedOpen(false);
+                setVoiceOnlyMode(false);
+              } else if (iastedOpen && !voiceOnlyMode) {
+                // Modal déjà ouvert en mode normal : basculer le mode vocal
+                setVoiceModeToggleTimestamp(Date.now());
+              } else {
+                // Modal fermé : activer le mode vocal pur
+                setVoiceOnlyMode(true);
+                setIastedOpen(true);
+                setVoiceModeToggleTimestamp(Date.now());
+              }
             }}
             size="lg"
             voiceListening={false}
             voiceSpeaking={isAgentSpeaking}
             voiceProcessing={false}
-            isInterfaceOpen={iastedOpen}
+            isInterfaceOpen={iastedOpen && !voiceOnlyMode}
             isVoiceModeActive={isVoiceModeActive}
           />
         </div>
@@ -735,11 +751,12 @@ export default function PresidentSpace() {
           isOpen={iastedOpen} 
           onClose={() => {
             setIastedOpen(false);
-            setVoiceModeRequested(false);
+            setVoiceOnlyMode(false);
           }}
           onSpeakingChange={setIsAgentSpeaking}
           onVoiceModeChange={setIsVoiceModeActive}
-          activateVoiceMode={voiceModeRequested}
+          voiceModeToggleTimestamp={voiceModeToggleTimestamp}
+          voiceOnlyMode={voiceOnlyMode}
           userRole="president"
         />
       </div>

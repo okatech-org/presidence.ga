@@ -62,11 +62,11 @@ Répondez de manière claire et professionnelle.`;
   const getFirstMessage = (role: string) => {
     switch (role) {
       case 'president':
-        return "Bonjour Monsieur le Président. iAsted à votre service. Comment puis-je vous assister aujourd'hui?";
+        return "Bonjour Monsieur le Président, je vous écoute.";
       case 'minister':
-        return "Bonjour Excellence. iAsted est opérationnel pour la gestion du secteur maritime. Comment puis-je vous aider?";
+        return "Bonjour Excellence, je vous écoute.";
       default:
-        return "Bonjour, iAsted à votre service. Comment puis-je vous aider?";
+        return "Bonjour, je vous écoute.";
     }
   };
 
