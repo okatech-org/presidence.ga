@@ -9,17 +9,16 @@ interface PresidentLayoutProps {
 export function PresidentLayout({ children }: PresidentLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
+      <div className="min-h-screen flex w-full bg-background p-6 gap-6">
+        {/* Sidebar détachée avec effet neomorphique */}
+        <div className="w-[280px] shrink-0">
+          <div className="sticky top-6">
+            <AppSidebar />
+          </div>
+        </div>
+        
+        {/* Contenu principal */}
         <div className="flex-1 flex flex-col">
-          <header className="h-12 flex items-center border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
-            <SidebarTrigger className="ml-2" />
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-sm font-semibold text-muted-foreground">
-                Console de Commandement Présidentielle
-              </div>
-            </div>
-          </header>
           <main className="flex-1">
             {children}
           </main>
