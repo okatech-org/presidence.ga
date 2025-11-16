@@ -163,9 +163,6 @@ export function AppSidebar() {
                         {open && (
                           <div className="flex flex-col flex-1 min-w-0">
                             <span className="text-sm font-semibold truncate text-foreground">Console Présidentielle</span>
-                            <span className="text-xs text-muted-foreground truncate">
-                              Commandement centralisé
-                            </span>
                           </div>
                         )}
                       </NavLink>
