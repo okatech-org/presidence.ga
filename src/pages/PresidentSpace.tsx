@@ -720,6 +720,9 @@ export default function PresidentSpace() {
         >
           <IAstedButtonFull
             onSingleClick={async () => {
+              console.log('[PresidentSpace] 🖱️ IAstedButtonFull Single Click');
+              console.log('[PresidentSpace] États: voiceOnlyMode=', voiceOnlyMode, ', iastedOpen=', iastedOpen);
+              
               // Activer le contexte audio lors du clic
               try {
                 const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -733,13 +736,16 @@ export default function PresidentSpace() {
               
               if (voiceOnlyMode) {
                 // Mode vocal pur actif : fermer
+                console.log('[PresidentSpace] ⏹️ Fermeture du mode vocal pur');
                 setIastedOpen(false);
                 setVoiceOnlyMode(false);
               } else if (iastedOpen && !voiceOnlyMode) {
                 // Modal déjà ouvert en mode texte : basculer le mode vocal
+                console.log('[PresidentSpace] 🔄 Basculer vers mode vocal (modal déjà ouvert)');
                 voiceConversationRef.current?.toggleVoiceMode();
               } else {
                 // Modal fermé : activer le mode vocal pur
+                console.log('[PresidentSpace] 🎙️ Activation du mode vocal pur');
                 setVoiceOnlyMode(true);
                 setIastedOpen(true);
               }
