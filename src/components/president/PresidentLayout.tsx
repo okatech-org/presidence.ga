@@ -13,9 +13,9 @@ interface PresidentLayoutProps {
 export function PresidentLayout({ children }: PresidentLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen w-full bg-background">
         <div className="w-full flex flex-col">
-          {/* Header horizontal détaché */}
+          {/* Header horizontal */}
           <header className="h-20 mx-6 mt-6 px-6 flex items-center justify-between bg-card shadow-neo-lg rounded-3xl">
             <div className="flex items-center gap-6">
               {/* Logo et titre */}
@@ -55,18 +55,14 @@ export function PresidentLayout({ children }: PresidentLayoutProps) {
             </Button>
           </header>
           
-          <div className="px-6 pb-6 flex gap-6 flex-1">
-            {/* Sidebar détachée */}
-            <div className="w-[280px] shrink-0 mt-6">
-              <div className="sticky top-6">
-                <AppSidebar />
-              </div>
-            </div>
-            
-            {/* Contenu principal */}
-            <div className="flex-1 mt-6">
-              {children}
-            </div>
+          {/* Sidebar sous le header */}
+          <div className="mx-6 mt-6">
+            <AppSidebar />
+          </div>
+          
+          {/* Contenu principal */}
+          <div className="mx-6 mt-6 pb-6">
+            {children}
           </div>
         </div>
       </div>
