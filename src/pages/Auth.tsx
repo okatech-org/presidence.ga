@@ -117,6 +117,15 @@ const Auth = () => {
               >
                 {loading ? "Connexion..." : "Se connecter"}
               </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate("/demo")}
+              >
+                Voir les comptes démo
+              </Button>
             </form>
 
             <div className="mt-6 pt-6 border-t text-center text-xs text-muted-foreground">
