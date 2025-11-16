@@ -201,7 +201,7 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
       </TabsContent>
 
       <TabsContent value="settings">
-        <VoiceSettings onSettingsChange={handleSettingsChange} />
+        <VoiceSettings />
       </TabsContent>
     </Tabs>
   );
