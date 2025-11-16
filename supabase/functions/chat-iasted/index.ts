@@ -139,12 +139,7 @@ serve(async (req) => {
       throw new Error("Messages array is required");
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
-    // Sélection du prompt système selon le rôle
+    // Sélection du prompt système selon le rôle - ULTRA CONCIS
     let systemPrompt = DEFAULT_SYSTEM_PROMPT;
     if (userRole === "president") {
       systemPrompt = PRESIDENT_SYSTEM_PROMPT;
@@ -152,7 +147,20 @@ serve(async (req) => {
       systemPrompt = MINISTER_SYSTEM_PROMPT;
     }
 
+    // Ajout de la règle de concision
+    systemPrompt += `\n\nRÈGLE ABSOLUE DE CONCISION:
+- Réponses de 1-2 phrases MAXIMUM (20-40 mots)
+- Spontané et réactif
+- TOUJOURS poser une question de suivi après chaque réponse
+- Lecture naturelle des nombres: "29 245" → "vingt-neuf mille deux cent quarante-cinq"
+- Jamais "FCFA" → "francs CFA"`;
+
     console.log(`Processing iAsted chat for role: ${userRole || 'default'}`);
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -167,6 +175,8 @@ serve(async (req) => {
           ...messages,
         ],
         stream: true,
+        temperature: 0.8,
+        max_tokens: 150,
       }),
     });
 
