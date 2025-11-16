@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Shield, Lock, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import emblemGabon from "@/assets/emblem_gabon.png";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -59,8 +60,12 @@ const Auth = () => {
       <div className="w-full max-w-md">
         {/* Header with Republic emblem */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-accent mb-4 shadow-xl">
-            <Shield className="h-10 w-10 text-accent-foreground" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white p-2 mb-4 shadow-xl">
+            <img 
+              src={emblemGabon} 
+              alt="Emblème de la République Gabonaise" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
             PRÉSIDENCE DE LA RÉPUBLIQUE

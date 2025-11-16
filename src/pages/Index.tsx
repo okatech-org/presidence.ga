@@ -6,6 +6,7 @@ import commandCenterImage from "@/assets/command-center.jpg";
 import presidentialPalaceImage from "@/assets/presidential-palace.jpg";
 import collaborationImage from "@/assets/collaboration.jpg";
 import securityImage from "@/assets/security.jpg";
+import emblemGabon from "@/assets/emblem_gabon.png";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -65,8 +66,12 @@ const Index = () => {
         
         <div className="container mx-auto px-6 py-24 relative z-10">
           <div className="max-w-4xl mx-auto text-center text-white">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-accent mb-8 shadow-xl animate-scale-in">
-              <Shield className="h-12 w-12 text-accent-foreground" />
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white p-2 mb-8 shadow-xl animate-scale-in">
+              <img 
+                src={emblemGabon} 
+                alt="Emblème de la République Gabonaise" 
+                className="w-full h-full object-contain"
+              />
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
@@ -257,7 +262,11 @@ const Index = () => {
               className="bg-accent text-accent-foreground hover:bg-accent/90 text-lg px-10 py-6 hover:scale-105 transition-smooth"
               onClick={() => navigate("/auth")}
             >
-              <Shield className="mr-2 h-5 w-5" />
+              <img 
+                src={emblemGabon} 
+                alt="Emblème" 
+                className="mr-2 h-5 w-5 object-contain"
+              />
               Accéder à la Plateforme Sécurisée
             </Button>
           </div>
