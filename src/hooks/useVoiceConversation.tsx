@@ -10,9 +10,10 @@ interface Message {
 interface UseVoiceConversationProps {
   userRole: 'president' | 'minister' | 'default';
   onSpeakingChange?: (isSpeaking: boolean) => void;
+  pushToTalk?: boolean;
 }
 
-export const useVoiceConversation = ({ userRole, onSpeakingChange }: UseVoiceConversationProps) => {
+export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = false }: UseVoiceConversationProps) => {
   const { toast } = useToast();
   const [isActive, setIsActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -240,8 +241,8 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange }: UseVoiceCon
         onSpeakingChange?.(false);
         URL.revokeObjectURL(url);
         
-        // Reprendre l'écoute automatiquement si le mode est actif
-        if (isActive) {
+        // Reprendre l'écoute automatiquement seulement en mode continu
+        if (isActive && !pushToTalk) {
           setTimeout(() => startListening(), 500);
         }
       };
@@ -278,11 +279,15 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange }: UseVoiceCon
       
       toast({
         title: "Mode vocal activé",
-        description: "Vous pouvez commencer à parler",
+        description: pushToTalk 
+          ? "Maintenez le bouton enfoncé pour parler" 
+          : "Vous pouvez commencer à parler",
       });
 
-      // Démarrer l'écoute après un court délai
-      setTimeout(() => startListening(), 500);
+      // Démarrer l'écoute seulement en mode continu
+      if (!pushToTalk) {
+        setTimeout(() => startListening(), 500);
+      }
 
     } catch (error) {
       console.error('Error starting conversation:', error);
@@ -292,7 +297,7 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange }: UseVoiceCon
         variant: "destructive",
       });
     }
-  }, [toast, startListening]);
+  }, [toast, startListening, pushToTalk]);
 
   // Arrêter le mode conversation
   const stopConversation = useCallback(() => {

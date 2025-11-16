@@ -411,6 +411,7 @@ export type Database = {
           user_id: string
           voice_continuous_mode: boolean | null
           voice_id: string | null
+          voice_push_to_talk: boolean | null
           voice_silence_duration: number | null
           voice_silence_threshold: number | null
         }
@@ -420,6 +421,7 @@ export type Database = {
           user_id: string
           voice_continuous_mode?: boolean | null
           voice_id?: string | null
+          voice_push_to_talk?: boolean | null
           voice_silence_duration?: number | null
           voice_silence_threshold?: number | null
         }
@@ -429,6 +431,7 @@ export type Database = {
           user_id?: string
           voice_continuous_mode?: boolean | null
           voice_id?: string | null
+          voice_push_to_talk?: boolean | null
           voice_silence_duration?: number | null
           voice_silence_threshold?: number | null
         }
