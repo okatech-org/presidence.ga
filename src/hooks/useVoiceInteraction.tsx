@@ -9,6 +9,7 @@ interface UseVoiceInteractionOptions {
   silenceDuration?: number;
   silenceThreshold?: number;
   continuousMode?: boolean;
+  voiceId?: string;
 }
 
 export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
@@ -18,6 +19,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     silenceDuration = 2000,
     silenceThreshold = 10,
     continuousMode = false,
+    voiceId,
   } = options;
 
   // États
@@ -26,8 +28,8 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   const [userId, setUserId] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  // Voix iAsted par défaut: Brian (voix masculine professionnelle d'ElevenLabs)
-  const [selectedVoiceId, setSelectedVoiceId] = useState<string>('nPczCjzI2devNBz1zQrb');
+  // Utiliser le voiceId fourni ou la voix iAsted par défaut
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>(voiceId || 'nPczCjzI2devNBz1zQrb');
   const [silenceDetected, setSilenceDetected] = useState(false);
   const [silenceTimeRemaining, setSilenceTimeRemaining] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState<string>('');
@@ -52,6 +54,14 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     };
     loadUser();
   }, []);
+
+  // Mettre à jour selectedVoiceId quand voiceId change
+  useEffect(() => {
+    if (voiceId) {
+      console.log('[useVoiceInteraction] 🎙️ Mise à jour voice ID:', voiceId);
+      setSelectedVoiceId(voiceId);
+    }
+  }, [voiceId]);
 
   // Créer une nouvelle session
   const createSession = async (): Promise<string> => {

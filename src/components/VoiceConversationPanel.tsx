@@ -5,6 +5,7 @@ import { Mic, MicOff, Volume2, Settings as SettingsIcon, Sparkles } from 'lucide
 import { VoiceButton } from './VoiceButton';
 import { VoiceSettings } from './VoiceSettings';
 import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
+import { useIastedAgent } from '@/hooks/useIastedAgent';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,16 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   onVoiceModeChange,
 }, ref) => {
   const { toast } = useToast();
+  const { config, isLoading: isLoadingConfig } = useIastedAgent();
+  
+  // Déterminer le voice ID selon le rôle utilisateur
+  const voiceId = userRole === 'president' 
+    ? config?.presidentVoiceId 
+    : userRole === 'minister'
+    ? config?.ministerVoiceId
+    : config?.defaultVoiceId;
+  
+  console.log('[VoiceConversationPanel] 🎙️ Voice ID configuré:', voiceId, 'pour rôle:', userRole);
   
   const {
     voiceState,
@@ -43,6 +54,7 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
     silenceDuration: 2000,
     silenceThreshold: 10,
     continuousMode: false,
+    voiceId: voiceId,
   });
 
   // Notifier le parent quand le mode vocal change
