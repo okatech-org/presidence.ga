@@ -32,7 +32,8 @@ import {
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import { StatCard, CircularProgress, TimelineItem, SectionCard } from "@/components/president/PresidentSpaceComponents";
 import { ActivityItem } from "@/components/president/ActivityItem";
-import IAstedInterface from "@/components/iasted/IAstedInterface";
+import { VoiceConversationPanel } from "@/components/VoiceConversationPanel";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 type ThemeConfig = {
   primary: string;
@@ -105,9 +106,6 @@ export default function PresidentSpace() {
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["gouvernance"]);
   const [iastedOpen, setIastedOpen] = useState(false);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
-  const [voiceModeToggleTimestamp, setVoiceModeToggleTimestamp] = useState(0);
-  const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
-  const [voiceOnlyMode, setVoiceOnlyMode] = useState(false);
   const navigate = useNavigate();
   const theme = useMemo(() => darkMode ? themes.dark : themes.light, [darkMode]);
 
@@ -718,47 +716,29 @@ export default function PresidentSpace() {
         >
           <IAstedButtonFull
             onClick={() => {
-              // Double clic : ouvrir le modal en mode texte
-              setVoiceOnlyMode(false);
               setIastedOpen(true);
             }}
             onVoiceClick={() => {
-              if (iastedOpen && voiceOnlyMode) {
-                // Mode vocal pur actif : fermer
-                setIastedOpen(false);
-                setVoiceOnlyMode(false);
-              } else if (iastedOpen && !voiceOnlyMode) {
-                // Modal déjà ouvert en mode normal : basculer le mode vocal
-                setVoiceModeToggleTimestamp(Date.now());
-              } else {
-                // Modal fermé : activer le mode vocal pur
-                setVoiceOnlyMode(true);
-                setIastedOpen(true);
-                setVoiceModeToggleTimestamp(Date.now());
-              }
+              setIastedOpen(true);
             }}
             size="lg"
             voiceListening={false}
             voiceSpeaking={isAgentSpeaking}
             voiceProcessing={false}
-            isInterfaceOpen={iastedOpen && !voiceOnlyMode}
-            isVoiceModeActive={isVoiceModeActive}
+            isInterfaceOpen={iastedOpen}
+            isVoiceModeActive={isAgentSpeaking}
           />
         </div>
         
-        {/* Interface iAsted */}
-        <IAstedInterface 
-          isOpen={iastedOpen} 
-          onClose={() => {
-            setIastedOpen(false);
-            setVoiceOnlyMode(false);
-          }}
-          onSpeakingChange={setIsAgentSpeaking}
-          onVoiceModeChange={setIsVoiceModeActive}
-          voiceModeToggleTimestamp={voiceModeToggleTimestamp}
-          voiceOnlyMode={voiceOnlyMode}
-          userRole="president"
-        />
+        {/* Interface iAsted avec conversation vocale */}
+        <Dialog open={iastedOpen} onOpenChange={setIastedOpen}>
+          <DialogContent className="max-w-3xl">
+            <VoiceConversationPanel 
+              userRole="president"
+              onSpeakingChange={setIsAgentSpeaking}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
