@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Shield, Lock, Activity, Users, TrendingUp, Globe, CheckCircle, ArrowRight } from "lucide-react";
+import { Shield, Lock, Activity, Users, TrendingUp, Globe, CheckCircle, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   Carousel,
   CarouselContent,
@@ -17,6 +18,21 @@ import emblemGabon from "@/assets/emblem_gabon.png";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState(0);
+
+  const sections = [
+    { id: 0, title: "Pourquoi Cette Application Est Cruciale ?" },
+    { id: 1, title: "Fonctionnalités Clés" },
+    { id: 2, title: "Impact Mesurable" },
+  ];
+
+  const handlePrevSection = () => {
+    setActiveSection((prev) => (prev > 0 ? prev - 1 : sections.length - 1));
+  };
+
+  const handleNextSection = () => {
+    setActiveSection((prev) => (prev < sections.length - 1 ? prev + 1 : 0));
+  };
 
   const features = [
     {
@@ -116,18 +132,55 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Why This Matters Section */}
+      {/* Tabbed Sections with Pagination */}
       <section className="py-24 bg-gradient-to-br from-primary/5 to-secondary/5">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Pourquoi Cette Application Est Cruciale ?
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Dans un monde en constante évolution, la gouvernance moderne exige des outils adaptés 
-              pour une prise de décision rapide, éclairée et coordonnée.
-            </p>
+          {/* Section Navigation */}
+          <div className="flex items-center justify-center gap-4 mb-12">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handlePrevSection}
+              className="rounded-full hover:bg-primary/10"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+
+            <div className="flex items-center gap-2 overflow-x-auto max-w-4xl">
+              {sections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`px-6 py-3 rounded-full whitespace-nowrap transition-all ${
+                    activeSection === section.id
+                      ? "bg-primary text-primary-foreground font-bold"
+                      : "bg-card hover:bg-muted"
+                  }`}
+                >
+                  {section.title}
+                </button>
+              ))}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleNextSection}
+              className="rounded-full hover:bg-primary/10"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </Button>
           </div>
+
+          {/* Section Content */}
+          {activeSection === 0 && (
+            <div className="animate-fade-in">
+              <div className="max-w-4xl mx-auto text-center mb-16">
+                <p className="text-xl text-muted-foreground">
+                  Dans un monde en constante évolution, la gouvernance moderne exige des outils adaptés 
+                  pour une prise de décision rapide, éclairée et coordonnée.
+                </p>
+              </div>
 
           <Carousel className="w-full max-w-7xl mx-auto">
             <CarouselContent>
@@ -208,20 +261,16 @@ const Index = () => {
             <CarouselPrevious className="hidden md:flex" />
             <CarouselNext className="hidden md:flex" />
           </Carousel>
-        </div>
-      </section>
+            </div>
+          )}
 
-      {/* Features Section */}
-      <section id="features" className="py-24">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Fonctionnalités Clés
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Une suite complète d'outils pour un pilotage optimal de l'action gouvernementale
-            </p>
-          </div>
+          {activeSection === 1 && (
+            <div className="animate-fade-in">
+              <div className="max-w-4xl mx-auto text-center mb-16">
+                <p className="text-xl text-muted-foreground">
+                  Une suite complète d'outils pour un pilotage optimal de l'action gouvernementale
+                </p>
+              </div>
 
           <Carousel className="w-full max-w-7xl mx-auto">
             <CarouselContent>
@@ -243,17 +292,12 @@ const Index = () => {
             <CarouselPrevious className="hidden md:flex" />
             <CarouselNext className="hidden md:flex" />
           </Carousel>
-        </div>
-      </section>
+            </div>
+          )}
 
-      {/* Benefits Section */}
-      <section className="py-24 bg-gradient-to-br from-secondary/10 to-primary/10">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center">
-              Impact Mesurable
-            </h2>
-            
+          {activeSection === 2 && (
+            <div className="animate-fade-in">
+              <div className="max-w-4xl mx-auto">
             <Carousel className="w-full">
               <CarouselContent>
                 {benefits.map((benefit, index) => (
@@ -271,7 +315,9 @@ const Index = () => {
               <CarouselPrevious className="hidden md:flex" />
               <CarouselNext className="hidden md:flex" />
             </Carousel>
-          </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
