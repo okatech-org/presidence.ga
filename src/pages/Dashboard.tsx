@@ -16,6 +16,7 @@ import {
   Activity,
   AlertTriangle,
   LogOut,
+  Mic,
 } from "lucide-react";
 import emblemGabon from "@/assets/emblem_gabon.png";
 
@@ -104,6 +105,33 @@ const Dashboard = () => {
               description="Réserves de change en baisse de 3.2% ce trimestre - Nécessite attention"
               timestamp="Il y a 2h"
             />
+          </div>
+        </section>
+
+        {/* iAsted - Assistant Vocal */}
+        <section className="mb-8">
+          <div 
+            onClick={() => navigate("/iasted")}
+            className="bg-gradient-to-br from-primary to-accent p-6 rounded-lg shadow-lg cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-4 bg-white/10 rounded-full backdrop-blur-sm">
+                <Mic className="h-8 w-8 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-white mb-1">iAsted</h3>
+                <p className="text-white/90">
+                  Assistant Vocal Intelligent - Votre conseiller présidentiel IA
+                </p>
+              </div>
+              <Button 
+                variant="secondary" 
+                size="lg"
+                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-white/20"
+              >
+                Lancer
+              </Button>
+            </div>
           </div>
         </section>
 
