@@ -106,6 +106,7 @@ export default function PresidentSpace() {
   const [iastedOpen, setIastedOpen] = useState(false);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [voiceModeRequested, setVoiceModeRequested] = useState(false);
+  const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
   const navigate = useNavigate();
   const theme = useMemo(() => darkMode ? themes.dark : themes.light, [darkMode]);
 
@@ -725,6 +726,7 @@ export default function PresidentSpace() {
             voiceSpeaking={isAgentSpeaking}
             voiceProcessing={false}
             isInterfaceOpen={iastedOpen}
+            isVoiceModeActive={isVoiceModeActive}
           />
         </div>
         
@@ -736,6 +738,7 @@ export default function PresidentSpace() {
             setVoiceModeRequested(false);
           }}
           onSpeakingChange={setIsAgentSpeaking}
+          onVoiceModeChange={setIsVoiceModeActive}
           activateVoiceMode={voiceModeRequested}
           userRole="president"
         />

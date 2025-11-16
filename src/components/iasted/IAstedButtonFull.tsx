@@ -10,6 +10,7 @@ interface IAstedButtonProps {
   voiceSpeaking?: boolean;
   voiceProcessing?: boolean;
   isInterfaceOpen?: boolean;
+  isVoiceModeActive?: boolean; // Indique si le mode vocal est actuellement actif
 }
 
 interface Shockwave {
@@ -917,6 +918,52 @@ const styles = `
   75% { transform: scale(1.05) rotate(270deg); filter: hue-rotate(270deg) brightness(1.1); }
 }
 
+/* Badge de mode vocal */
+.voice-mode-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 4px 12px rgba(16, 185, 129, 0.4),
+    0 0 20px rgba(16, 185, 129, 0.3),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  z-index: 10;
+  animation: badge-pulse 2s ease-in-out infinite;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+}
+
+.voice-mode-badge svg {
+  width: 16px;
+  height: 16px;
+  color: white;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes badge-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 
+      0 4px 12px rgba(16, 185, 129, 0.4),
+      0 0 20px rgba(16, 185, 129, 0.3),
+      inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  }
+  50% { 
+    transform: scale(1.1);
+    box-shadow: 
+      0 6px 16px rgba(16, 185, 129, 0.6),
+      0 0 30px rgba(16, 185, 129, 0.5),
+      inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  }
+}
+
 .thick-matter-button.sm { width: 80px; height: 80px; }
 .thick-matter-button.md { width: 128px; height: 128px; }
 .thick-matter-button.lg { width: 160px; height: 160px; }
@@ -965,6 +1012,19 @@ const styles = `
   .thick-matter-button:hover .morphing-bg {
     filter: saturate(2.5) brightness(1.3) contrast(1.2);
   }
+
+  /* Badge plus petit sur mobile */
+  .voice-mode-badge {
+    width: 24px;
+    height: 24px;
+    top: -6px;
+    right: -6px;
+  }
+
+  .voice-mode-badge svg {
+    width: 12px;
+    height: 12px;
+  }
 }
 
 /* Adaptation pour tablette */
@@ -1005,6 +1065,19 @@ const styles = `
   .satellite-particle {
     display: none;
   }
+
+  /* Badge encore plus petit sur très petits écrans */
+  .voice-mode-badge {
+    width: 20px;
+    height: 20px;
+    top: -5px;
+    right: -5px;
+  }
+
+  .voice-mode-badge svg {
+    width: 10px;
+    height: 10px;
+  }
 }
 `;
 
@@ -1016,7 +1089,8 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   voiceListening = false, 
   voiceSpeaking = false, 
   voiceProcessing = false, 
-  isInterfaceOpen = false 
+  isInterfaceOpen = false,
+  isVoiceModeActive = false
 }) => {
   const [shockwaves, setShockwaves] = useState<Shockwave[]>([]);
   const [isClicked, setIsClicked] = useState(false);
@@ -1274,6 +1348,13 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
             {shockwaves.map(shockwave => (
               <div key={shockwave.id} className="shockwave-effect"></div>
             ))}
+            
+            {/* Badge de mode vocal actif */}
+            {isVoiceModeActive && (
+              <div className="voice-mode-badge">
+                <Mic />
+              </div>
+            )}
             
             {/* Conteneur des icônes au centre - À l'intérieur du bouton */}
             <div className="fixed-icons-container">

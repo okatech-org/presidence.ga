@@ -25,6 +25,7 @@ interface IAstedInterfaceProps {
   elevenLabsAgentId?: string;
   onSpeakingChange?: (isSpeaking: boolean) => void;
   activateVoiceMode?: boolean; // Prop pour activer le mode vocal depuis l'extérieur
+  onVoiceModeChange?: (isActive: boolean) => void; // Callback quand le mode vocal change
 }
 
 const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
@@ -33,7 +34,8 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   userRole = 'default',
   elevenLabsAgentId: elevenLabsAgentIdProp,
   onSpeakingChange,
-  activateVoiceMode = false
+  activateVoiceMode = false,
+  onVoiceModeChange
 }) => {
   const [elevenLabsAgentId, setElevenLabsAgentId] = useState<string | undefined>(elevenLabsAgentIdProp);
 
@@ -79,6 +81,11 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   useEffect(() => {
     onSpeakingChange?.(isAgentSpeaking);
   }, [isAgentSpeaking, onSpeakingChange]);
+
+  // Notifier le parent quand le mode vocal change
+  useEffect(() => {
+    onVoiceModeChange?.(isContinuousMode);
+  }, [isContinuousMode, onVoiceModeChange]);
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
