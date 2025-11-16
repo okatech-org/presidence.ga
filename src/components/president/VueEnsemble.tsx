@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/StatCard";
 import { AlertTriangle, TrendingUp, CheckCircle, DollarSign } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { NationalKPITrend, RegionData } from "@/types/analytics";
@@ -15,11 +15,7 @@ export const VueEnsemble = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
-
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     try {
       setError(null);
       // Dernier KPI (vue cartes)
@@ -80,7 +76,11 @@ export const VueEnsemble = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   if (loading) {
     return <div className="text-center py-8">Chargement des données...</div>;

@@ -1,17 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const OpinionPublique = () => {
   const [opinion, setOpinion] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchOpinion();
-  }, []);
-
-  const fetchOpinion = async () => {
+  const fetchOpinion = useCallback(async () => {
     try {
       const { data } = await supabase
         .from('opinion_publique')
@@ -26,19 +22,26 @@ export const OpinionPublique = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchOpinion();
+  }, [fetchOpinion]);
+
+  const preoccupations = useMemo(() => 
+    opinion?.preoccupations || [
+      { nom: "Corruption", score: 85 },
+      { nom: "Pouvoir d'achat", score: 78 },
+      { nom: "Emploi des jeunes", score: 72 },
+      { nom: "Santé publique", score: 68 },
+      { nom: "Éducation", score: 65 }
+    ],
+    [opinion]
+  );
 
   if (loading) {
     return <div className="text-center py-8">Chargement des données...</div>;
   }
-
-  const preoccupations = opinion?.preoccupations || [
-    { nom: "Corruption", score: 85 },
-    { nom: "Pouvoir d'achat", score: 78 },
-    { nom: "Emploi des jeunes", score: 72 },
-    { nom: "Santé publique", score: 68 },
-    { nom: "Éducation", score: 65 }
-  ];
 
   return (
     <div className="space-y-6">

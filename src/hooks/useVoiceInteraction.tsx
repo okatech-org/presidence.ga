@@ -31,11 +31,13 @@ export const useVoiceInteraction = (settings: VoiceSettings) => {
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
-  // Créer une session au démarrage
+  // Créer une session au démarrage (mémorisé)
   useEffect(() => {
+    let mounted = true;
+    
     const createSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || !mounted) return;
 
       const { data, error } = await supabase
         .from('conversation_sessions')
@@ -51,12 +53,18 @@ export const useVoiceInteraction = (settings: VoiceSettings) => {
         return;
       }
 
-      setSessionId(data.id);
-      console.log('Session created:', data.id);
+      if (mounted) {
+        setSessionId(data.id);
+        console.log('Session created:', data.id);
+      }
     };
 
     createSession();
-  }, []);
+    
+    return () => {
+      mounted = false;
+    };
+  }, [settings.voiceId, settings.silenceDuration, settings.silenceThreshold, settings.continuousMode]);
 
   const logAnalytics = async (eventType: string, data: any = {}) => {
     if (!sessionId) return;
