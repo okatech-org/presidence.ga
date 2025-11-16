@@ -99,7 +99,7 @@ type StatCardProps = {
   title: string;
   value: string | number;
   subtitle?: string;
-  icon: React.ComponentType<{ size?: number }>;
+  icon: React.ComponentType<any>;
   color: string;
   trend?: string;
   theme: ThemeConfig;
@@ -866,6 +866,7 @@ export default function PresidentSpace() {
           />
         </div>
       </div>
+    </div>
   );
 }
 
