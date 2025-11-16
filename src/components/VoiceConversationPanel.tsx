@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } f
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2, User, Bot, Settings as SettingsIcon } from 'lucide-react';
+import { Mic, MicOff, Volume2, User, Bot, Settings as SettingsIcon, Loader2 } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
 import { VoiceSettings } from './VoiceSettings';
-import { useContinuousConversation } from '@/hooks/useContinuousConversation';
+import { useElevenLabsAgent } from '@/hooks/useElevenLabsAgent';
 import { useIastedAgent } from '@/hooks/useIastedAgent';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -31,29 +31,27 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   const { config: agentConfig, isLoading: isLoadingAgent } = useIastedAgent();
   
   const {
-    isActive,
+    isConnected,
     isSpeaking,
-    messages,
-    startContinuousMode,
-    stopContinuousMode,
-  } = useContinuousConversation(
+    isLoading,
+    conversationStarted,
+    startConversation,
+    stopConversation,
+    setVolume,
+  } = useElevenLabsAgent({
+    agentId: agentConfig?.agentId || null,
     userRole,
-    agentConfig?.agentId || ''
-  );
+    onSpeakingChange,
+    autoStart: autoActivate,
+  });
 
-  const isListening = isActive && !isSpeaking;
+  const isActive = conversationStarted;
+  const isListening = isConnected && !isSpeaking;
 
   // Notifier le parent quand le mode vocal change
   useEffect(() => {
     onVoiceModeChange?.(isActive);
   }, [isActive, onVoiceModeChange]);
-
-  // Auto-activer la conversation vocale au montage si demandé
-  useEffect(() => {
-    if (autoActivate && !isActive && agentConfig?.agentId) {
-      startContinuousMode();
-    }
-  }, [autoActivate, agentConfig]); // Ne dépend que de autoActivate pour s'exécuter une seule fois
 
   // Exposer la fonction de toggle pour permettre de basculer depuis l'extérieur
   useImperativeHandle(ref, () => ({
@@ -66,9 +64,9 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
     }
     
     if (isActive) {
-      stopContinuousMode();
+      await stopConversation();
     } else {
-      await startContinuousMode();
+      await startConversation();
     }
   };
 
@@ -76,11 +74,12 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
     setPushToTalk(settings.pushToTalk);
   };
 
-  if (isLoadingAgent) {
+  if (isLoadingAgent || isLoading) {
     return (
       <Card className="w-full border-0 shadow-none">
-        <CardContent className="flex items-center justify-center py-8">
-          <p className="text-muted-foreground">Chargement de l'agent iAsted...</p>
+        <CardContent className="flex items-center justify-center py-8 gap-2">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <p className="text-muted-foreground">Initialisation de l'agent iAsted...</p>
         </CardContent>
       </Card>
     );
@@ -89,8 +88,14 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   if (!agentConfig?.agentId) {
     return (
       <Card className="w-full border-0 shadow-none">
-        <CardContent className="flex items-center justify-center py-8">
-          <p className="text-muted-foreground">Agent iAsted non disponible</p>
+        <CardContent className="flex flex-col items-center justify-center py-8 gap-3">
+          <p className="text-muted-foreground">Agent iAsted non configuré</p>
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.href = '/admin?tab=iasted'}
+          >
+            Configurer l'agent
+          </Button>
         </CardContent>
       </Card>
     );
@@ -115,73 +120,59 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
             </CardTitle>
             <CardDescription>
               {isActive
-                ? pushToTalk
-                  ? isListening
-                    ? "Parlez maintenant..."
-                    : isSpeaking
-                    ? "iAsted répond..."
-                    : "Maintenez le bouton pour parler"
-                  : isListening
-                  ? "Vous pouvez parler..."
-                  : isSpeaking
-                  ? "iAsted répond..."
-                  : "En attente..."
-                : pushToTalk
-                ? "Cliquez pour démarrer, puis maintenez le bouton pour parler"
-                : "Cliquez sur le bouton pour commencer"}
+                ? isSpeaking
+                  ? "🗣️ iAsted parle..."
+                  : "🎤 Vous pouvez parler, je vous écoute..."
+                : "Cliquez sur Démarrer pour lancer la conversation"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Zone de messages */}
-            <ScrollArea className="h-[400px] rounded-md border p-4">
-              <div className="space-y-4">
-                {messages.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <Bot className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Aucun message pour le moment</p>
-                    <p className="text-sm">
-                      {pushToTalk 
-                        ? "Démarrez et maintenez le bouton pour parler"
-                        : "Démarrez la conversation pour commencer"}
-                    </p>
-                  </div>
-                ) : (
-                  messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={cn(
-                        "flex gap-3 items-start",
-                        message.role === 'user' ? "justify-end" : "justify-start"
-                      )}
-                    >
-                      {message.role === 'assistant' && (
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <Bot className="w-4 h-4 text-primary" />
-                        </div>
-                      )}
-                      <div
-                        className={cn(
-                          "rounded-lg px-4 py-2 max-w-[80%]",
-                          message.role === 'user'
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        )}
-                      >
-                        <p className="text-sm">{message.content}</p>
-                      </div>
-                      {message.role === 'user' && (
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                          <User className="w-4 h-4 text-primary-foreground" />
-                        </div>
+            {/* Indicateur de statut */}
+            <div className="flex items-center justify-center p-6 rounded-lg bg-muted/50">
+              <div className="flex flex-col items-center gap-3">
+                {isActive ? (
+                  <>
+                    <div className={cn(
+                      "relative w-20 h-20 rounded-full flex items-center justify-center",
+                      isSpeaking 
+                        ? "bg-gradient-to-br from-cyan-500 to-blue-500 animate-pulse" 
+                        : "bg-gradient-to-br from-green-500 to-emerald-500"
+                    )}>
+                      {isSpeaking ? (
+                        <Volume2 className="h-10 w-10 text-white" />
+                      ) : (
+                        <Mic className="h-10 w-10 text-white" />
                       )}
                     </div>
-                  ))
+                    <div className="text-center">
+                      <p className="font-medium">
+                        {isSpeaking ? "iAsted parle..." : "Écoute en cours..."}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Conversation active
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-muted">
+                      <MicOff className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-muted-foreground">
+                        Conversation inactive
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Cliquez sur Démarrer pour commencer
+                      </p>
+                    </div>
+                  </>
                 )}
               </div>
-            </ScrollArea>
-
-            {/* Bouton de contrôle */}
-            <div className="flex justify-center">
+            </div>
+            
+            {/* Contrôles */}
+            <div className="flex justify-center gap-3">
               <VoiceButton
                 isActive={isActive}
                 isListening={isListening}
