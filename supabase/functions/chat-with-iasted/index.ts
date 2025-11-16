@@ -222,9 +222,9 @@ serve(async (req) => {
       systemPrompt += '\n\nCette interaction est une politesse. Répondez de manière brève et chaleureuse (1-2 phrases max).';
     }
 
-    // 4. Appeler Lovable AI Gateway
+    // 4. Appeler OpenAI GPT via Lovable AI Gateway
     const llmStart = Date.now();
-    console.log('[chat-with-iasted] Génération réponse GPT...');
+    console.log('[chat-with-iasted] Génération réponse GPT-5-mini...');
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
@@ -238,12 +238,12 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'openai/gpt-5-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           ...conversationHistory,
         ],
-        temperature: 0.7,
+        max_completion_tokens: 500,
       }),
     });
 

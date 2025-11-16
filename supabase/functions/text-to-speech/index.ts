@@ -22,22 +22,21 @@ serve(async (req) => {
       throw new Error('ELEVENLABS_API_KEY not configured');
     }
 
-    // Déterminer la voix selon le rôle
+    // Déterminer la voix selon le rôle ou utiliser la voix iAsted par défaut
     let selectedVoiceId = voiceId;
-    if (!selectedVoiceId && userRole) {
-      switch (userRole) {
-        case 'president':
-          selectedVoiceId = '9BWtsMINqrJLrRacOk9x'; // Aria
-          break;
-        case 'minister':
-          selectedVoiceId = 'EXAVITQu4vr4xnSDxMaL'; // Sarah
-          break;
-        default:
-          selectedVoiceId = 'Xb7hH8MSUJpSbSDYk0k2'; // Alice
+    if (!selectedVoiceId) {
+      if (userRole === 'president') {
+        selectedVoiceId = '9BWtsMINqrJLrRacOk9x'; // Aria
+      } else if (userRole === 'minister') {
+        selectedVoiceId = 'EXAVITQu4vr4xnSDxMaL'; // Sarah
+      } else {
+        // Voix iAsted par défaut: Brian (voix masculine professionnelle)
+        selectedVoiceId = 'nPczCjzI2devNBz1zQrb';
       }
     }
 
-    console.log('Generating speech with voice:', selectedVoiceId);
+    console.log('🎙️ [text-to-speech] Génération avec voix:', selectedVoiceId);
+    console.log('📝 [text-to-speech] Texte:', text.substring(0, 100) + '...');
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}/stream`,
@@ -68,10 +67,12 @@ serve(async (req) => {
 
     // Récupérer l'audio complet
     const audioBuffer = await response.arrayBuffer();
+    console.log('✅ [text-to-speech] Audio reçu, taille:', audioBuffer.byteLength, 'bytes');
     
     // Convertir en base64
     const audioArray = new Uint8Array(audioBuffer);
     const base64Audio = btoa(String.fromCharCode(...audioArray));
+    console.log('✅ [text-to-speech] Audio encodé en base64, longueur:', base64Audio.length);
     
     // Retourner le JSON avec audioContent
     return new Response(

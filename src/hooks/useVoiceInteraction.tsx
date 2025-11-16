@@ -26,7 +26,8 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   const [userId, setUserId] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [selectedVoiceId, setSelectedVoiceId] = useState<string | undefined>(undefined);
+  // Voix iAsted par défaut: Brian (voix masculine professionnelle d'ElevenLabs)
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>('nPczCjzI2devNBz1zQrb');
   const [silenceDetected, setSilenceDetected] = useState(false);
   const [silenceTimeRemaining, setSilenceTimeRemaining] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState<string>('');
@@ -307,35 +308,44 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   // Jouer la réponse audio
   const playAudioResponse = async (audioBase64: string) => {
     try {
-      console.log('🔊 Lecture de la réponse audio...');
+      console.log('🔊 [playAudioResponse] Démarrage lecture audio');
+      console.log('📊 [playAudioResponse] Longueur base64:', audioBase64.length);
+      console.log('🔍 [playAudioResponse] Premiers chars:', audioBase64.substring(0, 50));
+      
       setVoiceState('speaking');
       onSpeakingChange?.(true);
 
       const audio = new Audio(`data:audio/mpeg;base64,${audioBase64}`);
       currentAudioRef.current = audio;
 
+      audio.onloadeddata = () => {
+        console.log('✅ [playAudioResponse] Audio chargé, durée:', audio.duration);
+      };
+
       audio.onended = () => {
-        console.log('✅ Lecture audio terminée');
+        console.log('✅ [playAudioResponse] Lecture terminée');
         setVoiceState('idle');
         onSpeakingChange?.(false);
       };
 
       audio.onerror = (error) => {
-        console.error('❌ Erreur lecture audio:', error);
+        console.error('❌ [playAudioResponse] Erreur audio:', error);
+        console.error('❌ [playAudioResponse] Audio error code:', audio.error?.code);
+        console.error('❌ [playAudioResponse] Audio error message:', audio.error?.message);
         setVoiceState('idle');
         onSpeakingChange?.(false);
       };
 
-      console.log('▶️ Démarrage lecture audio...');
+      console.log('▶️ [playAudioResponse] Appel audio.play()...');
       await audio.play();
-      console.log('🎵 Audio en cours de lecture');
+      console.log('🎵 [playAudioResponse] Audio en lecture');
     } catch (error) {
-      console.error('❌ Erreur playback:', error);
+      console.error('❌ [playAudioResponse] Exception:', error);
       setVoiceState('idle');
       onSpeakingChange?.(false);
       toast({
         title: "Erreur audio",
-        description: "Impossible de lire l'audio",
+        description: error instanceof Error ? error.message : "Impossible de lire l'audio",
         variant: "destructive",
       });
     }
