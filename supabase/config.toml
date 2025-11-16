@@ -18,5 +18,5 @@ verify_jwt = false
 [functions.speech-to-text]
 verify_jwt = false
 
-[functions.openai-realtime]
+[functions.openai-ephemeral-token]
 verify_jwt = false

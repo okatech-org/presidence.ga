@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Volume2, User, Bot, Settings as SettingsIcon, Loader2 } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
 import { VoiceSettings } from './VoiceSettings';
-import { useOpenAIRealtime } from '@/hooks/useOpenAIRealtime';
+import { useOpenAIWebRTC } from '@/hooks/useOpenAIWebRTC';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -34,7 +34,7 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
     isListening,
     startConversation,
     stopConversation,
-  } = useOpenAIRealtime({
+  } = useOpenAIWebRTC({
     userRole,
     onSpeakingChange,
     autoStart: autoActivate,
