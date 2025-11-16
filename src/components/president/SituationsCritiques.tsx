@@ -5,6 +5,15 @@ import { AlertTriangle, CheckCircle, Eye, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { z } from 'zod';
+
+const decisionSchema = z.object({
+  motif: z.string()
+    .trim()
+    .min(5, 'Le motif doit contenir au moins 5 caractères')
+    .max(500, 'Le motif ne peut pas dépasser 500 caractères'),
+  decisionType: z.enum(['approuver_enquete', 'priorite_zero']),
+});
 
 export const SituationsCritiques = () => {
   const [signalements, setSignalements] = useState<any[]>([]);
@@ -34,6 +43,22 @@ export const SituationsCritiques = () => {
   };
 
   const enregistrerDecision = async (signalementId: string, decisionType: string) => {
+    const motif = `Décision présidentielle sur cas critique`;
+    
+    // Validation avec zod
+    try {
+      decisionSchema.parse({ motif, decisionType });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Erreur de validation",
+          description: error.errors[0].message,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -52,7 +77,7 @@ export const SituationsCritiques = () => {
           signalement_id: signalementId,
           decision_type: decisionType,
           president_user_id: user.id,
-          motif: `Décision présidentielle sur cas critique`,
+          motif,
         });
 
       if (error) throw error;
