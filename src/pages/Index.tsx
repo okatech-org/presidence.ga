@@ -284,23 +284,18 @@ const Index = () => {
           {activeSection === 2 && (
             <div className="animate-fade-in">
               <div className="max-w-4xl mx-auto">
-            <Carousel className="w-full">
-              <CarouselContent>
-                {benefits.map((benefit, index) => (
-                  <CarouselItem key={index} className="md:basis-1/2">
-                    <div 
-                      className="flex items-start gap-4 p-6 bg-card rounded-lg shadow-sm hover:shadow-elegant transition-smooth animate-fade-in h-full"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <CheckCircle className="h-6 w-6 text-success flex-shrink-0 mt-1" />
-                      <p className="text-lg">{benefit}</p>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="hidden md:flex" />
-              <CarouselNext className="hidden md:flex" />
-            </Carousel>
+            <div className="grid md:grid-cols-2 gap-6">
+              {benefits.map((benefit, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-start gap-4 p-6 bg-card rounded-lg shadow-sm hover:shadow-elegant transition-smooth animate-fade-in"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <CheckCircle className="h-6 w-6 text-success flex-shrink-0 mt-1" />
+                  <p className="text-lg">{benefit}</p>
+                </div>
+              ))}
+            </div>
               </div>
             </div>
           )}
