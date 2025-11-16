@@ -191,8 +191,7 @@ const Demo = () => {
         });
         setShowAdminDialog(false);
         setAdminCode("");
-        // TODO: Navigate to admin page or show admin features
-        // navigate("/admin");
+        navigate("/admin-dashboard");
       } else {
         toast({
           title: "Code incorrect",
