@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { MinistryCard } from "@/components/MinistryCard";
 import { AlertBanner } from "@/components/AlertBanner";
 import { StatCard } from "@/components/StatCard";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import {
   Shield,
   Building2,
@@ -53,10 +54,11 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="gradient-primary text-primary-foreground shadow-lg sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
+    <DashboardLayout>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="gradient-primary text-primary-foreground shadow-lg">
+          <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-2 rounded-full bg-white">
@@ -272,7 +274,8 @@ const Dashboard = () => {
           </div>
         </section>
       </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 

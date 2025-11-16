@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Shield, FileText, Download, Eye, Paperclip, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import {
   Table,
@@ -183,7 +184,8 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/5">
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/5">
       {/* Header */}
       <header className="gradient-primary text-primary-foreground shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
@@ -357,7 +359,8 @@ const AdminDashboard = () => {
           feedbackId={selectedFeedback.id}
         />
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
