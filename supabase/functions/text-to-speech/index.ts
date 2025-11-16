@@ -66,8 +66,11 @@ serve(async (req) => {
       throw new Error(`Failed to generate speech: ${response.status}`);
     }
 
-    // Stream the audio response
-    return new Response(response.body, {
+    // Récupérer l'audio complet
+    const audioBuffer = await response.arrayBuffer();
+    
+    // Retourner l'audio
+    return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'audio/mpeg',
