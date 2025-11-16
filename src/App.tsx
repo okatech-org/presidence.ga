@@ -11,6 +11,7 @@ import Demo from "./pages/Demo";
 import AdminDashboard from "./pages/AdminDashboard";
 import PresidentSpace from "./pages/PresidentSpace";
 import IAstedConfig from "./pages/IAstedConfig";
+import IAstedPage from "./pages/IAstedPage";
 import NotFound from "./pages/NotFound";
 import { LoadingScreen } from "@/components/ErrorBoundary";
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/president-space" element={<PresidentSpace />} />
             <Route path="/iasted-config" element={<IAstedConfig />} />
+            <Route path="/iasted" element={<IAstedPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

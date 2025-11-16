@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Mic, MicOff, Send, Loader2, MessageCircle, Volume2 } from 'lucide-react';
@@ -470,6 +470,10 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
+        <DialogTitle className="sr-only">{getRoleTitle()}</DialogTitle>
+        <DialogDescription className="sr-only">
+          Intelligence Artificielle Stratégique de Traitement et d'Évaluation des Données
+        </DialogDescription>
         {/* Header */}
         <div className="p-6 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5">
           <h2 className="text-2xl font-bold text-foreground">{getRoleTitle()}</h2>
@@ -545,10 +549,21 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
                     🔍 Diagnostic
                   </Button>
                 </div>
-                {isConversationActive && !isAgentSpeaking && (
-                  <p className="text-xs text-center text-muted-foreground">
-                    💡 Parlez pour déclencher une réponse, ou attendez quelques secondes pour le message de bienvenue
-                  </p>
+                {isConversationActive && (
+                  <div className="space-y-1">
+                    {!isAgentSpeaking ? (
+                      <p className="text-xs text-center text-muted-foreground">
+                        💡 Parlez pour déclencher une réponse, ou attendez quelques secondes pour le message de bienvenue
+                      </p>
+                    ) : (
+                      <p className="text-xs text-center text-primary font-medium animate-pulse">
+                        🔊 iAsted vous parle...
+                      </p>
+                    )}
+                    <p className="text-xs text-center text-muted-foreground">
+                      ⚠️ Si vous n'entendez pas le son, vérifiez votre volume système et cliquez sur "Activer l'audio"
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

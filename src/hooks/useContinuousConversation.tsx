@@ -105,6 +105,17 @@ Répondez de manière claire et professionnelle.`;
             console.log('[useContinuousConversation] ✅ Contexte audio activé');
           }
           
+          // Forcer l'activation avec un son test
+          const testOscillator = audioContext.createOscillator();
+          const testGain = audioContext.createGain();
+          testOscillator.connect(testGain);
+          testGain.connect(audioContext.destination);
+          testGain.gain.value = 0.001;
+          testOscillator.frequency.value = 440;
+          testOscillator.start();
+          testOscillator.stop(audioContext.currentTime + 0.001);
+          console.log('[useContinuousConversation] Son test joué pour forcer activation');
+          
           // Régler le volume immédiatement
           console.log('[useContinuousConversation] Réglage volume après connexion...');
           await conversation.setVolume({ volume: 0.8 });
@@ -120,6 +131,16 @@ Répondez de manière claire et professionnelle.`;
             
             if (!conversation.isSpeaking && conversation.status === 'connected') {
               console.log('[useContinuousConversation] ⚠️ Agent connecté mais ne parle pas - le firstMessage devrait se jouer automatiquement');
+              console.log('[useContinuousConversation] Tentative de forcer la lecture du firstMessage...');
+              
+              // Essayer de déclencher manuellement le firstMessage
+              // Le SDK devrait le faire automatiquement, mais on peut essayer de forcer
+              try {
+                // Vérifier si on peut accéder aux méthodes internes
+                console.log('[useContinuousConversation] Méthodes disponibles:', Object.keys(conversation));
+              } catch (e) {
+                console.error('[useContinuousConversation] Erreur accès méthodes:', e);
+              }
             }
           }, 2000);
         } catch (error) {
@@ -219,6 +240,9 @@ Répondez de manière claire et professionnelle.`;
 
       // Démarrer la conversation avec le volume par défaut
       console.log('[useContinuousConversation] Démarrage de la session avec URL signée...');
+      console.log('[useContinuousConversation] FirstMessage configuré:', overrides.agent?.firstMessage);
+      console.log('[useContinuousConversation] Prompt configuré:', overrides.agent?.prompt?.prompt?.substring(0, 100) + '...');
+      
       const id = await conversation.startSession({ 
         signedUrl: data.signedUrl 
       });
@@ -226,6 +250,19 @@ Répondez de manière claire et professionnelle.`;
       console.log('[useContinuousConversation] ✅ Session démarrée avec ID:', id);
       console.log('[useContinuousConversation] Statut conversation:', conversation.status);
       console.log('[useContinuousConversation] Agent parle?', conversation.isSpeaking);
+      
+      // Vérifier immédiatement après démarrage
+      setTimeout(() => {
+        console.log('[useContinuousConversation] 📊 Vérification immédiate après startSession:');
+        console.log('  - Statut:', conversation.status);
+        console.log('  - Agent parle:', conversation.isSpeaking);
+        console.log('  - Session ID:', id);
+        
+        // Si l'agent ne parle pas après 1 seconde, il y a peut-être un problème
+        if (!conversation.isSpeaking && conversation.status === 'connected') {
+          console.warn('[useContinuousConversation] ⚠️ L\'agent est connecté mais ne parle pas. Le firstMessage devrait être joué automatiquement.');
+        }
+      }, 1000);
       
       // Régler le volume immédiatement après démarrage
       setTimeout(async () => {
