@@ -202,25 +202,58 @@ export const useDirectVoiceAgent = ({
       await navigator.mediaDevices.getUserMedia({ audio: true });
       
       setConversationActive(true);
+      setIsProcessing(true);
       conversationHistoryRef.current = [];
       
-      toast({
-        title: "Conversation démarrée",
-        description: "Parlez maintenant, je vous écoute",
+      // Message de bienvenue selon le rôle
+      const welcomeMessage = userRole === 'president' 
+        ? "Bonjour Monsieur le Président, je suis iAsted, votre assistant vocal intelligent. Comment puis-je vous aider aujourd'hui ?"
+        : userRole === 'minister'
+        ? "Bonjour Monsieur le Ministre, je suis iAsted, à votre service. Que puis-je faire pour vous ?"
+        : "Bonjour, je suis iAsted, votre assistant vocal. Comment puis-je vous aider ?";
+
+      console.log('🎤 Génération du message de bienvenue...');
+
+      // Ajouter le message de bienvenue à l'historique
+      conversationHistoryRef.current.push({
+        role: 'assistant',
+        content: welcomeMessage,
       });
 
-      // Démarrer l'enregistrement
-      await startRecording();
+      // Synthèse vocale du message de bienvenue
+      const { data: audioData, error: ttsError } = await supabase.functions.invoke(
+        'text-to-speech',
+        {
+          body: {
+            text: welcomeMessage,
+            userRole,
+          },
+        }
+      );
+
+      if (ttsError) throw ttsError;
+      if (!audioData) throw new Error('No audio data received');
+
+      setIsProcessing(false);
+
+      toast({
+        title: "Conversation démarrée",
+        description: "iAsted vous salue...",
+      });
+
+      // Jouer le message de bienvenue
+      await playAudio(audioData);
       
     } catch (error) {
       console.error('❌ Error starting conversation:', error);
+      setIsProcessing(false);
       toast({
         title: "Erreur",
         description: "Impossible de démarrer la conversation",
         variant: "destructive",
       });
     }
-  }, [startRecording, toast]);
+  }, [userRole, toast]);
 
   const stopConversation = useCallback(() => {
     console.log('⏹️ Stopping conversation...');
