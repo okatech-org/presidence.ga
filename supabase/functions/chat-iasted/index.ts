@@ -133,7 +133,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, userRole } = await req.json();
+    const { messages, userRole, focusMode, focusTopic } = await req.json();
     
     if (!messages || !Array.isArray(messages)) {
       throw new Error("Messages array is required");
@@ -155,7 +155,18 @@ serve(async (req) => {
 - Lecture naturelle des nombres: "29 245" → "vingt-neuf mille deux cent quarante-cinq"
 - Jamais "FCFA" → "francs CFA"`;
 
-    console.log(`Processing iAsted chat for role: ${userRole || 'default'}`);
+    // Ajout du comportement Mode Focus si activé
+    if (focusMode) {
+      systemPrompt += `\n\n🎯 MODE FOCUS ACTIVÉ:
+- Tu DOIS rester concentré sur UN SEUL sujet: "${focusTopic || 'À définir au premier échange'}"
+- Progression obligatoire par niveaux: Général → Spécifique → Détaillé → Expertise
+- REFUSE poliment de changer de sujet sauf demande explicite
+- Questions de plus en plus approfondies à chaque tour
+- Analyse le niveau actuel de la conversation et progresse vers le niveau suivant
+- Mentionne le niveau actuel dans ta réponse ("Niveau général", "Allons plus spécifique", etc.)`;
+    }
+
+    console.log(`Processing iAsted chat for role: ${userRole || 'default'} | Focus: ${focusMode ? 'ON' : 'OFF'}`);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

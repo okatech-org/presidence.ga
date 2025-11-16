@@ -11,14 +11,17 @@ interface UseVoiceConversationProps {
   userRole: 'president' | 'minister' | 'default';
   onSpeakingChange?: (isSpeaking: boolean) => void;
   pushToTalk?: boolean;
+  focusMode?: boolean;
 }
 
-export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = false }: UseVoiceConversationProps) => {
+export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = false, focusMode = false }: UseVoiceConversationProps) => {
   const { toast } = useToast();
   const [isActive, setIsActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [focusTopic, setFocusTopic] = useState<string | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -109,10 +112,20 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
       console.log('Transcription:', userMessage);
 
       // Ajouter le message utilisateur
-      setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+      const updatedMessages = [...messages, { role: 'user', content: userMessage }];
+      setMessages(updatedMessages);
+
+      // Sauvegarder le message en DB si on a une session
+      if (sessionId) {
+        await supabase.from('conversation_messages').insert({
+          session_id: sessionId,
+          role: 'user',
+          content: userMessage,
+        });
+      }
 
       // Obtenir la réponse de l'IA
-      await getAIResponse([...messages, { role: 'user', content: userMessage }]);
+      await getAIResponse(updatedMessages);
 
     } catch (error) {
       console.error('Error processing audio:', error);
@@ -143,6 +156,8 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
             messages: conversationMessages,
             userRole,
             stream: true,
+            focusMode,
+            focusTopic,
           }),
         }
       );
@@ -187,6 +202,31 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
 
       // Ajouter la réponse aux messages
       setMessages(prev => [...prev, { role: 'assistant', content: fullText }]);
+
+      // Sauvegarder la réponse en DB si on a une session
+      if (sessionId) {
+        await supabase.from('conversation_messages').insert({
+          session_id: sessionId,
+          role: 'assistant',
+          content: fullText,
+        });
+      }
+
+      // Extraire le sujet principal si mode focus et pas encore défini
+      if (focusMode && !focusTopic && fullText.length > 10) {
+        const firstSentence = fullText.split(/[.!?]/)[0];
+        if (firstSentence.length > 5) {
+          setFocusTopic(firstSentence.substring(0, 50));
+          
+          // Mettre à jour la session avec le sujet
+          if (sessionId) {
+            await supabase
+              .from('conversation_sessions')
+              .update({ focus_mode: firstSentence.substring(0, 50) })
+              .eq('id', sessionId);
+          }
+        }
+      }
 
       // Convertir en audio avec ElevenLabs
       await speakText(fullText);
@@ -268,20 +308,86 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
     }
   }, [userRole, toast, onSpeakingChange, isActive, startListening, initAudioContext]);
 
+  // Créer ou charger une session de conversation
+  const initializeSession = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      // En mode focus, essayer de charger la dernière session non terminée
+      if (focusMode) {
+        const { data: existingSession } = await supabase
+          .from('conversation_sessions')
+          .select('id, focus_mode, settings')
+          .eq('user_id', user.id)
+          .is('ended_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (existingSession) {
+          // Charger les messages de la session
+          const { data: sessionMessages } = await supabase
+            .from('conversation_messages')
+            .select('role, content')
+            .eq('session_id', existingSession.id)
+            .order('created_at', { ascending: true });
+
+          if (sessionMessages) {
+            setMessages(sessionMessages.map(m => ({
+              role: m.role as 'user' | 'assistant',
+              content: m.content
+            })));
+          }
+          
+          setFocusTopic(existingSession.focus_mode);
+          return existingSession.id;
+        }
+      }
+
+      // Créer une nouvelle session
+      const { data: newSession, error } = await supabase
+        .from('conversation_sessions')
+        .insert({
+          user_id: user.id,
+          settings: { focusMode, pushToTalk },
+          focus_mode: focusMode ? 'À définir' : null,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      return newSession.id;
+    } catch (error) {
+      console.error('Error initializing session:', error);
+      return null;
+    }
+  }, [focusMode, pushToTalk]);
+
   // Démarrer le mode conversation
   const startConversation = useCallback(async () => {
     try {
       // Vérifier les permissions micro
       await navigator.mediaDevices.getUserMedia({ audio: true });
       
+      // Créer ou charger la session
+      const newSessionId = await initializeSession();
+      setSessionId(newSessionId);
+      
       setIsActive(true);
-      setMessages([]);
+      
+      // Si pas de messages chargés, réinitialiser
+      if (messages.length === 0) {
+        setMessages([]);
+      }
       
       toast({
-        title: "Mode vocal activé",
-        description: pushToTalk 
-          ? "Maintenez le bouton enfoncé pour parler" 
-          : "Vous pouvez commencer à parler",
+        title: focusMode ? "🎯 Mode Focus activé" : "Mode vocal activé",
+        description: focusMode 
+          ? "Je vais approfondir progressivement le sujet"
+          : pushToTalk 
+            ? "Maintenez le bouton enfoncé pour parler" 
+            : "Vous pouvez commencer à parler",
       });
 
       // Démarrer l'écoute seulement en mode continu
@@ -297,10 +403,10 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
         variant: "destructive",
       });
     }
-  }, [toast, startListening, pushToTalk]);
+  }, [toast, startListening, pushToTalk, focusMode, initializeSession, messages.length]);
 
   // Arrêter le mode conversation
-  const stopConversation = useCallback(() => {
+  const stopConversation = useCallback(async () => {
     stopListening();
     
     // Arrêter l'audio en cours
@@ -309,14 +415,33 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
       currentAudioRef.current = null;
     }
 
+    // Terminer la session si on en a une
+    if (sessionId) {
+      await supabase
+        .from('conversation_sessions')
+        .update({ 
+          ended_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
+    }
+
     setIsActive(false);
     setIsSpeaking(false);
     onSpeakingChange?.(false);
+    setSessionId(null);
+    
+    // En mode focus, ne pas effacer les messages (pour reprise)
+    if (!focusMode) {
+      setMessages([]);
+      setFocusTopic(null);
+    }
     
     toast({
-      title: "Mode vocal désactivé",
+      title: focusMode ? "🎯 Mode Focus mis en pause" : "Mode vocal désactivé",
+      description: focusMode ? "La conversation est sauvegardée pour reprise" : undefined,
     });
-  }, [stopListening, toast, onSpeakingChange]);
+  }, [stopListening, toast, onSpeakingChange, sessionId, focusMode]);
 
   return {
     isActive,

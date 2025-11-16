@@ -8,11 +8,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface VoiceSettingsProps {
-  onSettingsChange?: (settings: { pushToTalk: boolean }) => void;
+  onSettingsChange?: (settings: { pushToTalk: boolean; focusMode: boolean }) => void;
 }
 
 export const VoiceSettings: React.FC<VoiceSettingsProps> = ({ onSettingsChange }) => {
   const [pushToTalk, setPushToTalk] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -29,7 +30,7 @@ export const VoiceSettings: React.FC<VoiceSettingsProps> = ({ onSettingsChange }
 
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('voice_push_to_talk')
+        .select('voice_push_to_talk, voice_continuous_mode')
         .eq('user_id', user.id)
         .single();
 
@@ -39,7 +40,11 @@ export const VoiceSettings: React.FC<VoiceSettingsProps> = ({ onSettingsChange }
 
       if (data) {
         setPushToTalk(data.voice_push_to_talk || false);
-        onSettingsChange?.({ pushToTalk: data.voice_push_to_talk || false });
+        setFocusMode(data.voice_continuous_mode || false);
+        onSettingsChange?.({ 
+          pushToTalk: data.voice_push_to_talk || false,
+          focusMode: data.voice_continuous_mode || false
+        });
       }
     } catch (error) {
       console.error('Error loading preferences:', error);
@@ -59,12 +64,13 @@ export const VoiceSettings: React.FC<VoiceSettingsProps> = ({ onSettingsChange }
         .upsert({
           user_id: user.id,
           voice_push_to_talk: pushToTalk,
+          voice_continuous_mode: focusMode,
           updated_at: new Date().toISOString(),
         });
 
       if (error) throw error;
 
-      onSettingsChange?.({ pushToTalk });
+      onSettingsChange?.({ pushToTalk, focusMode });
 
       toast({
         title: "Paramètres sauvegardés",
@@ -106,6 +112,25 @@ export const VoiceSettings: React.FC<VoiceSettingsProps> = ({ onSettingsChange }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Mode Focus */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1 flex-1">
+              <Label htmlFor="focus-mode" className="text-base font-medium">
+                🎯 Mode Focus
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Approfondit UN sujet avec questions progressives (général → expert)
+              </p>
+            </div>
+            <Switch
+              id="focus-mode"
+              checked={focusMode}
+              onCheckedChange={setFocusMode}
+            />
+          </div>
+        </div>
+
         {/* Mode de conversation */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
