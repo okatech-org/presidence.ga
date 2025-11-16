@@ -14,6 +14,7 @@ import commandCenterImage from "@/assets/command-center.jpg";
 import presidentialPalaceImage from "@/assets/presidential-palace.jpg";
 import collaborationImage from "@/assets/collaboration.jpg";
 import securityImage from "@/assets/security.jpg";
+import dataAnalysisImage from "@/assets/data-analysis.jpg";
 import emblemGabon from "@/assets/emblem_gabon.png";
 
 const Index = () => {
@@ -235,9 +236,11 @@ const Index = () => {
             </Card>
 
             <Card className="p-8 shadow-elegant hover:shadow-xl transition-smooth bg-gradient-to-br from-primary/5 to-secondary/5">
-              <div className="flex items-center justify-center h-64 mb-6">
-                <TrendingUp className="h-32 w-32 text-primary animate-pulse" />
-              </div>
+              <img 
+                src={dataAnalysisImage} 
+                alt="Analyse de données et décisions éclairées" 
+                className="w-full h-64 object-cover rounded-lg mb-6"
+              />
               <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
                 <CheckCircle className="h-8 w-8 text-success" />
                 Décisions Éclairées
