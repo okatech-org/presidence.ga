@@ -719,7 +719,18 @@ export default function PresidentSpace() {
           }}
         >
           <IAstedButtonFull
-            onSingleClick={() => {
+            onSingleClick={async () => {
+              // Activer le contexte audio lors du clic
+              try {
+                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                if (audioContext.state === 'suspended') {
+                  await audioContext.resume();
+                  console.log('[PresidentSpace] ✅ Contexte audio activé au clic');
+                }
+              } catch (error) {
+                console.error('[PresidentSpace] Erreur activation audio:', error);
+              }
+              
               if (voiceOnlyMode) {
                 // Mode vocal pur actif : fermer
                 setIastedOpen(false);
@@ -733,7 +744,18 @@ export default function PresidentSpace() {
                 setIastedOpen(true);
               }
             }}
-            onDoubleClick={() => {
+            onDoubleClick={async () => {
+              // Activer le contexte audio lors du double clic
+              try {
+                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                if (audioContext.state === 'suspended') {
+                  await audioContext.resume();
+                  console.log('[PresidentSpace] ✅ Contexte audio activé au double clic');
+                }
+              } catch (error) {
+                console.error('[PresidentSpace] Erreur activation audio:', error);
+              }
+              
               // Ouvrir le modal en mode texte
               setVoiceOnlyMode(false);
               setIastedOpen(true);

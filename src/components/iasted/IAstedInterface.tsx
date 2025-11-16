@@ -97,6 +97,49 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
     }
   }, [isOpen, isContinuousMode]);
 
+  // Démarrer automatiquement le mode vocal quand l'interface s'ouvre et que l'agent est configuré
+  useEffect(() => {
+    if (isOpen && elevenLabsAgentId && !isContinuousMode && !isConversationActive) {
+      console.log('[IAstedInterface] Démarrage automatique du mode vocal...');
+      
+      // Activer le contexte audio immédiatement (avant même de démarrer)
+      const activateAudioContext = async () => {
+        try {
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+            console.log('[IAstedInterface] ✅ Contexte audio activé pour démarrage');
+          }
+        } catch (error) {
+          console.error('[IAstedInterface] Erreur activation contexte audio:', error);
+        }
+      };
+      activateAudioContext();
+      
+      const timer = setTimeout(async () => {
+        setIsContinuousMode(true);
+        try {
+          console.log('[IAstedInterface] Appel startContinuousMode...');
+          await startContinuousMode();
+          console.log('[IAstedInterface] ✅ Mode vocal démarré');
+          toast({
+            title: "Mode vocal activé",
+            description: "iAsted vous écoute et va vous saluer...",
+          });
+        } catch (error) {
+          console.error('[IAstedInterface] ❌ Erreur démarrage automatique:', error);
+          setIsContinuousMode(false);
+          toast({
+            title: "Erreur",
+            description: error instanceof Error ? error.message : "Impossible de démarrer le mode vocal",
+            variant: "destructive",
+          });
+        }
+      }, 300); // Délai réduit pour démarrer plus vite
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, elevenLabsAgentId, isContinuousMode, isConversationActive, startContinuousMode, toast]);
+
   const scrollToBottom = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -170,7 +213,104 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   const handleVolumeChange = async (newVolume: number[]) => {
     const vol = newVolume[0];
     setVolume(vol);
-    await setAgentVolume(vol);
+    try {
+      await setAgentVolume(vol);
+      console.log('[IAstedInterface] Volume réglé à:', vol * 100 + '%');
+    } catch (error) {
+      console.error('[IAstedInterface] Erreur réglage volume:', error);
+    }
+  };
+
+  // Initialiser le volume par défaut quand la conversation démarre
+  useEffect(() => {
+    if (isConversationActive && volume > 0) {
+      console.log('[IAstedInterface] Initialisation du volume:', volume * 100 + '%');
+      setAgentVolume(volume);
+    }
+  }, [isConversationActive, volume]);
+
+  // Fonction pour activer manuellement l'audio (nécessaire pour certains navigateurs)
+  const activateAudio = async () => {
+    try {
+      console.log('[IAstedInterface] Activation manuelle de l\'audio...');
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log('[IAstedInterface] État contexte audio:', audioContext.state);
+      
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+        console.log('[IAstedInterface] ✅ Contexte audio activé manuellement');
+      }
+      
+      // Créer un son de test pour forcer l'activation
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      gainNode.gain.value = 0.001; // Très silencieux pour ne pas gêner
+      oscillator.frequency.value = 440;
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.01);
+      
+      // Si la conversation est active, régler à nouveau le volume
+      if (isConversationActive) {
+        try {
+          await setAgentVolume(0.8);
+          console.log('[IAstedInterface] Volume réglé après activation manuelle');
+        } catch (volError) {
+          console.error('[IAstedInterface] Erreur réglage volume:', volError);
+        }
+      }
+      
+      toast({
+        title: "Audio activé",
+        description: "Le son est maintenant activé. Vérifiez votre volume système.",
+      });
+    } catch (error) {
+      console.error('[IAstedInterface] Erreur activation audio manuelle:', error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible d'activer l'audio",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Fonction de diagnostic
+  const runDiagnostic = () => {
+    const diagnostics: string[] = [];
+    
+    // Vérifier l'agent
+    if (!elevenLabsAgentId) {
+      diagnostics.push('❌ Agent ElevenLabs non configuré');
+    } else {
+      diagnostics.push(`✅ Agent configuré: ${elevenLabsAgentId.substring(0, 8)}...`);
+    }
+    
+    // Vérifier le statut de la conversation
+    diagnostics.push(`📊 Statut conversation: ${conversationStatus}`);
+    diagnostics.push(`🔊 Agent parle: ${isAgentSpeaking ? 'Oui' : 'Non'}`);
+    diagnostics.push(`🎤 Mode actif: ${isConversationActive ? 'Oui' : 'Non'}`);
+    
+    // Vérifier le contexte audio
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      diagnostics.push(`🎵 Contexte audio: ${audioContext.state}`);
+    } catch (error) {
+      diagnostics.push(`❌ Erreur contexte audio: ${error}`);
+    }
+    
+    // Vérifier le volume
+    diagnostics.push(`🔉 Volume: ${Math.round(volume * 100)}%`);
+    
+    // Afficher dans la console et dans une toast
+    console.log('[IAstedInterface] 📋 Diagnostic:');
+    diagnostics.forEach(msg => console.log('  ' + msg));
+    
+    toast({
+      title: "Diagnostic iAsted",
+      description: diagnostics.join('\n'),
+      duration: 8000,
+    });
   };
 
   const streamChat = useCallback(async (userMessage: string) => {
@@ -371,18 +511,46 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
           </div>
           
           {isContinuousMode && (
-            <div className="flex items-center gap-3 pb-2">
-              <Volume2 className="w-4 h-4 text-muted-foreground" />
-              <Slider
-                value={[volume]}
-                onValueChange={handleVolumeChange}
-                max={1}
-                step={0.1}
-                className="flex-1"
-              />
-              <span className="text-xs text-muted-foreground w-10 text-right">
-                {Math.round(volume * 100)}%
-              </span>
+            <div className="space-y-2 pb-2">
+              <div className="flex items-center gap-3">
+                <Volume2 className="w-4 h-4 text-muted-foreground" />
+                <Slider
+                  value={[volume]}
+                  onValueChange={handleVolumeChange}
+                  max={1}
+                  step={0.1}
+                  className="flex-1"
+                />
+                <span className="text-xs text-muted-foreground w-10 text-right">
+                  {Math.round(volume * 100)}%
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={activateAudio}
+                    className="flex-1"
+                  >
+                    <Volume2 className="w-4 h-4 mr-2" />
+                    Activer l'audio
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={runDiagnostic}
+                    className="flex-1"
+                  >
+                    🔍 Diagnostic
+                  </Button>
+                </div>
+                {isConversationActive && !isAgentSpeaking && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    💡 Parlez pour déclencher une réponse, ou attendez quelques secondes pour le message de bienvenue
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>

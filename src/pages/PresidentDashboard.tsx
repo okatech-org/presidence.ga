@@ -103,8 +103,32 @@ const PresidentDashboard = () => {
         }}
       >
         <IAstedButtonFull
-          onSingleClick={() => setIastedOpen(true)}
-          onDoubleClick={() => setIastedOpen(true)}
+          onSingleClick={async () => {
+            // Activer le contexte audio lors du clic
+            try {
+              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+              if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+                console.log('[PresidentDashboard] ✅ Contexte audio activé au clic');
+              }
+            } catch (error) {
+              console.error('[PresidentDashboard] Erreur activation audio:', error);
+            }
+            setIastedOpen(true);
+          }}
+          onDoubleClick={async () => {
+            // Activer le contexte audio lors du double clic
+            try {
+              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+              if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+                console.log('[PresidentDashboard] ✅ Contexte audio activé au double clic');
+              }
+            } catch (error) {
+              console.error('[PresidentDashboard] Erreur activation audio:', error);
+            }
+            setIastedOpen(true);
+          }}
           size="lg"
           voiceListening={false}
           voiceSpeaking={false}

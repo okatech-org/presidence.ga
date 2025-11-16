@@ -133,8 +133,32 @@ const Dashboard = () => {
             
             <div className="flex justify-center">
               <IAstedButtonFull
-                onSingleClick={() => setIastedOpen(true)}
-                onDoubleClick={() => setIastedOpen(true)}
+                onSingleClick={async () => {
+                  // Activer le contexte audio lors du clic (nécessaire pour certains navigateurs)
+                  try {
+                    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                    if (audioContext.state === 'suspended') {
+                      await audioContext.resume();
+                      console.log('[Dashboard] ✅ Contexte audio activé au clic');
+                    }
+                  } catch (error) {
+                    console.error('[Dashboard] Erreur activation audio au clic:', error);
+                  }
+                  setIastedOpen(true);
+                }}
+                onDoubleClick={async () => {
+                  // Activer le contexte audio lors du double clic aussi
+                  try {
+                    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                    if (audioContext.state === 'suspended') {
+                      await audioContext.resume();
+                      console.log('[Dashboard] ✅ Contexte audio activé au double clic');
+                    }
+                  } catch (error) {
+                    console.error('[Dashboard] Erreur activation audio au double clic:', error);
+                  }
+                  setIastedOpen(true);
+                }}
                 size="lg"
                 voiceListening={false}
                 voiceSpeaking={false}
