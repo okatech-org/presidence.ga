@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      role_feedback: {
+        Row: {
+          created_at: string | null
+          id: string
+          implementation_suggestions: string | null
+          role_description: string
+          role_name: string
+          status: string | null
+          user_email: string
+          work_description: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          implementation_suggestions?: string | null
+          role_description: string
+          role_name: string
+          status?: string | null
+          user_email: string
+          work_description: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          implementation_suggestions?: string | null
+          role_description?: string
+          role_name?: string
+          status?: string | null
+          user_email?: string
+          work_description?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
