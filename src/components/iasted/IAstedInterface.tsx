@@ -1,11 +1,15 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mic, MicOff, Send, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Send, Loader2, MessageCircle, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
+import { useContinuousConversation } from '@/hooks/useContinuousConversation';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -16,24 +20,64 @@ interface IAstedInterfaceProps {
   isOpen: boolean;
   onClose: () => void;
   userRole?: 'president' | 'minister' | 'default';
+  elevenLabsAgentId?: string;
 }
 
 const IAstedInterface: React.FC<IAstedInterfaceProps> = ({ 
   isOpen, 
   onClose, 
-  userRole = 'default' 
+  userRole = 'default',
+  elevenLabsAgentId = 'your-agent-id-here' // À remplacer par l'ID réel de l'agent ElevenLabs
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isContinuousMode, setIsContinuousMode] = useState(false);
+  const [volume, setVolume] = useState(0.8);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isRecording, isTranscribing, startRecording, stopRecording } = useAudioRecording();
+  
+  const {
+    isActive: isConversationActive,
+    isSpeaking: isAgentSpeaking,
+    status: conversationStatus,
+    messages: conversationMessages,
+    startContinuousMode,
+    stopContinuousMode,
+    setVolume: setAgentVolume,
+  } = useContinuousConversation(userRole, elevenLabsAgentId);
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
+  };
+
+  // Synchroniser les messages du mode conversation avec l'état local
+  useEffect(() => {
+    if (isContinuousMode && conversationMessages.length > 0) {
+      setMessages(conversationMessages);
+      scrollToBottom();
+    }
+  }, [conversationMessages, isContinuousMode]);
+
+  // Gérer le changement de mode
+  const handleModeToggle = async (enabled: boolean) => {
+    setIsContinuousMode(enabled);
+    
+    if (enabled) {
+      await startContinuousMode();
+    } else {
+      await stopContinuousMode();
+    }
+  };
+
+  // Gérer le volume
+  const handleVolumeChange = async (newVolume: number[]) => {
+    const vol = newVolume[0];
+    setVolume(vol);
+    await setAgentVolume(vol);
   };
 
   const streamChat = useCallback(async (userMessage: string) => {
@@ -151,6 +195,15 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   };
 
   const toggleVoice = async () => {
+    // Mode conversation continue actif : ne pas gérer le micro manuellement
+    if (isContinuousMode) {
+      toast({
+        title: "Mode conversation actif",
+        description: "Le micro est géré automatiquement en mode conversation",
+      });
+      return;
+    }
+
     if (isRecording) {
       try {
         const transcribedText = await stopRecording();
@@ -185,6 +238,55 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
           <p className="text-sm text-muted-foreground mt-1">
             Intelligence Artificielle Stratégique de Traitement et d'Évaluation des Données
           </p>
+        </div>
+
+        {/* Mode Controls */}
+        <div className="px-6 pt-4 pb-2 border-b border-border bg-muted/30">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <Switch
+                id="continuous-mode"
+                checked={isContinuousMode}
+                onCheckedChange={handleModeToggle}
+                disabled={isLoading || isRecording}
+              />
+              <Label htmlFor="continuous-mode" className="flex items-center gap-2 cursor-pointer">
+                <MessageCircle className="w-4 h-4" />
+                <span className="font-medium">Mode Conversation Continue</span>
+              </Label>
+            </div>
+            {isConversationActive && (
+              <div className="flex items-center gap-2 text-sm">
+                {isAgentSpeaking ? (
+                  <span className="flex items-center gap-2 text-primary animate-pulse">
+                    <Volume2 className="w-4 h-4" />
+                    iAsted parle...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <Mic className="w-4 h-4" />
+                    En écoute
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {isContinuousMode && (
+            <div className="flex items-center gap-3 pb-2">
+              <Volume2 className="w-4 h-4 text-muted-foreground" />
+              <Slider
+                value={[volume]}
+                onValueChange={handleVolumeChange}
+                max={1}
+                step={0.1}
+                className="flex-1"
+              />
+              <span className="text-xs text-muted-foreground w-10 text-right">
+                {Math.round(volume * 100)}%
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Messages */}
@@ -232,24 +334,25 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
           </div>
         </ScrollArea>
 
-        {/* Input */}
-        <div className="p-6 border-t border-border bg-background">
-          <div className="flex gap-2">
-            <Button
-              variant={isRecording ? "default" : "outline"}
-              size="icon"
-              onClick={toggleVoice}
-              disabled={isLoading || isTranscribing}
-              className={isRecording ? "animate-pulse" : ""}
-            >
-              {isTranscribing ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : isRecording ? (
-                <Mic className="w-5 h-5" />
-              ) : (
-                <MicOff className="w-5 h-5" />
-              )}
-            </Button>
+        {/* Input - Désactivé en mode conversation */}
+        {!isContinuousMode && (
+          <div className="p-6 border-t border-border bg-background">
+            <div className="flex gap-2">
+              <Button
+                variant={isRecording ? "default" : "outline"}
+                size="icon"
+                onClick={toggleVoice}
+                disabled={isLoading || isTranscribing}
+                className={isRecording ? "animate-pulse" : ""}
+              >
+                {isTranscribing ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : isRecording ? (
+                  <Mic className="w-5 h-5" />
+                ) : (
+                  <MicOff className="w-5 h-5" />
+                )}
+              </Button>
             
             <Textarea
               value={input}
@@ -274,15 +377,27 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
             </Button>
           </div>
           
-          <p className="text-xs text-muted-foreground mt-2">
-            {isRecording 
-              ? "🎙️ Enregistrement en cours - Cliquez à nouveau pour terminer" 
-              : isTranscribing
-              ? "⏳ Transcription en cours..."
-              : "Cliquez sur le micro pour parler, ou tapez votre message (Entrée pour envoyer)"
-            }
-          </p>
-        </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {isRecording 
+                ? "🎙️ Enregistrement en cours - Cliquez à nouveau pour terminer" 
+                : isTranscribing
+                ? "⏳ Transcription en cours..."
+                : "Cliquez sur le micro pour parler, ou tapez votre message (Entrée pour envoyer)"
+              }
+            </p>
+          </div>
+        )}
+        
+        {isContinuousMode && (
+          <div className="p-6 border-t border-border bg-muted/50">
+            <p className="text-sm text-center text-muted-foreground">
+              {isAgentSpeaking 
+                ? "🔊 iAsted vous répond..." 
+                : "🎤 Parlez librement, iAsted vous écoute en continu"
+              }
+            </p>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

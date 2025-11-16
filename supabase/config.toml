@@ -1,1 +1,10 @@
 project_id = "bpaouvtlexhtschufshd"
+
+[functions.chat-iasted]
+verify_jwt = false
+
+[functions.transcribe-audio]
+verify_jwt = false
+
+[functions.elevenlabs-signed-url]
+verify_jwt = false
