@@ -18,9 +18,17 @@ export const VoiceButton: React.FC<VoiceButtonProps> = ({
   onToggle,
   className,
 }) => {
+  const handleClick = () => {
+    console.log('[VoiceButton] Bouton cliqué!');
+    console.log('[VoiceButton] isActive:', isActive);
+    console.log('[VoiceButton] isListening:', isListening);
+    console.log('[VoiceButton] isSpeaking:', isSpeaking);
+    onToggle();
+  };
+
   return (
     <Button
-      onClick={onToggle}
+      onClick={handleClick}
       variant="default"
       size="lg"
       className={cn(
