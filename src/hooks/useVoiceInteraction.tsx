@@ -171,6 +171,12 @@ export const useVoiceInteraction = (settings: VoiceSettings) => {
     await logAnalytics('voice_processing');
 
     try {
+      // Get user session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       // Transcription avec Whisper via edge function
       const formData = new FormData();
       formData.append('file', audioBlob, 'audio.webm');
@@ -178,7 +184,8 @@ export const useVoiceInteraction = (settings: VoiceSettings) => {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
         body: formData,
       });
