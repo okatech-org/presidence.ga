@@ -24,6 +24,7 @@ interface IAstedInterfaceProps {
   userRole?: 'president' | 'minister' | 'default';
   elevenLabsAgentId?: string;
   onSpeakingChange?: (isSpeaking: boolean) => void;
+  activateVoiceMode?: boolean; // Prop pour activer le mode vocal depuis l'extérieur
 }
 
 const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
@@ -31,7 +32,8 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   onClose, 
   userRole = 'default',
   elevenLabsAgentId: elevenLabsAgentIdProp,
-  onSpeakingChange
+  onSpeakingChange,
+  activateVoiceMode = false
 }) => {
   const [elevenLabsAgentId, setElevenLabsAgentId] = useState<string | undefined>(elevenLabsAgentIdProp);
 
@@ -138,6 +140,13 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
       });
     }
   };
+
+  // Activer le mode vocal automatiquement si demandé (après la définition de handleModeToggle)
+  useEffect(() => {
+    if (activateVoiceMode && !isContinuousMode && elevenLabsAgentId) {
+      handleModeToggle(true);
+    }
+  }, [activateVoiceMode, isContinuousMode, elevenLabsAgentId]);
 
   // Gérer le volume
   const handleVolumeChange = async (newVolume: number[]) => {
