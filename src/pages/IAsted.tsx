@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useVoiceInteraction, VoiceSettings as VoiceSettingsType } from '@/hooks/useVoiceInteraction';
+import { DashboardLayout } from "@/components/DashboardLayout";
 import IAstedButtonFull from '@/components/iasted/IAstedButtonFull';
 import IAstedListeningOverlay from '@/components/iasted/IAstedListeningOverlay';
 import IAstedVoiceControls from '@/components/iasted/IAstedVoiceControls';
@@ -43,7 +44,8 @@ const IAsted = () => {
   }, [handleInteraction]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-background to-secondary/20 flex items-center justify-center p-4">
+    <DashboardLayout>
+      <div className="fixed inset-0 bg-gradient-to-br from-background to-secondary/20 flex items-center justify-center p-4">
       {/* Listening Overlay */}
       <IAstedListeningOverlay voiceState={voiceState} audioLevel={audioLevel} />
 
@@ -102,7 +104,8 @@ const IAsted = () => {
         voiceSettings={voiceSettings}
         onSettingsChange={setVoiceSettings}
       />
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
