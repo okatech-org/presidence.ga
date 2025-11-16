@@ -312,7 +312,7 @@ export default function PresidentSpace() {
   };
 
   return (
-    <div
+      <div
       style={{
         minHeight: "100vh",
         backgroundColor: "#F7F8FA",
@@ -847,26 +847,25 @@ export default function PresidentSpace() {
             </>
           )}
         </main>
+        {/* Bouton iAsted - visible sur toutes les pages de l'espace Président */}
+        <div
+          style={{
+            position: "fixed",
+            right: 24,
+            bottom: 24,
+            zIndex: 200,
+          }}
+        >
+          <IAstedButtonFull
+            onClick={() => navigate("/iasted")}
+            size="lg"
+            voiceListening={false}
+            voiceSpeaking={false}
+            voiceProcessing={false}
+            isInterfaceOpen={false}
+          />
+        </div>
       </div>
-    </div>
-    {/* Bouton iAsted – visible sur toutes les pages de l’espace Président */}
-    <div
-      style={{
-        position: "fixed",
-        right: 24,
-        bottom: 24,
-        zIndex: 200,
-      }}
-    >
-      <IAstedButtonFull
-        onClick={() => navigate("/iasted")}
-        size="lg"
-        voiceListening={false}
-        voiceSpeaking={false}
-        voiceProcessing={false}
-        isInterfaceOpen={false}
-      />
-    </div>
   );
 }
 
