@@ -7,6 +7,18 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleFeedbackModal } from "@/components/RoleFeedbackModal";
 import emblemGabon from "@/assets/emblem_gabon.png";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 interface DemoAccount {
   role: string;
@@ -24,6 +36,9 @@ const Demo = () => {
   const [loadingAccount, setLoadingAccount] = useState<string | null>(null);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<{ role: string; email: string } | null>(null);
+  const [adminClicks, setAdminClicks] = useState(0);
+  const [showAdminDialog, setShowAdminDialog] = useState(false);
+  const [adminCode, setAdminCode] = useState("");
 
   const demoAccounts: DemoAccount[] = [
     {
@@ -150,6 +165,45 @@ const Demo = () => {
     setFeedbackModalOpen(true);
   };
 
+  const handleAdminClick = () => {
+    const newClicks = adminClicks + 1;
+    setAdminClicks(newClicks);
+    
+    if (newClicks === 2) {
+      setShowAdminDialog(true);
+      setAdminClicks(0);
+    }
+    
+    // Reset clicks after 2 seconds if not reaching 2 clicks
+    setTimeout(() => {
+      setAdminClicks(0);
+    }, 2000);
+  };
+
+  const handleAdminCodeChange = (value: string) => {
+    setAdminCode(value);
+    
+    if (value.length === 6) {
+      if (value === "011282") {
+        toast({
+          title: "Accès autorisé",
+          description: "Bienvenue Administrateur Système",
+        });
+        setShowAdminDialog(false);
+        setAdminCode("");
+        // TODO: Navigate to admin page or show admin features
+        // navigate("/admin");
+      } else {
+        toast({
+          title: "Code incorrect",
+          description: "Le code saisi est invalide",
+          variant: "destructive",
+        });
+        setAdminCode("");
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/5">
       {/* Header */}
@@ -245,7 +299,17 @@ const Demo = () => {
 
         {/* Help Section */}
         <div className="max-w-4xl mx-auto mt-12 p-6 bg-card rounded-lg border shadow-sm">
-          <h3 className="text-xl font-bold mb-4">Comment tester ?</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold">Comment tester ?</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleAdminClick}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Lock className="h-5 w-5" />
+            </Button>
+          </div>
           <ol className="space-y-3 text-muted-foreground">
             <li className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
@@ -284,6 +348,37 @@ const Demo = () => {
           userEmail={selectedAccount.email}
         />
       )}
+
+      {/* Admin Access Dialog */}
+      <Dialog open={showAdminDialog} onOpenChange={setShowAdminDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Accès Administrateur Système
+            </DialogTitle>
+            <DialogDescription>
+              Entrez le code à 6 chiffres pour accéder à l'administration
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-6">
+            <InputOTP
+              maxLength={6}
+              value={adminCode}
+              onChange={handleAdminCodeChange}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
