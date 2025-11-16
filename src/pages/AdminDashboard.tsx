@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Shield, FileText, Download, Eye, Paperclip } from "lucide-react";
+import { ArrowLeft, Shield, FileText, Download, Eye, Paperclip, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import emblemGabon from "@/assets/emblem_gabon.png";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { FeedbackDocumentsViewer } from "@/components/FeedbackDocumentsViewer";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Feedback {
   id: string;
@@ -75,6 +77,109 @@ const AdminDashboard = () => {
   const handleViewDocuments = (feedback: Feedback) => {
     setSelectedFeedback(feedback);
     setShowDocuments(true);
+  };
+
+  const exportToCSV = () => {
+    try {
+      // Prepare CSV headers
+      const headers = [
+        "Date",
+        "Rôle",
+        "Email",
+        "Description du rôle",
+        "Description du travail",
+        "Suggestions",
+        "Statut",
+        "Documents"
+      ];
+
+      // Prepare CSV rows
+      const rows = feedbacks.map(feedback => [
+        new Date(feedback.created_at).toLocaleDateString("fr-FR"),
+        feedback.role_name,
+        feedback.user_email,
+        feedback.role_description.replace(/\n/g, " "),
+        feedback.work_description.replace(/\n/g, " "),
+        (feedback.implementation_suggestions || "-").replace(/\n/g, " "),
+        feedback.status || "nouveau",
+        feedback.document_paths?.length || 0
+      ]);
+
+      // Create CSV content
+      const csvContent = [
+        headers.join(","),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+      ].join("\n");
+
+      // Create blob and download
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `feedbacks_${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Export réussi",
+        description: "Les feedbacks ont été exportés en CSV",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'exporter en CSV",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+
+      // Add title
+      doc.setFontSize(18);
+      doc.text("Feedbacks des responsables", 14, 20);
+
+      doc.setFontSize(11);
+      doc.text(`Généré le ${new Date().toLocaleDateString("fr-FR")}`, 14, 28);
+
+      // Prepare table data
+      const tableData = feedbacks.map(feedback => [
+        new Date(feedback.created_at).toLocaleDateString("fr-FR"),
+        feedback.role_name,
+        feedback.user_email,
+        feedback.role_description.substring(0, 50) + "...",
+        feedback.work_description.substring(0, 50) + "...",
+        (feedback.implementation_suggestions || "-").substring(0, 50),
+        feedback.status || "nouveau",
+      ]);
+
+      // Generate table
+      autoTable(doc, {
+        head: [["Date", "Rôle", "Email", "Description rôle", "Description travail", "Suggestions", "Statut"]],
+        body: tableData,
+        startY: 35,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [66, 139, 202] },
+      });
+
+      // Save PDF
+      doc.save(`feedbacks_${new Date().toISOString().split("T")[0]}.pdf`);
+
+      toast({
+        title: "Export réussi",
+        description: "Les feedbacks ont été exportés en PDF",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'exporter en PDF",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -157,7 +262,27 @@ const AdminDashboard = () => {
 
         {/* Feedbacks Table */}
         <Card className="p-6">
-          <h2 className="text-2xl font-bold mb-6">Feedbacks des responsables</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Feedbacks des responsables</h2>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={exportToCSV}
+                className="gap-2"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Exporter CSV
+              </Button>
+              <Button
+                variant="outline"
+                onClick={exportToPDF}
+                className="gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Exporter PDF
+              </Button>
+            </div>
+          </div>
           {loading ? (
             <p className="text-center text-muted-foreground py-8">Chargement...</p>
           ) : feedbacks.length === 0 ? (
