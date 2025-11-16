@@ -2,37 +2,23 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import {
-  AlertTriangle,
-  TrendingUp,
-  Users,
-  FileText,
-  Activity,
-  LogOut,
-  Mail,
-  Phone,
-  FileSignature,
-  Bell,
-  Scale,
-  Calendar,
-  Shield,
-  Building2,
-  Globe,
-  Gavel,
-  BookOpen,
-} from "lucide-react";
+import { Activity, LogOut } from "lucide-react";
 import emblemGabon from "@/assets/emblem_gabon.png";
-import QuadrantAlertes from "@/components/president/QuadrantAlertes";
-import QuadrantPilotage from "@/components/president/QuadrantPilotage";
-import QuadrantSupervision from "@/components/president/QuadrantSupervision";
-import QuadrantAgenda from "@/components/president/QuadrantAgenda";
-import BarreActionsPresidentielles from "@/components/president/BarreActionsPresidentielles";
+import { usePresidentRole } from "@/hooks/usePresidentRole";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { VueEnsemble } from "@/components/president/VueEnsemble";
+import { OpinionPublique } from "@/components/president/OpinionPublique";
+import { SituationsCritiques } from "@/components/president/SituationsCritiques";
+import { VisionNationale } from "@/components/president/VisionNationale";
+import { ModuleXR7 } from "@/components/president/ModuleXR7";
+import { useToast } from "@/hooks/use-toast";
 
 const PresidentDashboard = () => {
   const navigate = useNavigate();
+  const { isPresident, loading: roleLoading } = usePresidentRole();
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     checkUser();
@@ -42,24 +28,40 @@ const PresidentDashboard = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth");
+      return;
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!roleLoading && !isPresident && !loading) {
+      toast({
+        title: "Accès refusé",
+        description: "Vous n'avez pas les droits d'accès présidentiel",
+        variant: "destructive"
+      });
+      navigate("/dashboard");
+    }
+  }, [isPresident, roleLoading, loading, navigate, toast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Activity className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Chargement...</p>
+          <p className="text-muted-foreground">Vérification des accès...</p>
         </div>
       </div>
     );
+  }
+
+  if (!isPresident) {
+    return null;
   }
 
   return (
@@ -99,29 +101,42 @@ const PresidentDashboard = () => {
       <main className="container mx-auto px-6 py-6">
         {/* Titre du Tableau de Bord Stratégique */}
         <div className="mb-6">
-          <h2 className="text-3xl font-bold mb-2">Tableau de Bord Stratégique</h2>
+          <h2 className="text-3xl font-bold mb-2">Console de Pilotage Stratégique</h2>
           <p className="text-muted-foreground text-lg">
-            Le Gabon en un coup d'œil - Temps réel
+            Tolérance Zéro, Transparence Totale - Interface de Commandement Présidentielle
           </p>
         </div>
 
-        {/* Les 4 Quadrants */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Quadrant 1 : ALERTES PRIORITAIRES */}
-          <QuadrantAlertes />
+        {/* Les 4 Piliers de l'Interface Présidentielle */}
+        <Tabs defaultValue="vue-ensemble" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="vue-ensemble">Vue d'Ensemble</TabsTrigger>
+            <TabsTrigger value="opinion-publique">Opinion Publique</TabsTrigger>
+            <TabsTrigger value="situations-critiques">Situations Critiques</TabsTrigger>
+            <TabsTrigger value="vision-nationale">Vision Nationale</TabsTrigger>
+          </TabsList>
 
-          {/* Quadrant 2 : PILOTAGE GOUVERNEMENTAL */}
-          <QuadrantPilotage />
+          <TabsContent value="vue-ensemble" className="space-y-6">
+            <VueEnsemble />
+          </TabsContent>
 
-          {/* Quadrant 3 : SUPERVISION INSTITUTIONNELLE */}
-          <QuadrantSupervision />
+          <TabsContent value="opinion-publique" className="space-y-6">
+            <OpinionPublique />
+          </TabsContent>
 
-          {/* Quadrant 4 : AGENDA & OPINION */}
-          <QuadrantAgenda />
+          <TabsContent value="situations-critiques" className="space-y-6">
+            <SituationsCritiques />
+          </TabsContent>
+
+          <TabsContent value="vision-nationale" className="space-y-6">
+            <VisionNationale />
+          </TabsContent>
+        </Tabs>
+
+        {/* Module XR-7 - PROTOCOLE D'ÉTAT (Toujours visible) */}
+        <div className="mt-8">
+          <ModuleXR7 />
         </div>
-
-        {/* Barre d'Actions Présidentielles */}
-        <BarreActionsPresidentielles />
       </main>
       </div>
     </DashboardLayout>

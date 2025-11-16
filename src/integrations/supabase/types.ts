@@ -126,6 +126,149 @@ export type Database = {
         }
         Relationships: []
       }
+      institution_performance: {
+        Row: {
+          cas_traites: number | null
+          created_at: string | null
+          id: string
+          institution_name: string
+          ministere: string | null
+          periode_debut: string | null
+          periode_fin: string | null
+          score_performance: number | null
+          taux_resolution: number | null
+        }
+        Insert: {
+          cas_traites?: number | null
+          created_at?: string | null
+          id?: string
+          institution_name: string
+          ministere?: string | null
+          periode_debut?: string | null
+          periode_fin?: string | null
+          score_performance?: number | null
+          taux_resolution?: number | null
+        }
+        Update: {
+          cas_traites?: number | null
+          created_at?: string | null
+          id?: string
+          institution_name?: string
+          ministere?: string | null
+          periode_debut?: string | null
+          periode_fin?: string | null
+          score_performance?: number | null
+          taux_resolution?: number | null
+        }
+        Relationships: []
+      }
+      national_kpis: {
+        Row: {
+          cas_critiques: number | null
+          created_at: string | null
+          date: string
+          fonds_recuperes_fcfa: number | null
+          id: string
+          indice_transparence: number | null
+          satisfaction_publique: number | null
+          signalements_totaux: number | null
+          taux_resolution: number | null
+        }
+        Insert: {
+          cas_critiques?: number | null
+          created_at?: string | null
+          date?: string
+          fonds_recuperes_fcfa?: number | null
+          id?: string
+          indice_transparence?: number | null
+          satisfaction_publique?: number | null
+          signalements_totaux?: number | null
+          taux_resolution?: number | null
+        }
+        Update: {
+          cas_critiques?: number | null
+          created_at?: string | null
+          date?: string
+          fonds_recuperes_fcfa?: number | null
+          id?: string
+          indice_transparence?: number | null
+          satisfaction_publique?: number | null
+          signalements_totaux?: number | null
+          taux_resolution?: number | null
+        }
+        Relationships: []
+      }
+      opinion_publique: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          preoccupations: Json | null
+          satisfaction_globale: number | null
+          sentiment_insatisfaits: number | null
+          sentiment_neutres: number | null
+          sentiment_satisfaits: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          preoccupations?: Json | null
+          satisfaction_globale?: number | null
+          sentiment_insatisfaits?: number | null
+          sentiment_neutres?: number | null
+          sentiment_satisfaits?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          preoccupations?: Json | null
+          satisfaction_globale?: number | null
+          sentiment_insatisfaits?: number | null
+          sentiment_neutres?: number | null
+          sentiment_satisfaits?: number | null
+        }
+        Relationships: []
+      }
+      presidential_decisions: {
+        Row: {
+          created_at: string | null
+          decision_data: Json | null
+          decision_type: string
+          id: string
+          motif: string | null
+          president_user_id: string
+          signalement_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          decision_data?: Json | null
+          decision_type: string
+          id?: string
+          motif?: string | null
+          president_user_id: string
+          signalement_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          decision_data?: Json | null
+          decision_type?: string
+          id?: string
+          motif?: string | null
+          president_user_id?: string
+          signalement_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presidential_decisions_signalement_id_fkey"
+            columns: ["signalement_id"]
+            isOneToOne: false
+            referencedRelation: "signalements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_feedback: {
         Row: {
           created_at: string | null
@@ -162,6 +305,72 @@ export type Database = {
         }
         Relationships: []
       }
+      signalements: {
+        Row: {
+          analyse_ia: string | null
+          categorie: string
+          code: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          grade_fonctionnaire: string | null
+          id: string
+          implique_haut_fonctionnaire: boolean | null
+          montant_fcfa: number | null
+          preuves: Json | null
+          province: string | null
+          recommandation_ia: string | null
+          score_priorite_ia: number | null
+          secteur: string | null
+          statut: string | null
+          temoins: Json | null
+          titre: string
+          updated_at: string | null
+        }
+        Insert: {
+          analyse_ia?: string | null
+          categorie: string
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          grade_fonctionnaire?: string | null
+          id?: string
+          implique_haut_fonctionnaire?: boolean | null
+          montant_fcfa?: number | null
+          preuves?: Json | null
+          province?: string | null
+          recommandation_ia?: string | null
+          score_priorite_ia?: number | null
+          secteur?: string | null
+          statut?: string | null
+          temoins?: Json | null
+          titre: string
+          updated_at?: string | null
+        }
+        Update: {
+          analyse_ia?: string | null
+          categorie?: string
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          grade_fonctionnaire?: string | null
+          id?: string
+          implique_haut_fonctionnaire?: boolean | null
+          montant_fcfa?: number | null
+          preuves?: Json | null
+          province?: string | null
+          recommandation_ia?: string | null
+          score_priorite_ia?: number | null
+          secteur?: string | null
+          statut?: string | null
+          temoins?: Json | null
+          titre?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string
@@ -189,6 +398,27 @@ export type Database = {
           voice_id?: string | null
           voice_silence_duration?: number | null
           voice_silence_threshold?: number | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -236,10 +466,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_president: { Args: { user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "president" | "dgss" | "dgr" | "minister" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -366,6 +603,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "president", "dgss", "dgr", "minister", "user"],
+    },
   },
 } as const
