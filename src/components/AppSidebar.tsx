@@ -135,43 +135,6 @@ export function AppSidebar() {
       <SidebarContent className="px-4 py-4 space-y-2">
         {isPresident ? (
           <>
-            {/* Commandement */}
-            <SidebarGroup className="px-0 space-y-1">
-              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground px-2 mb-1">
-                Commandement
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="space-y-1">
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Console Présidentielle"
-                      isActive={isActive("/president")}
-                      className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
-                    >
-                      <NavLink 
-                        to="/president" 
-                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
-                          isActive("/president") 
-                            ? "bg-background shadow-neo-inset" 
-                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
-                        }`}
-                      >
-                        <div className={`p-2 rounded-full transition-all ${isActive("/president") ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
-                          <Shield className="h-4 w-4 shrink-0 text-primary" />
-                        </div>
-                        {open && (
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <span className="text-sm font-semibold truncate text-foreground">Console Présidentielle</span>
-                          </div>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
             {/* Alertes Urgentes */}
             <SidebarGroup className="px-0 space-y-1">
               <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-destructive px-2 mb-1">
