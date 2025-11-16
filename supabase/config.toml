@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.speech-to-text]
 verify_jwt = false
+
+[functions.openai-realtime]
+verify_jwt = false

@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Volume2, User, Bot, Settings as SettingsIcon, Loader2 } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
 import { VoiceSettings } from './VoiceSettings';
-import { useElevenLabsAgent } from '@/hooks/useElevenLabsAgent';
-import { useIastedAgent } from '@/hooks/useIastedAgent';
+import { useOpenAIRealtime } from '@/hooks/useOpenAIRealtime';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -28,25 +27,20 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   onVoiceModeChange,
 }, ref) => {
   const [pushToTalk, setPushToTalk] = useState(false);
-  const { config: agentConfig, isLoading: isLoadingAgent } = useIastedAgent();
   
   const {
     isConnected,
     isSpeaking,
-    isLoading,
-    conversationStarted,
+    isListening,
     startConversation,
     stopConversation,
-    setVolume,
-  } = useElevenLabsAgent({
-    agentId: agentConfig?.agentId || null,
+  } = useOpenAIRealtime({
     userRole,
     onSpeakingChange,
     autoStart: autoActivate,
   });
 
-  const isActive = conversationStarted;
-  const isListening = isConnected && !isSpeaking;
+  const isActive = isConnected;
 
   // Notifier le parent quand le mode vocal change
   useEffect(() => {
@@ -59,12 +53,8 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   }));
 
   const handleToggle = async () => {
-    if (!agentConfig?.agentId) {
-      return;
-    }
-    
     if (isActive) {
-      await stopConversation();
+      stopConversation();
     } else {
       await startConversation();
     }
@@ -73,33 +63,6 @@ export const VoiceConversationPanel = forwardRef<VoiceConversationHandle, VoiceC
   const handleSettingsChange = (settings: { pushToTalk: boolean }) => {
     setPushToTalk(settings.pushToTalk);
   };
-
-  if (isLoadingAgent || isLoading) {
-    return (
-      <Card className="w-full border-0 shadow-none">
-        <CardContent className="flex items-center justify-center py-8 gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          <p className="text-muted-foreground">Initialisation de l'agent iAsted...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!agentConfig?.agentId) {
-    return (
-      <Card className="w-full border-0 shadow-none">
-        <CardContent className="flex flex-col items-center justify-center py-8 gap-3">
-          <p className="text-muted-foreground">Agent iAsted non configuré</p>
-          <Button 
-            variant="outline" 
-            onClick={() => window.location.href = '/admin?tab=iasted'}
-          >
-            Configurer l'agent
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Tabs defaultValue="conversation" className="w-full">
