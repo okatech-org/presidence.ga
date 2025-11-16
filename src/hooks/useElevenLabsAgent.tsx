@@ -1,4 +1,4 @@
-import { useConversation } from '@11labs/react';
+import { useConversation } from '@elevenlabs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';

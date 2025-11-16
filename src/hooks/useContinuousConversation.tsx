@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useConversation } from '@11labs/react';
+import { useConversation } from '@elevenlabs/react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -97,7 +97,7 @@ Répondez de manière claire et professionnelle.`;
     onMessage: (message) => {
       console.log('Message received:', message);
       
-      // L'API @11labs/react envoie des messages avec source: 'user' ou 'ai'
+      // L'API @elevenlabs/react envoie des messages avec source: 'user' ou 'ai'
       if (message.source === 'user' && message.message) {
         setMessages(prev => [...prev, { role: 'user', content: message.message }]);
       } else if (message.source === 'ai' && message.message) {
