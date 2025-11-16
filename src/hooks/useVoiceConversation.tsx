@@ -111,8 +111,9 @@ export const useVoiceConversation = ({ userRole, onSpeakingChange, pushToTalk = 
       const userMessage = transcription.text;
       console.log('Transcription:', userMessage);
 
-      // Ajouter le message utilisateur
-      const updatedMessages = [...messages, { role: 'user', content: userMessage }];
+      // Ajouter le message utilisateur avec type explicite
+      const newUserMessage: Message = { role: 'user' as const, content: userMessage };
+      const updatedMessages: Message[] = [...messages, newUserMessage];
       setMessages(updatedMessages);
 
       // Sauvegarder le message en DB si on a une session
