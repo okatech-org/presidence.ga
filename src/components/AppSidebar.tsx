@@ -3,16 +3,12 @@ import {
   Shield, 
   User, 
   Mic, 
-  ChevronRight,
   LayoutDashboard,
   Users,
   AlertTriangle,
   Target,
-  FileText,
-  Bell,
   Eye,
-  TrendingUp,
-  Scale
+  TrendingUp
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -33,36 +29,19 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-// Menu pour non-présidents (utilisateurs standards)
+// Menu pour non-présidents
 const standardMenuItems = [
   { 
-    title: "Tableau de Bord", 
+    title: "Tableau de bord", 
     url: "/dashboard", 
-    icon: Home,
+    icon: LayoutDashboard,
     description: "Vue d'ensemble"
   },
   { 
-    title: "Administration", 
-    url: "/admin-dashboard", 
-    icon: User,
-    description: "Gestion admin"
-  },
-  { 
-    title: "iAsted", 
+    title: "iAsted - Assistant IA", 
     url: "/iasted", 
     icon: Mic,
-    description: "Assistant vocal"
-  },
-];
-
-// Menu Président - Console de Commandement
-const consolePresidentielle = [
-  { 
-    title: "Console Présidentielle", 
-    url: "/president",
-    icon: Shield,
-    description: "Commandement centralisé",
-    badge: null
+    description: "Intelligence artificielle"
   },
 ];
 
@@ -72,40 +51,37 @@ const pilotageStrategique = [
     title: "Vue d'Ensemble", 
     hash: "#vue-ensemble",
     icon: LayoutDashboard,
-    description: "KPIs & Situation Nationale",
-    badge: null
+    description: "KPIs & Situation"
   },
   { 
     title: "Opinion Publique", 
     hash: "#opinion-publique",
     icon: Users,
-    description: "Pouls du Pays",
-    badge: null
+    description: "Pouls du Pays"
   },
   { 
     title: "Vision Nationale", 
     hash: "#vision-nationale",
     icon: Target,
-    description: "Gabon Émergent 2025",
-    badge: null
+    description: "Gabon 2025"
   },
 ];
 
-// Actions & Décisions Urgentes
+// Actions Urgentes
 const actionsUrgentes = [
   { 
     title: "Situations Critiques", 
     hash: "#situations-critiques",
     icon: AlertTriangle,
-    description: "23 Arbitrages requis",
-    badge: { text: "23", variant: "destructive" as const }
+    description: "Arbitrages requis",
+    badge: "23"
   },
   { 
     title: "Protocole XR-7", 
     hash: "#module-xr7",
     icon: Shield,
     description: "Urgence Nationale",
-    badge: { text: "CRITIQUE", variant: "destructive" as const }
+    badge: "CRITIQUE"
   },
 ];
 
@@ -115,40 +91,24 @@ const controleInstitutions = [
     title: "Performance Institutions", 
     hash: "#institutions",
     icon: TrendingUp,
-    description: "Conseil Numérique",
-    badge: null
+    description: "Conseil Numérique"
   },
   { 
     title: "Audit Trail", 
     hash: "#audit",
     icon: Eye,
-    description: "Traçabilité Complète",
-    badge: null
+    description: "Traçabilité"
   },
 ];
 
-// Outils de Décision
+// Outils
 const outilsDecision = [
   { 
     title: "iAsted", 
     url: "/iasted",
     icon: Mic,
-    description: "Assistant IA Stratégique",
-    badge: { text: "IA", variant: "default" as const }
-  },
-  { 
-    title: "Rapports Officiels", 
-    hash: "#rapports",
-    icon: FileText,
-    description: "Documents & Analyses",
-    badge: null
-  },
-  { 
-    title: "Cadre Juridique", 
-    hash: "#juridique",
-    icon: Scale,
-    description: "Références Légales",
-    badge: null
+    description: "Assistant IA",
+    badge: "IA"
   },
 ];
 
@@ -157,7 +117,7 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const currentHash = location.hash;
-  const { isPresident, loading } = usePresidentRole();
+  const { isPresident } = usePresidentRole();
 
   const isActive = (path: string) => currentPath === path || currentHash === path;
 
@@ -169,113 +129,111 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border/40 p-4">
-        <div className="flex items-center gap-3">
-          <div className="p-1.5 rounded-lg bg-primary/10">
+    <Sidebar
+      collapsible="icon"
+      className="rounded-3xl shadow-neo-lg bg-card border-0 overflow-hidden"
+    >
+      {/* Header */}
+      <SidebarHeader className="p-5">
+        <div className="flex items-center gap-3 p-3 rounded-2xl bg-background shadow-neo-sm">
+          <div className="p-2.5 rounded-full bg-success/10 shadow-neo-inset">
             <img 
               src={emblemGabon} 
-              alt="Emblème" 
-              className="h-8 w-8 object-contain"
+              alt="République Gabonaise" 
+              className="h-7 w-7 object-contain"
             />
           </div>
           {open && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold">Présidence</span>
+              <span className="font-bold text-sm text-foreground">Présidence</span>
               <span className="text-xs text-muted-foreground">République Gabonaise</span>
             </div>
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-4 py-3 space-y-4">
         {isPresident ? (
           <>
-            {/* Console Présidentielle */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Commandement</SidebarGroupLabel>
+            {/* Commandement */}
+            <SidebarGroup className="px-0 space-y-2">
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground px-2 mb-2">
+                Commandement
+              </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {consolePresidentielle.map((item) => (
-                    <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton 
-                        asChild 
-                        tooltip={item.title}
-                        isActive={isActive(item.url)}
-                      >
-                        <NavLink 
-                          to={item.url} 
-                          className="flex items-center gap-3 w-full"
-                        >
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <span className="text-sm font-medium truncate">{item.title}</span>
-                            {open && (
-                              <span className="text-xs text-muted-foreground truncate">
-                                {item.description}
-                              </span>
-                            )}
-                          </div>
-                          {open && isActive(item.url) && (
-                            <ChevronRight className="h-4 w-4 shrink-0 text-primary" />
-                          )}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            {/* Alertes Critiques - En haut pour visibilité */}
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-destructive">Alertes Urgentes</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
+                <SidebarMenu className="space-y-2">
                   <SidebarMenuItem>
                     <SidebarMenuButton 
-                      onClick={() => handleHashNavigation("#situations-critiques")}
-                      className="bg-destructive/10 hover:bg-destructive/20 border border-destructive/20"
+                      asChild 
+                      tooltip="Console Présidentielle"
+                      isActive={isActive("/president")}
+                      className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                     >
-                      <Bell className="h-4 w-4 shrink-0 text-destructive animate-pulse" />
-                      {open && (
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-sm font-medium text-destructive">23 arbitrages requis</span>
-                          <span className="text-xs text-muted-foreground">
-                            Action immédiate
-                          </span>
+                      <NavLink 
+                        to="/president" 
+                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
+                          isActive("/president") 
+                            ? "bg-background shadow-neo-inset" 
+                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                        }`}
+                      >
+                        <div className={`p-2 rounded-full transition-all ${isActive("/president") ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
+                          <Shield className="h-4 w-4 shrink-0 text-primary" />
                         </div>
-                      )}
+                        {open && (
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-sm font-semibold truncate text-foreground">Console Présidentielle</span>
+                            <span className="text-xs text-muted-foreground truncate">
+                              Commandement centralisé
+                            </span>
+                          </div>
+                        )}
+                      </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* Pilotage Stratégique */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Pilotage Stratégique</SidebarGroupLabel>
+            {/* Alertes Urgentes */}
+            <SidebarGroup className="px-0 space-y-2">
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-destructive px-2 mb-2">
+                Alertes Urgentes
+              </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {pilotageStrategique.map((item) => (
+                <SidebarMenu className="space-y-2">
+                  {actionsUrgentes.map((item) => (
                     <SidebarMenuItem key={item.hash}>
                       <SidebarMenuButton 
                         onClick={() => handleHashNavigation(item.hash)}
                         tooltip={item.title}
                         isActive={isActive(item.hash)}
+                        className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                       >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-sm font-medium truncate">{item.title}</span>
+                        <div className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
+                          isActive(item.hash)
+                            ? "bg-background shadow-neo-inset"
+                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                        }`}>
+                          <div className="p-2 rounded-full bg-destructive/10 shadow-neo-sm">
+                            <item.icon className="h-4 w-4 shrink-0 text-destructive" />
+                          </div>
                           {open && (
-                            <span className="text-xs text-muted-foreground truncate">
-                              {item.description}
-                            </span>
+                            <>
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-sm font-semibold truncate text-destructive">{item.title}</span>
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {item.description}
+                                </span>
+                              </div>
+                              {item.badge && (
+                                <Badge variant="destructive" className="shrink-0 h-6 min-w-[24px] flex items-center justify-center rounded-full text-[10px] px-2 font-bold">
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </>
                           )}
                         </div>
-                        {open && isActive(item.hash) && (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-primary" />
-                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -283,35 +241,38 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* Actions & Décisions */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Actions & Décisions</SidebarGroupLabel>
+            {/* Pilotage Stratégique */}
+            <SidebarGroup className="px-0 space-y-2">
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground px-2 mb-2">
+                Pilotage Stratégique
+              </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {actionsUrgentes.map((item) => (
+                <SidebarMenu className="space-y-2">
+                  {pilotageStrategique.map((item) => (
                     <SidebarMenuItem key={item.hash}>
                       <SidebarMenuButton 
                         onClick={() => handleHashNavigation(item.hash)}
                         tooltip={item.title}
                         isActive={isActive(item.hash)}
+                        className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                       >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-sm font-medium truncate">{item.title}</span>
+                        <div className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
+                          isActive(item.hash)
+                            ? "bg-background shadow-neo-inset"
+                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                        }`}>
+                          <div className={`p-2 rounded-full transition-all ${isActive(item.hash) ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
+                            <item.icon className="h-4 w-4 shrink-0 text-primary" />
+                          </div>
                           {open && (
-                            <span className="text-xs text-muted-foreground truncate">
-                              {item.description}
-                            </span>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="text-sm font-medium truncate text-foreground">{item.title}</span>
+                              <span className="text-xs text-muted-foreground truncate">
+                                {item.description}
+                              </span>
+                            </div>
                           )}
                         </div>
-                        {item.badge && open && (
-                          <Badge variant={item.badge.variant} className="ml-auto shrink-0">
-                            {item.badge.text}
-                          </Badge>
-                        )}
-                        {open && isActive(item.hash) && (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-primary" />
-                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -320,29 +281,37 @@ export function AppSidebar() {
             </SidebarGroup>
 
             {/* Contrôle & Institutions */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Contrôle & Institutions</SidebarGroupLabel>
+            <SidebarGroup className="px-0 space-y-2">
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground px-2 mb-2">
+                Contrôle & Institutions
+              </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
+                <SidebarMenu className="space-y-2">
                   {controleInstitutions.map((item) => (
                     <SidebarMenuItem key={item.hash}>
                       <SidebarMenuButton 
                         onClick={() => handleHashNavigation(item.hash)}
                         tooltip={item.title}
                         isActive={isActive(item.hash)}
+                        className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                       >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-sm font-medium truncate">{item.title}</span>
+                        <div className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
+                          isActive(item.hash)
+                            ? "bg-background shadow-neo-inset"
+                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                        }`}>
+                          <div className={`p-2 rounded-full transition-all ${isActive(item.hash) ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
+                            <item.icon className="h-4 w-4 shrink-0 text-primary" />
+                          </div>
                           {open && (
-                            <span className="text-xs text-muted-foreground truncate">
-                              {item.description}
-                            </span>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="text-sm font-medium truncate text-foreground">{item.title}</span>
+                              <span className="text-xs text-muted-foreground truncate">
+                                {item.description}
+                              </span>
+                            </div>
                           )}
                         </div>
-                        {open && isActive(item.hash) && (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-primary" />
-                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -351,130 +320,123 @@ export function AppSidebar() {
             </SidebarGroup>
 
             {/* Outils de Décision */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Outils de Décision</SidebarGroupLabel>
+            <SidebarGroup className="px-0 space-y-2">
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground px-2 mb-2">
+                Outils de Décision
+              </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
+                <SidebarMenu className="space-y-2">
                   {outilsDecision.map((item) => (
-                    <SidebarMenuItem key={item.url || item.hash}>
+                    <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton 
-                        {...(item.url ? {
-                          asChild: true
-                        } : {
-                          onClick: () => item.hash && handleHashNavigation(item.hash)
-                        })}
+                        asChild 
                         tooltip={item.title}
-                        isActive={isActive(item.url || item.hash || "")}
+                        isActive={isActive(item.url)}
+                        className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                       >
-                        {item.url ? (
-                          <NavLink to={item.url} className="flex items-center gap-3 w-full">
-                            <item.icon className="h-4 w-4 shrink-0" />
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <span className="text-sm font-medium truncate">{item.title}</span>
-                              {open && (
+                        <NavLink 
+                          to={item.url} 
+                          className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
+                            isActive(item.url)
+                              ? "bg-background shadow-neo-inset"
+                              : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                          }`}
+                        >
+                          <div className={`p-2 rounded-full transition-all ${isActive(item.url) ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
+                            <item.icon className="h-4 w-4 shrink-0 text-primary" />
+                          </div>
+                          {open && (
+                            <>
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-sm font-medium truncate text-foreground">{item.title}</span>
                                 <span className="text-xs text-muted-foreground truncate">
                                   {item.description}
                                 </span>
+                              </div>
+                              {item.badge && (
+                                <Badge className="shrink-0 h-6 min-w-[24px] flex items-center justify-center rounded-full text-[10px] px-2 font-bold bg-primary/10 text-primary border-0 shadow-neo-sm">
+                                  {item.badge}
+                                </Badge>
                               )}
-                            </div>
-                            {item.badge && open && (
-                              <Badge variant={item.badge.variant} className="ml-auto shrink-0">
-                                {item.badge.text}
-                              </Badge>
-                            )}
-                          </NavLink>
-                        ) : (
-                          <>
-                            <item.icon className="h-4 w-4 shrink-0" />
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <span className="text-sm font-medium truncate">{item.title}</span>
-                              {open && (
-                                <span className="text-xs text-muted-foreground truncate">
-                                  {item.description}
-                                </span>
-                              )}
-                            </div>
-                            {item.badge && open && (
-                              <Badge variant={item.badge.variant} className="ml-auto shrink-0">
-                                {item.badge.text}
-                              </Badge>
-                            )}
-                          </>
-                        )}
+                            </>
+                          )}
+                        </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-
-            {/* Administration */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Administration</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip="Administration"
-                      isActive={isActive("/admin-dashboard")}
-                    >
-                      <NavLink 
-                        to="/admin-dashboard" 
-                        className="flex items-center gap-3 w-full"
-                      >
-                        <User className="h-4 w-4 shrink-0" />
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-sm font-medium truncate">Administration</span>
-                          {open && (
-                            <span className="text-xs text-muted-foreground truncate">
-                              Gestion système
-                            </span>
-                          )}
-                        </div>
-                        {open && isActive("/admin-dashboard") && (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-primary" />
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
           </>
         ) : (
-          /* Menu Standard pour non-présidents */
-          <SidebarGroup>
-            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          /* Menu Standard */
+          <SidebarGroup className="px-0 space-y-2">
+            <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground px-2 mb-2">
+              Navigation
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="space-y-2">
                 {standardMenuItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton 
                       asChild 
                       tooltip={item.title}
                       isActive={isActive(item.url)}
+                      className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                     >
                       <NavLink 
                         to={item.url} 
-                        className="flex items-center gap-3 w-full"
+                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
+                          isActive(item.url)
+                            ? "bg-background shadow-neo-inset"
+                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                        }`}
                       >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <span className="text-sm font-medium truncate">{item.title}</span>
-                          {open && (
+                        <div className={`p-2 rounded-full transition-all ${isActive(item.url) ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
+                          <item.icon className="h-4 w-4 shrink-0 text-primary" />
+                        </div>
+                        {open && (
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-sm font-medium truncate text-foreground">{item.title}</span>
                             <span className="text-xs text-muted-foreground truncate">
                               {item.description}
                             </span>
-                          )}
-                        </div>
-                        {open && isActive(item.url) && (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-primary" />
+                          </div>
                         )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+                
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    tooltip="Administration"
+                    isActive={isActive("/admin-dashboard")}
+                    className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
+                  >
+                    <NavLink 
+                      to="/admin-dashboard" 
+                      className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
+                        isActive("/admin-dashboard")
+                          ? "bg-background shadow-neo-inset"
+                          : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                      }`}
+                    >
+                      <div className={`p-2 rounded-full transition-all ${isActive("/admin-dashboard") ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
+                        <User className="h-4 w-4 shrink-0 text-primary" />
+                      </div>
+                      {open && (
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="text-sm font-medium truncate text-foreground">Administration</span>
+                          <span className="text-xs text-muted-foreground truncate">
+                            Gestion système
+                          </span>
+                        </div>
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
