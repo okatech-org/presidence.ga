@@ -28,6 +28,58 @@ RÈGLES:
 - Toujours rester courtois et professionnel
 - Si information manquante, le signaler clairement`;
 
+// Routeur d'intentions - Classification des messages
+function classifyIntent(userText: string): { category: string; command?: string; args?: any } {
+  const text = userText.toLowerCase().trim();
+
+  // 1. Commandes vocales
+  const stopPatterns = ['arrête', 'stop', 'pause', 'arrêter', 'stopper'];
+  const continuePatterns = ['continue', 'reprends', 'reprendre', 'continuer'];
+  const newQuestionPatterns = ['nouvelle question', 'autre question', 'question suivante'];
+  const historyPatterns = ['historique', 'afficher historique', 'montre l\'historique', 'voir historique'];
+  
+  if (stopPatterns.some(p => text.includes(p))) {
+    return { category: 'voice_command', command: 'stop_listening', args: {} };
+  }
+  
+  if (continuePatterns.some(p => text.includes(p))) {
+    return { category: 'voice_command', command: 'resume', args: {} };
+  }
+  
+  if (newQuestionPatterns.some(p => text.includes(p))) {
+    return { category: 'voice_command', command: 'new_question', args: {} };
+  }
+  
+  if (historyPatterns.some(p => text.includes(p))) {
+    return { category: 'voice_command', command: 'show_history', args: {} };
+  }
+
+  // Changement de voix
+  if (text.includes('change') && text.includes('voix')) {
+    return { category: 'voice_command', command: 'change_voice', args: {} };
+  }
+
+  // 2. Demande de résumé
+  const resumePatterns = ['résumé', 'resume', 'synthèse', 'débriefe', 'debrief'];
+  if (resumePatterns.some(p => text.includes(p))) {
+    return { category: 'ask_resume', args: {} };
+  }
+
+  // 3. Small talk (politesses)
+  const greetingPatterns = ['bonjour', 'salut', 'hello', 'bonsoir', 'hey'];
+  const thanksPatterns = ['merci', 'thank', 'remercie'];
+  const byePatterns = ['au revoir', 'bye', 'à bientôt', 'salut'];
+  
+  if (greetingPatterns.some(p => text.includes(p)) || 
+      thanksPatterns.some(p => text.includes(p)) ||
+      byePatterns.some(p => text.includes(p))) {
+    return { category: 'small_talk', args: {} };
+  }
+
+  // 4. Query par défaut (questions métier)
+  return { category: 'query', args: {} };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -90,7 +142,53 @@ serve(async (req) => {
       throw new Error('Aucune transcription disponible');
     }
 
-    // 2. Récupérer l'historique de conversation
+    // 2. Classification d'intention (Router)
+    const routerStart = Date.now();
+    const intentRoute = classifyIntent(userTranscript);
+    const routerLatency = Date.now() - routerStart;
+    
+    console.log('[chat-with-iasted] Route détectée:', JSON.stringify(intentRoute));
+
+    // Si commande vocale, retourner immédiatement
+    if (intentRoute.category === 'voice_command') {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          route: intentRoute,
+          transcript: userTranscript,
+          latencies: {
+            stt: sttLatency,
+            router: routerLatency,
+            total: Date.now() - startTime,
+          },
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Si demande de résumé, indiquer au client d'appeler debrief-session
+    if (intentRoute.category === 'ask_resume') {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          route: intentRoute,
+          transcript: userTranscript,
+          answer: "Je vais générer un résumé de notre conversation...",
+          latencies: {
+            stt: sttLatency,
+            router: routerLatency,
+            total: Date.now() - startTime,
+          },
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // 3. Récupérer l'historique de conversation
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -118,6 +216,12 @@ serve(async (req) => {
       content: userTranscript,
     });
 
+    // Adapter le prompt selon l'intention
+    let systemPrompt = SYSTEM_PROMPT;
+    if (intentRoute.category === 'small_talk') {
+      systemPrompt += '\n\nCette interaction est une politesse. Répondez de manière brève et chaleureuse (1-2 phrases max).';
+    }
+
     // 4. Appeler Lovable AI Gateway
     const llmStart = Date.now();
     console.log('[chat-with-iasted] Génération réponse GPT...');
@@ -136,7 +240,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemPrompt },
           ...conversationHistory,
         ],
         temperature: 0.7,
@@ -220,12 +324,12 @@ serve(async (req) => {
       JSON.stringify({
         ok: true,
         answer: assistantResponse,
+        transcript: userTranscript,
         audioContent,
-        route: {
-          category: 'query', // Simplifi pour l'instant
-        },
+        route: intentRoute,
         latencies: {
           stt: sttLatency,
+          router: routerLatency,
           llm: llmLatency,
           tts: ttsLatency,
           total: totalLatency,
