@@ -130,18 +130,18 @@ export function AppSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      className="rounded-3xl shadow-neo-lg bg-card border-0 overflow-hidden w-full"
+      className="rounded-3xl shadow-neo-lg bg-card border-0 overflow-hidden"
     >
-      <SidebarContent className="px-4 py-6 space-y-6">
+      <SidebarContent className="px-4 py-4 space-y-2">
         {isPresident ? (
           <>
             {/* Alertes Urgentes */}
-            <SidebarGroup className="px-0 space-y-3">
-              <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-destructive px-3">
+            <SidebarGroup className="px-0 space-y-1">
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-destructive px-2 mb-1">
                 Alertes Urgentes
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className="space-y-1.5">
+                <SidebarMenu className="space-y-1">
                   {actionsUrgentes.map((item) => (
                     <SidebarMenuItem key={item.hash}>
                       <SidebarMenuButton 
@@ -179,12 +179,12 @@ export function AppSidebar() {
             </SidebarGroup>
 
             {/* Pilotage Stratégique */}
-            <SidebarGroup className="px-0 space-y-3">
-              <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-primary px-3">
+            <SidebarGroup className="px-0 space-y-1">
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground px-2 mb-1">
                 Pilotage Stratégique
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className="space-y-1.5">
+                <SidebarMenu className="space-y-1">
                   {pilotageStrategique.map((item) => (
                     <SidebarMenuItem key={item.hash}>
                       <SidebarMenuButton 
@@ -215,12 +215,12 @@ export function AppSidebar() {
             </SidebarGroup>
 
             {/* Contrôle & Institutions */}
-            <SidebarGroup className="px-0 space-y-3">
-              <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-muted-foreground px-3">
+            <SidebarGroup className="px-0 space-y-1">
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground px-2 mb-1">
                 Contrôle & Institutions
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className="space-y-1.5">
+                <SidebarMenu className="space-y-1">
                   {controleInstitutions.map((item) => (
                     <SidebarMenuItem key={item.hash}>
                       <SidebarMenuButton 
@@ -251,12 +251,12 @@ export function AppSidebar() {
             </SidebarGroup>
 
             {/* Outils de Décision */}
-            <SidebarGroup className="px-0 space-y-3">
-              <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-muted-foreground px-3">
+            <SidebarGroup className="px-0 space-y-1">
+              <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground px-2 mb-1">
                 Outils de Décision
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu className="space-y-1.5">
+                <SidebarMenu className="space-y-1">
                   {outilsDecision.map((item) => (
                     <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton 
@@ -297,14 +297,13 @@ export function AppSidebar() {
             </SidebarGroup>
           </>
         ) : (
-          <>
-            {/* Navigation */}
-            <SidebarGroup className="px-0 space-y-3">
-              <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-muted-foreground px-3">
-                Navigation
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="space-y-1.5">
+          /* Menu Standard */
+          <SidebarGroup className="px-0 space-y-1">
+            <SidebarGroupLabel className="text-[11px] uppercase tracking-widest font-bold text-muted-foreground px-2 mb-1">
+              Navigation
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
                 {standardMenuItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton 
@@ -360,10 +359,9 @@ export function AppSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         )}
       </SidebarContent>
     </Sidebar>
