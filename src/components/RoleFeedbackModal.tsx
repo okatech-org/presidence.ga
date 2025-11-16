@@ -91,6 +91,7 @@ export const RoleFeedbackModal = ({ isOpen, onClose, roleName, userEmail }: Role
           role_description: formData.roleDescription,
           work_description: formData.workDescription,
           implementation_suggestions: formData.implementationSuggestions,
+          document_paths: uploadedFileUrls,
         });
 
       if (insertError) {

@@ -17,6 +17,7 @@ export type Database = {
       role_feedback: {
         Row: {
           created_at: string | null
+          document_paths: string[] | null
           id: string
           implementation_suggestions: string | null
           role_description: string
@@ -27,6 +28,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          document_paths?: string[] | null
           id?: string
           implementation_suggestions?: string | null
           role_description: string
@@ -37,6 +39,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          document_paths?: string[] | null
           id?: string
           implementation_suggestions?: string | null
           role_description?: string
