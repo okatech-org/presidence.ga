@@ -17,6 +17,7 @@ import securityImage from "@/assets/security.jpg";
 import dataAnalysisImage from "@/assets/data-analysis.jpg";
 import emblemGabon from "@/assets/emblem_gabon.png";
 
+// Page d'accueil principale du GECOP
 const Index = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState(0);
