@@ -523,17 +523,33 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
 
   // Fonction pour interrompre et démarrer une nouvelle interaction
   const handleInteraction = useCallback(async () => {
-    if (voiceState === 'idle') {
-      await startConversation();
-    } else if (voiceState === 'listening') {
-      stopListening();
-    } else if (voiceState === 'speaking' && currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      startListening();
-    } else {
-      stopConversation();
+    console.log('🎯 [handleInteraction] État actuel:', voiceState);
+    
+    try {
+      if (voiceState === 'idle') {
+        console.log('▶️ [handleInteraction] Démarrage conversation...');
+        await startConversation();
+      } else if (voiceState === 'listening') {
+        console.log('⏸️ [handleInteraction] Arrêt écoute...');
+        stopListening();
+      } else if (voiceState === 'speaking' && currentAudioRef.current) {
+        console.log('⏭️ [handleInteraction] Interruption + nouvelle écoute...');
+        currentAudioRef.current.pause();
+        startListening();
+      } else {
+        console.log('⏹️ [handleInteraction] Arrêt conversation...');
+        stopConversation();
+      }
+    } catch (error) {
+      console.error('❌ [handleInteraction] Erreur:', error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Une erreur est survenue",
+        variant: "destructive",
+      });
+      setVoiceState('idle');
     }
-  }, [voiceState]);
+  }, [voiceState, startConversation, stopConversation, stopListening, startListening, toast]);
 
   // Fonction pour annuler l'interaction en cours
   const cancelInteraction = useCallback(() => {
