@@ -126,6 +126,39 @@ export type Database = {
         }
         Relationships: []
       }
+      iasted_config: {
+        Row: {
+          agent_id: string | null
+          agent_name: string | null
+          created_at: string
+          default_voice_id: string | null
+          id: string
+          minister_voice_id: string | null
+          president_voice_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_name?: string | null
+          created_at?: string
+          default_voice_id?: string | null
+          id?: string
+          minister_voice_id?: string | null
+          president_voice_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          agent_name?: string | null
+          created_at?: string
+          default_voice_id?: string | null
+          id?: string
+          minister_voice_id?: string | null
+          president_voice_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       institution_performance: {
         Row: {
           cas_traites: number | null
