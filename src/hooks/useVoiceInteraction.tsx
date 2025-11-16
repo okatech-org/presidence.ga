@@ -27,6 +27,10 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   const [audioLevel, setAudioLevel] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string | undefined>(undefined);
+  const [silenceDetected, setSilenceDetected] = useState(false);
+  const [silenceTimeRemaining, setSilenceTimeRemaining] = useState(0);
+  const [liveTranscript, setLiveTranscript] = useState<string>('');
+  const [continuousModePaused, setContinuousModePaused] = useState(false);
 
   // Refs pour l'enregistrement audio
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -71,7 +75,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     return data.id;
   };
 
-  // Analyser le niveau audio en temps réel
+  // Détecter le silence et mettre à jour les états
   const analyzeAudioLevel = useCallback(() => {
     if (!analyserRef.current) return;
 
@@ -85,17 +89,26 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     // Détection de silence
     if (normalizedLevel < silenceThreshold) {
       if (!silenceTimerRef.current) {
-        silenceTimerRef.current = setTimeout(() => {
-          if (voiceState === 'listening') {
+        setSilenceDetected(true);
+        let timeRemaining = silenceDuration;
+        
+        silenceTimerRef.current = setInterval(() => {
+          timeRemaining -= 100;
+          setSilenceTimeRemaining(timeRemaining);
+          
+          if (timeRemaining <= 0 && voiceState === 'listening') {
             console.log('🔇 Silence détecté, arrêt automatique');
             stopListening();
+            setSilenceDetected(false);
           }
-        }, silenceDuration);
+        }, 100);
       }
     } else {
       if (silenceTimerRef.current) {
-        clearTimeout(silenceTimerRef.current);
+        clearInterval(silenceTimerRef.current);
         silenceTimerRef.current = null;
+        setSilenceDetected(false);
+        setSilenceTimeRemaining(0);
       }
     }
 
@@ -443,13 +456,57 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     });
   }, [sessionId, stopListening, onSpeakingChange, toast]);
 
-  // Nouvelle question
-  const newQuestion = useCallback(() => {
-    if (voiceState === 'speaking' && currentAudioRef.current) {
+  // Fonction pour interrompre et démarrer une nouvelle interaction
+  const handleInteraction = useCallback(async () => {
+    if (voiceState === 'idle') {
+      await startConversation();
+    } else if (voiceState === 'listening') {
+      stopListening();
+    } else if (voiceState === 'speaking' && currentAudioRef.current) {
       currentAudioRef.current.pause();
+      startListening();
+    } else {
+      stopConversation();
     }
-    startListening();
-  }, [voiceState, startListening]);
+  }, [voiceState]);
+
+  // Fonction pour annuler l'interaction en cours
+  const cancelInteraction = useCallback(() => {
+    console.log('❌ Annulation de l\'interaction');
+    
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    
+    if (silenceTimerRef.current) {
+      clearInterval(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    
+    setSilenceDetected(false);
+    setSilenceTimeRemaining(0);
+    setVoiceState('idle');
+    onSpeakingChange?.(false);
+    
+    toast({
+      title: "Interaction annulée",
+      description: "L'interaction vocale a été interrompue",
+    });
+  }, [toast, onSpeakingChange]);
+
+  // Toggle pause en mode continu
+  const toggleContinuousPause = useCallback(() => {
+    setContinuousModePaused(prev => !prev);
+    toast({
+      title: continuousModePaused ? "Mode continu repris" : "Mode continu en pause",
+      description: continuousModePaused ? "iAsted recommence à écouter" : "iAsted ne relancera pas automatiquement",
+    });
+  }, [continuousModePaused, toast]);
 
   return {
     // États
@@ -457,6 +514,12 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     sessionId,
     audioLevel,
     isPaused,
+    silenceDetected,
+    silenceTimeRemaining,
+    silenceDuration,
+    liveTranscript,
+    continuousMode,
+    continuousModePaused,
     
     // Getters
     isIdle: voiceState === 'idle',
@@ -470,7 +533,9 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     stopConversation,
     startListening,
     stopListening,
-    newQuestion,
+    handleInteraction,
+    cancelInteraction,
+    toggleContinuousPause,
     setSelectedVoiceId,
     togglePause: () => setIsPaused(prev => !prev),
   };
