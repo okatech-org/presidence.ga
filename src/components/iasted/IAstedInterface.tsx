@@ -11,6 +11,8 @@ import { Slider } from '@/components/ui/slider';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { useContinuousConversation } from '@/hooks/useContinuousConversation';
 
+import { supabase } from '@/integrations/supabase/client';
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -23,12 +25,31 @@ interface IAstedInterfaceProps {
   elevenLabsAgentId?: string;
 }
 
-const IAstedInterface: React.FC<IAstedInterfaceProps> = ({ 
+const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   isOpen, 
   onClose, 
   userRole = 'default',
-  elevenLabsAgentId = 'your-agent-id-here' // À remplacer par l'ID réel de l'agent ElevenLabs
+  elevenLabsAgentId: elevenLabsAgentIdProp
 }) => {
+  const [elevenLabsAgentId, setElevenLabsAgentId] = useState<string | undefined>(elevenLabsAgentIdProp);
+
+  // Charger la config iAsted
+  useEffect(() => {
+    const loadIAstedConfig = async () => {
+      const { data } = await supabase
+        .from('iasted_config')
+        .select('agent_id')
+        .limit(1)
+        .single();
+      
+      if (data?.agent_id) {
+        setElevenLabsAgentId(data.agent_id);
+      }
+    };
+    
+    loadIAstedConfig();
+  }, []);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +67,7 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
     startContinuousMode,
     stopContinuousMode,
     setVolume: setAgentVolume,
-  } = useContinuousConversation(userRole, elevenLabsAgentId);
+  } = useContinuousConversation(userRole, elevenLabsAgentId || '');
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -64,6 +85,15 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
 
   // Gérer le changement de mode
   const handleModeToggle = async (enabled: boolean) => {
+    if (!elevenLabsAgentId) {
+      toast({
+        title: "Configuration requise",
+        description: "Veuillez configurer un agent ElevenLabs dans les paramètres",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsContinuousMode(enabled);
     
     if (enabled) {
