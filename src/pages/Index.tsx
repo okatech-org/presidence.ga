@@ -71,9 +71,9 @@ const Index = () => {
           }}
         />
         
-        <div className="container mx-auto px-6 py-24 relative z-10">
+        <div className="container mx-auto px-4 py-12 md:py-24 relative z-10">
           <div className="max-w-4xl mx-auto text-center text-white">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white p-2 mb-8 shadow-xl animate-scale-in">
+            <div className="inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-full bg-white p-1.5 md:p-2 mb-4 md:mb-8 shadow-xl animate-scale-in">
               <img 
                 src={emblemGabon} 
                 alt="Emblème de la République Gabonaise" 
@@ -81,32 +81,32 @@ const Index = () => {
               />
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
+            <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold mb-3 md:mb-6 animate-fade-in leading-tight">
               PRÉSIDENCE DE LA RÉPUBLIQUE
             </h1>
             
-            <p className="text-2xl md:text-3xl mb-4 text-accent animate-fade-in" style={{ animationDelay: "0.1s" }}>
+            <p className="text-lg md:text-2xl lg:text-3xl mb-2 md:mb-4 text-accent animate-fade-in" style={{ animationDelay: "0.1s" }}>
               Plateforme Unifiée de Pilotage de l'État
             </p>
             
-            <p className="text-lg md:text-xl mb-12 text-white/90 max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            <p className="text-sm md:text-lg lg:text-xl mb-6 md:mb-12 text-white/90 max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: "0.2s" }}>
               Une solution technologique de pointe permettant au Président de la République et à son cabinet 
               d'avoir une vision complète et en temps réel de l'action gouvernementale et de l'état de la nation.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-4 justify-center animate-fade-in" style={{ animationDelay: "0.3s" }}>
               <Button 
                 size="lg" 
-                className="gradient-gold text-accent-foreground text-lg px-8 py-6 hover:scale-105 transition-smooth"
+                className="gradient-gold text-accent-foreground text-sm md:text-lg px-4 py-4 md:px-8 md:py-6 hover:scale-105 transition-smooth"
                 onClick={() => navigate("/auth")}
               >
                 Accéder à la Plateforme
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5" />
               </Button>
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-white/30 bg-white/10 text-white hover:bg-white/20 text-lg px-8 py-6"
+                className="border-white/30 bg-white/10 text-white hover:bg-white/20 text-sm md:text-lg px-4 py-4 md:px-8 md:py-6"
                 onClick={() => navigate("/demo")}
               >
                 Comptes Démo
