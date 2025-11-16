@@ -421,10 +421,13 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   // Démarrer la conversation
   const startConversation = useCallback(async () => {
     try {
-      console.log('🚀 Démarrage de la conversation...');
+      console.log('🚀 [startConversation] Début...');
+      console.log('🔧 [startConversation] selectedVoiceId:', selectedVoiceId);
 
       // Créer une session
+      console.log('📝 [startConversation] Création session...');
       const newSessionId = await createSession();
+      console.log('✅ [startConversation] Session créée:', newSessionId);
       setSessionId(newSessionId);
 
       // Message de bienvenue contextuel
@@ -432,7 +435,8 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       const greeting = hour < 18 ? "Bonjour" : "Bonsoir";
       const welcomeMessage = `${greeting} Excellence, je suis iAsted, votre assistant vocal intelligent. Comment puis-je vous être utile ?`;
 
-      console.log('🎙️ Génération du message de bienvenue:', welcomeMessage);
+      console.log('🎙️ [startConversation] Message de bienvenue:', welcomeMessage);
+      console.log('🎤 [startConversation] Appel text-to-speech...');
 
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: {
@@ -441,22 +445,32 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
         },
       });
 
+      console.log('📊 [startConversation] Réponse text-to-speech:', { data, error });
+
       if (error) {
-        console.error('❌ Erreur text-to-speech:', error);
-        throw error;
+        console.error('❌ [startConversation] Erreur text-to-speech:', error);
+        throw new Error(`Erreur text-to-speech: ${error.message || 'Inconnue'}`);
       }
 
-      console.log('✅ Audio généré, data:', data);
+      if (!data) {
+        console.error('❌ [startConversation] Pas de data dans la réponse');
+        throw new Error('Pas de données dans la réponse text-to-speech');
+      }
+
+      console.log('✅ [startConversation] Audio généré, data:', data);
 
       // Jouer le message de bienvenue
       if (data?.audioContent) {
+        console.log('🔊 [startConversation] Lecture audio, longueur:', data.audioContent.length);
         await playAudioResponse(data.audioContent);
+        console.log('✅ [startConversation] Audio joué avec succès');
       } else {
-        console.error('❌ Pas de audioContent dans la réponse:', data);
-        throw new Error('Pas d\'audio dans la réponse');
+        console.error('❌ [startConversation] Pas de audioContent:', data);
+        throw new Error('Pas d\'audioContent dans la réponse');
       }
 
       // Démarrer l'écoute après le message de bienvenue
+      console.log('👂 [startConversation] Démarrage écoute dans 500ms...');
       setTimeout(() => {
         startListening();
       }, 500);
@@ -467,14 +481,16 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       });
 
     } catch (error) {
-      console.error('❌ Erreur démarrage:', error);
+      console.error('❌ [startConversation] Erreur complète:', error);
+      console.error('❌ [startConversation] Stack:', error instanceof Error ? error.stack : 'N/A');
       toast({
         title: "Erreur",
-        description: "Impossible de démarrer la conversation",
+        description: error instanceof Error ? error.message : "Impossible de démarrer la conversation",
         variant: "destructive",
       });
+      setVoiceState('idle');
     }
-  }, [selectedVoiceId, startListening, toast]);
+  }, [selectedVoiceId, startListening, toast, createSession]);
 
   // Arrêter la conversation
   const stopConversation = useCallback(async () => {

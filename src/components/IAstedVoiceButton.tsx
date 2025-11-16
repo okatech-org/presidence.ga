@@ -71,8 +71,15 @@ export const IAstedVoiceButton = ({ className = '', size = 'md' }: IAstedVoiceBu
   }, [voiceState, handleInteraction, cancelInteraction]);
 
   const handleClick = () => {
+    console.log('🖱️ [IAstedVoiceButton] Clic détecté, voiceState:', voiceState);
     // Clic simple: démarrer/arrêter l'interaction vocale
-    handleInteraction();
+    try {
+      handleInteraction();
+      console.log('✅ [IAstedVoiceButton] handleInteraction appelé');
+    } catch (error) {
+      console.error('❌ [IAstedVoiceButton] Erreur handleClick:', error);
+      toast.error('Erreur', 'Impossible de démarrer iAsted');
+    }
   };
 
   return (
