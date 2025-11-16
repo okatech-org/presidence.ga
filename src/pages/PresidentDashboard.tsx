@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PresidentLayout } from "@/components/president/PresidentLayout";
-import { Activity, LogOut } from "lucide-react";
+import { Activity } from "lucide-react";
 import { usePresidentRole } from "@/hooks/usePresidentRole";
 import { VueEnsemble } from "@/components/president/VueEnsemble";
 import { OpinionPublique } from "@/components/president/OpinionPublique";
@@ -10,8 +10,6 @@ import { SituationsCritiques } from "@/components/president/SituationsCritiques"
 import { VisionNationale } from "@/components/president/VisionNationale";
 import { ModuleXR7 } from "@/components/president/ModuleXR7";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import emblemGabon from "@/assets/emblem_gabon.png";
 
 const PresidentDashboard = () => {
   const navigate = useNavigate();
@@ -41,12 +39,7 @@ const PresidentDashboard = () => {
       });
       navigate("/dashboard");
     }
-  }, [isPresident, roleLoading, loading, navigate, toast]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
+    }, [isPresident, roleLoading, loading, navigate, toast]);
 
   if (loading || roleLoading) {
     return (
@@ -66,36 +59,8 @@ const PresidentDashboard = () => {
   return (
     <PresidentLayout>
       <div className="space-y-6">
-        {/* Header subtil intégré */}
+        {/* Titre du Tableau de Bord */}
         <div className="p-6 rounded-2xl bg-card shadow-neo-md border-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-2xl bg-background shadow-neo-inset">
-                <img 
-                  src={emblemGabon} 
-                  alt="Emblème de la République Gabonaise" 
-                  className="h-12 w-12 object-contain"
-                />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Présidence de la République</h1>
-                <p className="text-sm text-muted-foreground">
-                  S.E. le Président de la République - Chef de l'État, Chef du Gouvernement
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={handleLogout}
-              className="bg-card shadow-neo-sm hover:shadow-neo-md transition-all duration-300 text-foreground border-0"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Déconnexion
-            </Button>
-          </div>
-        </div>
-
-        {/* Titre du Tableau de Bord Stratégique */}
-        <div className="mb-2">
           <h2 className="text-2xl font-bold mb-1 text-foreground">Console de Pilotage Stratégique</h2>
           <p className="text-muted-foreground">
             Tolérance Zéro, Transparence Totale - Interface de Commandement Présidentielle

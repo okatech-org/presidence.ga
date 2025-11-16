@@ -25,7 +25,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -133,26 +132,7 @@ export function AppSidebar() {
       collapsible="icon"
       className="rounded-3xl shadow-neo-lg bg-card border-0 overflow-hidden"
     >
-      {/* Header */}
-      <SidebarHeader className="p-5">
-        <div className="flex items-center gap-3 p-3 rounded-2xl bg-background shadow-neo-sm">
-          <div className="p-2.5 rounded-full bg-success/10 shadow-neo-inset">
-            <img 
-              src={emblemGabon} 
-              alt="République Gabonaise" 
-              className="h-7 w-7 object-contain"
-            />
-          </div>
-          {open && (
-            <div className="flex flex-col">
-              <span className="font-bold text-sm text-foreground">Présidence</span>
-              <span className="text-xs text-muted-foreground">République Gabonaise</span>
-            </div>
-          )}
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent className="px-4 py-3 space-y-4">
+      <SidebarContent className="px-4 py-6 space-y-4">
         {isPresident ? (
           <>
             {/* Commandement */}
