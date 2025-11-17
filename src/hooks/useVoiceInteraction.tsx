@@ -298,6 +298,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
           langHint: 'fr',
           voiceId: selectedVoiceId,
           generateAudio: true,
+          userRole: userRole || 'default', // Envoi du rôle pour prompts adaptatifs
         },
       });
 
