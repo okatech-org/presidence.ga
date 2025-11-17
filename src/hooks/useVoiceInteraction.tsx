@@ -4,6 +4,12 @@ import { useToast } from '@/hooks/use-toast';
 
 export type VoiceState = 'idle' | 'listening' | 'thinking' | 'speaking';
 
+export interface Message {
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp?: Date;
+}
+
 interface UseVoiceInteractionOptions {
   onSpeakingChange?: (isSpeaking: boolean) => void;
   silenceDuration?: number;

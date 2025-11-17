@@ -47,7 +47,7 @@ import { VoiceConversationPanel } from "@/components/VoiceConversationPanel";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { SectionCard, StatCard } from "@/components/president/PresidentSpaceComponents";
+import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
 import { useTheme } from "next-themes";
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import emblemGabon from "@/assets/emblem_gabon.png";
