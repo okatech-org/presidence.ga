@@ -44,6 +44,7 @@ CREATE TYPE public.app_role AS ENUM (
 
 CREATE FUNCTION public.handle_updated_at() RETURNS trigger
     LANGUAGE plpgsql
+    SET search_path TO 'public'
     AS $$
 BEGIN
   NEW.updated_at = now();
@@ -78,6 +79,21 @@ CREATE FUNCTION public.is_president(user_id uuid) RETURNS boolean
     SET search_path TO 'public'
     AS $$
   SELECT public.has_role(user_id, 'president'::app_role)
+$$;
+
+
+--
+-- Name: update_iasted_config_updated_at(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.update_iasted_config_updated_at() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'public'
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
 $$;
 
 
@@ -126,6 +142,22 @@ CREATE TABLE public.conversation_sessions (
     focus_mode text,
     started_at timestamp with time zone DEFAULT now() NOT NULL,
     ended_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: iasted_config; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.iasted_config (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    agent_id text,
+    agent_name text DEFAULT 'iAsted'::text,
+    president_voice_id text DEFAULT '9BWtsMINqrJLrRacOk9x'::text,
+    minister_voice_id text DEFAULT 'EXAVITQu4vr4xnSDxMaL'::text,
+    default_voice_id text DEFAULT 'Xb7hH8MSUJpSbSDYk0k2'::text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -258,7 +290,8 @@ CREATE TABLE public.user_preferences (
     voice_silence_threshold integer DEFAULT 10,
     voice_continuous_mode boolean DEFAULT false,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    voice_push_to_talk boolean DEFAULT false
 );
 
 
@@ -314,6 +347,14 @@ ALTER TABLE ONLY public.conversation_messages
 
 ALTER TABLE ONLY public.conversation_sessions
     ADD CONSTRAINT conversation_sessions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: iasted_config iasted_config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.iasted_config
+    ADD CONSTRAINT iasted_config_pkey PRIMARY KEY (id);
 
 
 --
@@ -471,6 +512,13 @@ CREATE TRIGGER conversation_sessions_updated_at BEFORE UPDATE ON public.conversa
 
 
 --
+-- Name: iasted_config update_iasted_config_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_iasted_config_updated_at BEFORE UPDATE ON public.iasted_config FOR EACH ROW EXECUTE FUNCTION public.update_iasted_config_updated_at();
+
+
+--
 -- Name: signalements update_signalements_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -551,6 +599,22 @@ CREATE POLICY "Admins can manage roles" ON public.user_roles USING (public.has_r
 --
 
 CREATE POLICY "Admins can manage signalements" ON public.signalements USING (public.has_role(auth.uid(), 'admin'::public.app_role));
+
+
+--
+-- Name: iasted_config Admins can update iasted config; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can update iasted config" ON public.iasted_config FOR UPDATE USING ((EXISTS ( SELECT 1
+   FROM public.user_roles
+  WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = ANY (ARRAY['admin'::public.app_role, 'president'::public.app_role]))))));
+
+
+--
+-- Name: iasted_config Anyone can read iasted config; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Anyone can read iasted config" ON public.iasted_config FOR SELECT USING (true);
 
 
 --
@@ -756,6 +820,12 @@ ALTER TABLE public.conversation_messages ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.conversation_sessions ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: iasted_config; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.iasted_config ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: institution_performance; Type: ROW SECURITY; Schema: public; Owner: -
