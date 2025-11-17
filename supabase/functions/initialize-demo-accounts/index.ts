@@ -9,6 +9,7 @@ interface DemoAccount {
   email: string;
   password: string;
   role: string;
+  appRoles: ('admin' | 'president' | 'dgss' | 'dgr' | 'minister' | 'user')[];
 }
 
 const demoAccounts: DemoAccount[] = [
@@ -16,41 +17,49 @@ const demoAccounts: DemoAccount[] = [
     email: 'president@presidence.ga',
     password: 'President2025!',
     role: 'Président de la République',
+    appRoles: ['president', 'admin'],
   },
   {
     email: 'directeur.cabinet@presidence.ga',
     password: 'Cabinet2025!',
     role: 'Directeur de Cabinet',
+    appRoles: ['admin'],
   },
   {
     email: 'cabinet.prive@presidence.ga',
     password: 'Prive2025!',
     role: 'Directeur de Cabinet Privé',
+    appRoles: ['admin'],
   },
   {
     email: 'secretariat.general@presidence.ga',
     password: 'SecGen2025!',
     role: 'Secrétariat Général',
+    appRoles: ['admin'],
   },
   {
     email: 'dgss@presidence.ga',
     password: 'DGSS2025!',
     role: 'DGSS (Renseignement)',
+    appRoles: ['dgss'],
   },
   {
     email: 'protocole@presidence.ga',
     password: 'Proto2025!',
     role: 'Directeur de Protocole',
+    appRoles: ['minister'],
   },
   {
     email: 'courriers@presidence.ga',
     password: 'Courrier2025!',
     role: 'Service Courriers',
+    appRoles: ['user'],
   },
   {
     email: 'reception@presidence.ga',
     password: 'Reception2025!',
     role: 'Service Réception',
+    appRoles: ['user'],
   },
 ];
 
@@ -95,24 +104,21 @@ Deno.serve(async (req) => {
         const userExists = existingUsers.users.some(u => u.email === account.email);
         const existingUser = existingUsers.users.find(u => u.email === account.email);
 
-        if (userExists) {
+        if (userExists && existingUser) {
           console.log(`User already exists: ${account.email}`);
           results.existing.push(account.email);
-          // Ensure user_roles contains president/admin when applicable
-          if (account.email === 'president@presidence.ga' && existingUser) {
+          
+          // Assign all app roles for this user
+          for (const appRole of account.appRoles) {
             const { error: upsertErr } = await supabaseAdmin
               .from('user_roles')
-              .upsert({ user_id: existingUser.id, role: 'president' as any }, { onConflict: 'user_id,role', ignoreDuplicates: true });
+              .upsert(
+                { user_id: existingUser.id, role: appRole as any }, 
+                { onConflict: 'user_id,role', ignoreDuplicates: true }
+              );
             if (upsertErr) {
-              console.error(`Error upserting role for ${account.email}:`, upsertErr);
-              results.errors.push({ email: account.email, error: upsertErr.message });
-            }
-            const { error: upsertAdminErr } = await supabaseAdmin
-              .from('user_roles')
-              .upsert({ user_id: existingUser.id, role: 'admin' as any }, { onConflict: 'user_id,role', ignoreDuplicates: true });
-            if (upsertAdminErr) {
-              console.error(`Error upserting admin role for ${account.email}:`, upsertAdminErr);
-              results.errors.push({ email: account.email, error: upsertAdminErr.message });
+              console.error(`Error upserting ${appRole} role for ${account.email}:`, upsertErr);
+              results.errors.push({ email: account.email, error: `${appRole}: ${upsertErr.message}` });
             }
           }
           continue;
@@ -137,21 +143,22 @@ Deno.serve(async (req) => {
         console.log(`Successfully created user: ${account.email}`);
         results.created.push(account.email);
 
-        // Grant president and admin roles in user_roles for the president account
-        if (account.email === 'president@presidence.ga' && newUser?.user?.id) {
-          const { error: upsertErr } = await supabaseAdmin
-            .from('user_roles')
-            .upsert({ user_id: newUser.user.id, role: 'president' as any }, { onConflict: 'user_id,role', ignoreDuplicates: true });
-          if (upsertErr) {
-            console.error(`Error upserting role for ${account.email}:`, upsertErr);
-            results.errors.push({ email: account.email, error: upsertErr.message });
-          }
-          const { error: upsertAdminErr } = await supabaseAdmin
-            .from('user_roles')
-            .upsert({ user_id: newUser.user.id, role: 'admin' as any }, { onConflict: 'user_id,role', ignoreDuplicates: true });
-          if (upsertAdminErr) {
-            console.error(`Error upserting admin role for ${account.email}:`, upsertAdminErr);
-            results.errors.push({ email: account.email, error: upsertAdminErr.message });
+        // Assign all app roles for the newly created user
+        if (newUser?.user?.id) {
+          for (const appRole of account.appRoles) {
+            const { error: roleError } = await supabaseAdmin
+              .from('user_roles')
+              .upsert(
+                { user_id: newUser.user.id, role: appRole as any },
+                { onConflict: 'user_id,role', ignoreDuplicates: true }
+              );
+
+            if (roleError) {
+              console.error(`Error assigning ${appRole} role to ${account.email}:`, roleError);
+              results.errors.push({ email: account.email, error: `${appRole}: ${roleError.message}` });
+            } else {
+              console.log(`✓ ${appRole} role assigned to ${account.email}`);
+            }
           }
         }
 
