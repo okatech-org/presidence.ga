@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Lock, ArrowLeft } from "lucide-react";
+import { Shield, Lock, ArrowLeft, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import emblemGabon from "@/assets/emblem_gabon.png";
@@ -13,6 +13,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [initializingDemo, setInitializingDemo] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,6 +43,42 @@ const Auth = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInitializeDemoAccounts = async () => {
+    setInitializingDemo(true);
+    
+    try {
+      console.log('🚀 Initialisation des comptes de démonstration...');
+      
+      const { data, error } = await supabase.functions.invoke('initialize-demo-accounts');
+      
+      if (error) {
+        console.error('❌ Erreur lors de l\'initialisation:', error);
+        throw error;
+      }
+
+      console.log('✅ Réponse reçue:', data);
+      
+      toast({
+        title: "Comptes initialisés",
+        description: `${data.results.created.length} comptes créés, ${data.results.existing.length} existants. Utilisez president@presidence.ga / President2025!`,
+      });
+      
+      // Pré-remplir les identifiants du président
+      setEmail("president@presidence.ga");
+      setPassword("President2025!");
+      
+    } catch (error: any) {
+      console.error('❌ Erreur complète:', error);
+      toast({
+        title: "Erreur d'initialisation",
+        description: error.message || "Impossible d'initialiser les comptes",
+        variant: "destructive",
+      });
+    } finally {
+      setInitializingDemo(false);
     }
   };
 
@@ -118,14 +155,27 @@ const Auth = () => {
                 {loading ? "Connexion..." : "Se connecter"}
               </Button>
               
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate("/demo")}
-              >
-                Voir les comptes démo
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  onClick={handleInitializeDemoAccounts}
+                  disabled={initializingDemo}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  {initializingDemo ? "Initialisation..." : "Initialiser les comptes de démonstration"}
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate("/demo")}
+                >
+                  Voir les comptes démo
+                </Button>
+              </div>
             </form>
 
             <div className="mt-6 pt-6 border-t text-center text-xs text-muted-foreground">
