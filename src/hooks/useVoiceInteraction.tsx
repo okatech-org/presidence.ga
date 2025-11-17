@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { usePresidentRole } from '@/hooks/usePresidentRole';
+
 
 export type VoiceState = 'idle' | 'listening' | 'thinking' | 'speaking';
 
@@ -21,7 +21,6 @@ interface UseVoiceInteractionOptions {
 
 export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   const { toast } = useToast();
-  const { isPresident } = usePresidentRole();
   const {
     onSpeakingChange,
     silenceDuration = 2000,
@@ -300,7 +299,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
           langHint: 'fr',
           voiceId: selectedVoiceId,
           generateAudio: true,
-          userRole: isPresident ? 'president' : 'minister', // Envoi du rôle pour prompts adaptatifs
+          userRole: 'president', // Application dédiée à la présidence
         },
       });
 
