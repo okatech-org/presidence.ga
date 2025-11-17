@@ -641,10 +641,12 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
 
   const generateSpeech = async (text: string): Promise<string> => {
     console.log('🎤 [generateSpeech] Génération audio pour:', text.substring(0, 50) + '...');
+    console.log('🎤 [generateSpeech] VoiceId utilisé:', settings.voiceId);
     
     const { data, error } = await invokeWithRetry<TextToSpeechResponse>('text-to-speech', {
       text,
       voiceId: settings.voiceId,
+      userRole: 'president', // Important: permet à l'edge function de sélectionner la bonne voix
     }, 2, 1000); // 2 tentatives pour TTS
 
     if (error) {
