@@ -109,14 +109,11 @@ export const useRealtimeIasted = () => {
         throw new Error('Non authentifié');
       }
 
-      // Connexion WebSocket avec token JWT
+      // Connexion WebSocket avec JWT en query parameter
       const projectId = 'bpaouvtlexhtschufshd';
-      const wsUrl = `wss://${projectId}.supabase.co/functions/v1/realtime-iasted`;
+      const wsUrl = `wss://${projectId}.supabase.co/functions/v1/realtime-iasted?jwt=${session.access_token}`;
       
-      const ws = new WebSocket(wsUrl, [
-        'Bearer',
-        session.access_token
-      ]);
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {

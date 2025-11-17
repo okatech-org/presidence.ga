@@ -17,6 +17,17 @@ serve(async (req) => {
     return new Response('Expected websocket', { status: 426 });
   }
 
+  // Vérifier le JWT depuis les query params
+  const url = new URL(req.url);
+  const jwt = url.searchParams.get('jwt');
+  
+  if (!jwt) {
+    console.error('❌ JWT token not provided');
+    return new Response('JWT token required', { status: 401 });
+  }
+
+  console.log('✅ JWT token received, upgrading to WebSocket');
+
   const { socket, response } = Deno.upgradeWebSocket(req);
   
   const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
