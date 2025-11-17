@@ -1,0 +1,577 @@
+/**
+ * Hook principal pour la gestion des interactions vocales de l'agent iAsted présidentiel
+ */
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  audioUrl?: string;
+  metadata?: {
+    intent?: string;
+    tokens?: number;
+    latency?: number;
+    focusDepth?: number;
+  };
+}
+
+interface VoiceSettings {
+  voiceId: string;
+  silenceDuration: number;
+  silenceThreshold: number;
+  continuousMode: boolean;
+  autoGreeting: boolean;
+  language: string;
+  responseStyle: 'concis' | 'detaille' | 'strategique';
+}
+
+interface Session {
+  id: string;
+  user_id: string;
+  settings: any;
+  focus_mode: string | null;
+  focus_topic: string | null;
+  memory_summary: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
+  const [voiceState, setVoiceState] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [session, setSession] = useState<Session | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [transcript, setTranscript] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  
+  const { toast } = useToast();
+
+  useEffect(() => {
+    initializeSession();
+    return () => {
+      cleanupAudioResources();
+    };
+  }, []);
+
+  const initializeSession = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utilisateur non authentifié');
+
+      const { data: existingSession } = await supabase
+        .from('conversation_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingSession) {
+        setSession({
+          ...existingSession,
+          focus_topic: existingSession.focus_mode === 'active' ? (existingSession.memory_summary || null) : null,
+        });
+        await loadSessionMessages(existingSession.id);
+      } else {
+        const { data: newSession, error } = await supabase
+          .from('conversation_sessions')
+          .insert({
+            user_id: user.id,
+            settings: settings as any,
+            focus_mode: null,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setSession({
+          ...newSession,
+          focus_topic: null,
+        });
+
+        if (settings.autoGreeting) {
+          await generateGreeting();
+        }
+      }
+    } catch (error) {
+      console.error('Erreur initialisation session:', error);
+      toast({
+        title: 'Erreur de session',
+        description: 'Impossible d\'initialiser la session iAsted',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const loadSessionMessages = async (sessionId: string) => {
+    const { data: msgs, error } = await supabase
+      .from('conversation_messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+
+    if (!error && msgs) {
+      setMessages(msgs.map(m => ({
+        id: m.id,
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+        timestamp: m.created_at,
+        audioUrl: m.audio_url || undefined,
+      })));
+    }
+  };
+
+  const generateGreeting = async () => {
+    const hour = new Date().getHours();
+    let timeGreeting = 'Bonjour';
+    if (hour >= 12 && hour < 18) timeGreeting = 'Bon après-midi';
+    else if (hour >= 18) timeGreeting = 'Bonsoir';
+
+    const greetingMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: `${timeGreeting} Monsieur le Président,\n\nJe suis iAsted, votre assistant stratégique. Comment puis-je vous aider ?`,
+      timestamp: new Date().toISOString(),
+      metadata: { intent: 'greeting' },
+    };
+
+    setMessages([greetingMessage]);
+    await saveMessage(greetingMessage);
+  };
+
+  const saveMessage = async (message: Message) => {
+    if (!session) return;
+
+    try {
+      await supabase.from('conversation_messages').insert({
+        id: message.id,
+        session_id: session.id,
+        role: message.role,
+        content: message.content,
+        audio_url: message.audioUrl,
+        created_at: message.timestamp,
+      });
+    } catch (error) {
+      console.error('Erreur sauvegarde message:', error);
+    }
+  };
+
+  const startListening = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 24000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+
+      streamRef.current = stream;
+
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      source.connect(analyserRef.current);
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus',
+      });
+
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await processAudioInput(audioBlob);
+      };
+
+      mediaRecorder.start(100);
+      setVoiceState('listening');
+      setTranscript('');
+
+      analyzeAudioLevel();
+
+      toast({
+        title: 'Écoute active',
+        description: 'Je vous écoute, Monsieur le Président...',
+      });
+
+    } catch (error) {
+      console.error('Erreur accès microphone:', error);
+      toast({
+        title: 'Accès microphone refusé',
+        description: 'Veuillez autoriser l\'accès au microphone.',
+        variant: 'destructive',
+      });
+      setVoiceState('idle');
+    }
+  }, [toast]);
+
+  const analyzeAudioLevel = useCallback(() => {
+    if (!analyserRef.current) return;
+
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+
+    const checkLevel = () => {
+      if (!analyserRef.current || voiceState !== 'listening') {
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        return;
+      }
+
+      analyserRef.current.getByteFrequencyData(dataArray);
+      const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+      setAudioLevel(Math.min(100, average * 2));
+
+      if (average < settings.silenceThreshold) {
+        if (!silenceTimerRef.current) {
+          silenceTimerRef.current = setTimeout(() => {
+            if (mediaRecorderRef.current?.state === 'recording') {
+              stopListening();
+            }
+          }, settings.silenceDuration);
+        }
+      } else {
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(checkLevel);
+    };
+
+    checkLevel();
+  }, [settings.silenceDuration, settings.silenceThreshold, voiceState]);
+
+  const stopListening = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+
+    cleanupAudioResources();
+    setVoiceState('thinking');
+    setAudioLevel(0);
+  }, []);
+
+  const cleanupAudioResources = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    if (audioContextRef.current?.state !== 'closed') {
+      audioContextRef.current?.close();
+      audioContextRef.current = null;
+    }
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  };
+
+  const processAudioInput = async (audioBlob: Blob) => {
+    setIsProcessing(true);
+    const startTime = Date.now();
+
+    try {
+      setVoiceState('thinking');
+      const transcribedText = await transcribeAudio(audioBlob);
+      
+      if (!transcribedText || transcribedText.trim().length < 2) {
+        toast({
+          title: 'Audio non détecté',
+          description: 'Je n\'ai pas capté votre message.',
+          variant: 'destructive',
+        });
+        setVoiceState('idle');
+        setIsProcessing(false);
+        return;
+      }
+
+      setTranscript(transcribedText);
+
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: transcribedText,
+        timestamp: new Date().toISOString(),
+      };
+      
+      setMessages(prev => [...prev, userMessage]);
+      await saveMessage(userMessage);
+
+      const response = await generatePresidentResponse(transcribedText);
+      const audioBase64 = await generateSpeech(response.text);
+
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: response.text,
+        timestamp: new Date().toISOString(),
+        audioUrl: audioBase64,
+        metadata: {
+          intent: response.intent,
+          tokens: response.tokensUsed,
+          latency: Date.now() - startTime,
+        },
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      await saveMessage(assistantMessage);
+
+      if (audioBase64) {
+        await playAudioResponse(audioBase64);
+      }
+
+      if (settings.continuousMode && voiceState === 'idle') {
+        setTimeout(() => {
+          startListening();
+        }, 1000);
+      }
+
+    } catch (error) {
+      console.error('Erreur traitement audio:', error);
+      toast({
+        title: 'Erreur de traitement',
+        description: 'Une erreur est survenue.',
+        variant: 'destructive',
+      });
+      setVoiceState('idle');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+    const { data, error } = await supabase.functions.invoke('speech-to-text', {
+      body: {
+        audio: base64Audio,
+        language: settings.language,
+      },
+    });
+
+    if (error) throw error;
+    return data.text;
+  };
+
+  const generatePresidentResponse = async (userInput: string): Promise<{
+    text: string;
+    intent: string;
+    tokensUsed: number;
+  }> => {
+    const conversationHistory = messages.slice(-10).map(m => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    const { data, error } = await supabase.functions.invoke('chat-with-iasted', {
+      body: {
+        sessionId: session?.id,
+        transcriptOverride: userInput,
+        conversationHistory,
+        userRole: 'president',
+      },
+    });
+
+    if (error) throw error;
+
+    return {
+      text: data.response,
+      intent: data.intent || 'query',
+      tokensUsed: data.tokensUsed || 0,
+    };
+  };
+
+  const generateSpeech = async (text: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke('text-to-speech', {
+      body: {
+        text,
+        voiceId: settings.voiceId,
+        userRole: 'president',
+      },
+    });
+
+    if (error) throw error;
+    return data.audioContent;
+  };
+
+  const playAudioResponse = async (base64Audio: string) => {
+    return new Promise<void>((resolve) => {
+      setVoiceState('speaking');
+
+      const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
+      audioElementRef.current = audio;
+
+      audio.onended = () => {
+        setVoiceState('idle');
+        audioElementRef.current = null;
+        resolve();
+      };
+
+      audio.onerror = () => {
+        setVoiceState('idle');
+        audioElementRef.current = null;
+        resolve();
+      };
+
+      audio.play().catch(error => {
+        console.error('Erreur lecture audio:', error);
+        setVoiceState('idle');
+        resolve();
+      });
+    });
+  };
+
+  const sendTextMessage = async (text: string) => {
+    if (!text.trim() || isProcessing) return;
+
+    setIsProcessing(true);
+    const startTime = Date.now();
+
+    try {
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: text,
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, userMessage]);
+      await saveMessage(userMessage);
+
+      setVoiceState('thinking');
+      const response = await generatePresidentResponse(text);
+
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: response.text,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          intent: response.intent,
+          tokens: response.tokensUsed,
+          latency: Date.now() - startTime,
+        },
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      await saveMessage(assistantMessage);
+
+      setVoiceState('idle');
+
+    } catch (error) {
+      console.error('Erreur envoi message:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer votre message.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const toggleFocusMode = async (topic?: string) => {
+    if (!session) return;
+
+    const newFocusMode = session.focus_mode === 'active' ? null : 'active';
+
+    await supabase
+      .from('conversation_sessions')
+      .update({
+        focus_mode: newFocusMode,
+      })
+      .eq('id', session.id);
+
+    setSession(prev => prev ? {
+      ...prev,
+      focus_mode: newFocusMode,
+      focus_topic: newFocusMode ? (topic || null) : null,
+    } : null);
+
+    toast({
+      title: newFocusMode ? 'Mode Focus activé' : 'Mode Focus désactivé',
+      description: newFocusMode
+        ? `Approfondissement sur : ${topic || 'sujet à définir'}`
+        : 'Retour au mode conversation libre',
+    });
+  };
+
+  const clearSessionHistory = async () => {
+    if (!session) return;
+
+    await supabase
+      .from('conversation_messages')
+      .delete()
+      .eq('session_id', session.id);
+
+    setMessages([]);
+    await generateGreeting();
+
+    toast({
+      title: 'Historique effacé',
+      description: 'La conversation a été réinitialisée.',
+    });
+  };
+
+  const cancelOperation = () => {
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current = null;
+    }
+
+    cleanupAudioResources();
+    setVoiceState('idle');
+    setIsProcessing(false);
+  };
+
+  return {
+    voiceState,
+    messages,
+    session,
+    audioLevel,
+    transcript,
+    isProcessing,
+    startListening,
+    stopListening,
+    sendTextMessage,
+    toggleFocusMode,
+    clearSessionHistory,
+    cancelOperation,
+  };
+};

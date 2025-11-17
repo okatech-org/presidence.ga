@@ -43,13 +43,12 @@ import {
   Wrench,
   Target,
 } from "lucide-react";
-import IAstedChatInterface from "@/components/iasted/IAstedChatInterface";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { IAstedPresidentModal } from '@/components/iasted/IAstedPresidentModal';
+import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
 import { useTheme } from "next-themes";
-import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import emblemGabon from "@/assets/emblem_gabon.png";
 
 type ThemeConfig = {
@@ -733,13 +732,9 @@ export default function PresidentSpace() {
           />
 
       {/* Interface iAsted avec chat et vocal */}
-      <IAstedChatInterface
+      <IAstedPresidentModal
         isOpen={iastedOpen}
         onClose={() => setIastedOpen(false)}
-        userRole="president"
-        onSpeakingChange={setIsAgentSpeaking}
-        voiceModeToggleTimestamp={voiceModeToggleTimestamp}
-        onVoiceModeChange={setIsVoiceModeActive}
       />
     </div>
   );
