@@ -18,6 +18,9 @@ verify_jwt = true
 [functions.openai-realtime-session]
 verify_jwt = true
 
+[functions.realtime-iasted]
+verify_jwt = true
+
 [functions.elevenlabs-signed-url]
 verify_jwt = true
 
