@@ -17,6 +17,7 @@ interface Message {
     tokens?: number;
     latency?: number;
     focusDepth?: number;
+    responseStyle?: string;
   };
 }
 
@@ -345,6 +346,7 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
           intent: response.intent,
           tokens: response.tokensUsed,
           latency: Date.now() - startTime,
+          responseStyle: response.detectedStyle,
         },
       };
 
@@ -393,18 +395,53 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
     text: string;
     intent: string;
     tokensUsed: number;
+    detectedStyle: string;
   }> => {
     const conversationHistory = messages.slice(-10).map(m => ({
       role: m.role,
       content: m.content,
     }));
 
+    // 1. Analyse automatique de l'intention et du style optimal
+    const { data: intentAnalysis } = await supabase.functions.invoke('analyze-intent', {
+      body: {
+        userMessage: userInput,
+        conversationHistory,
+      },
+    });
+
+    const detectedStyle = intentAnalysis?.responseStyle || 'strategique';
+    const detectedIntent = intentAnalysis?.intent || 'query';
+    const shouldUseContinuousMode = intentAnalysis?.continuousMode || false;
+
+    console.log('🤖 iAsted Auto-Analysis:', {
+      intent: detectedIntent,
+      style: detectedStyle,
+      continuous: shouldUseContinuousMode,
+      reasoning: intentAnalysis?.reasoning
+    });
+
+    // 2. Adaptation automatique du mode continu si nécessaire
+    if (shouldUseContinuousMode && !settings.continuousMode) {
+      toast({
+        title: 'Mode continu activé automatiquement',
+        description: intentAnalysis?.reasoning || 'Contexte de conversation prolongée détecté',
+      });
+    }
+
+    // 3. Génération de la réponse avec le style adapté
     const { data, error } = await supabase.functions.invoke('chat-with-iasted', {
       body: {
         sessionId: session?.id,
         transcriptOverride: userInput,
         conversationHistory,
         userRole: 'president',
+        settings: {
+          responseStyle: detectedStyle,
+          maxTokens: detectedStyle === 'concis' ? 150 : detectedStyle === 'detaille' ? 400 : 300,
+          temperature: 0.7,
+          intent: detectedIntent,
+        },
       },
     });
 
@@ -412,8 +449,9 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
 
     return {
       text: data.response,
-      intent: data.intent || 'query',
+      intent: detectedIntent,
       tokensUsed: data.tokensUsed || 0,
+      detectedStyle,
     };
   };
 
@@ -486,6 +524,7 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
           intent: response.intent,
           tokens: response.tokensUsed,
           latency: Date.now() - startTime,
+          responseStyle: response.detectedStyle,
         },
       };
 
