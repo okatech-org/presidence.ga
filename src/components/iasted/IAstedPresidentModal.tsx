@@ -35,6 +35,8 @@ const DEFAULT_SETTINGS = {
 interface IAstedPresidentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  voiceModeToggleTimestamp?: number;
+  isVoiceModeActive?: boolean;
 }
 
 const AudioLevelIndicator: React.FC<{ level: number; state: string }> = ({ level, state }) => (
@@ -111,7 +113,12 @@ const MessageBubble: React.FC<{ message: any }> = ({ message }) => {
   );
 };
 
-export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOpen, onClose }) => {
+export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  voiceModeToggleTimestamp,
+  isVoiceModeActive 
+}) => {
   const [voiceSettings, setVoiceSettings] = useState(DEFAULT_SETTINGS);
   const [inputText, setInputText] = useState('');
   const [activeTab, setActiveTab] = useState<'chat' | 'settings' | 'analytics'>('chat');
@@ -133,6 +140,31 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
     toggleFocusMode,
     clearSessionHistory,
   } = usePresidentVoiceAgent(voiceSettings);
+
+  // Gérer le toggle du mode vocal depuis le bouton externe
+  useEffect(() => {
+    if (!voiceModeToggleTimestamp || !isOpen) return;
+    
+    console.log('🔄 [IAstedModal] Toggle vocal détecté, timestamp:', voiceModeToggleTimestamp);
+    
+    if (voiceState === 'listening') {
+      console.log('⏸️ [IAstedModal] Arrêt de l\'écoute');
+      stopListening();
+    } else if (voiceState === 'idle') {
+      console.log('🎤 [IAstedModal] Démarrage de l\'écoute');
+      startListening();
+    }
+  }, [voiceModeToggleTimestamp]);
+
+  // Démarrer automatiquement l'écoute si le modal s'ouvre en mode vocal
+  useEffect(() => {
+    if (isOpen && isVoiceModeActive && voiceState === 'idle') {
+      console.log('🚀 [IAstedModal] Modal ouvert en mode vocal, démarrage auto de l\'écoute');
+      setTimeout(() => {
+        startListening();
+      }, 300); // Petit délai pour laisser le modal s'ouvrir
+    }
+  }, [isOpen, isVoiceModeActive]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
