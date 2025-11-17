@@ -12,6 +12,11 @@ interface Message {
   content: string;
   timestamp: string;
   audioUrl?: string;
+  documents?: Array<{
+    filename: string;
+    url?: string;
+    path?: string;
+  }>;
   metadata?: {
     intent?: string;
     tokens?: number;
@@ -184,6 +189,7 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const hasDetectedSpeechRef = useRef<boolean>(false);
   
   const { toast } = useToast();
 
@@ -333,6 +339,8 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        // CORRECTION: Réinitialiser hasDetectedSpeechRef pour éviter le blocage de détection
+        hasDetectedSpeechRef.current = false;
         await processAudioInput(audioBlob);
       };
 
@@ -376,7 +384,12 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
       setAudioLevel(Math.min(100, average * 2));
 
       if (average < settings.silenceThreshold) {
-        if (!silenceTimerRef.current) {
+        // Détecter si on a eu de la parole avant le silence
+        if (!hasDetectedSpeechRef.current && average > 0) {
+          hasDetectedSpeechRef.current = true;
+        }
+        // Ne démarrer le timer de silence que si on a détecté de la parole
+        if (hasDetectedSpeechRef.current && !silenceTimerRef.current) {
           silenceTimerRef.current = setTimeout(() => {
             if (mediaRecorderRef.current?.state === 'recording') {
               stopListening();
@@ -384,6 +397,8 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
           }, settings.silenceDuration);
         }
       } else {
+        // Marquer qu'on a détecté de la parole
+        hasDetectedSpeechRef.current = true;
         if (silenceTimerRef.current) {
           clearTimeout(silenceTimerRef.current);
           silenceTimerRef.current = null;
