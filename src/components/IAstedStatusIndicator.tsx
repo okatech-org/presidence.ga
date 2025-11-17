@@ -227,11 +227,21 @@ export const IAstedStatusIndicator: React.FC = () => {
 
   const checkConfiguration = async () => {
     try {
-      // On utilise maintenant OpenAI, pas besoin de configuration ElevenLabs
-      setStatus('configured');
-      setAgentName('iAsted GPT');
+      const { data, error } = await supabase
+        .from('iasted_config')
+        .select('agent_id, agent_name')
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data?.agent_id) {
+        setStatus('configured');
+        setAgentName(data.agent_name || 'iAsted');
+      } else {
+        setStatus('not-configured');
+      }
     } catch (error) {
-      console.error('Error checking configuration:', error);
+      console.error('Error checking iAsted configuration:', error);
       setStatus('not-configured');
     }
   };
