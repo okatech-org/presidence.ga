@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
+import { useElevenLabsAgent } from '@/hooks/useElevenLabsAgent';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -128,10 +128,54 @@ export default function PresidentSpace() {
   });
   const [activeSection, setActiveSection] = useState("dashboard");
   const [iastedOpen, setIastedOpen] = useState(false);
+  const [agentId, setAgentId] = useState<string | null>(null);
   const navigate = useNavigate();
+  
+  // Charger la configuration iAsted depuis la DB
+  useEffect(() => {
+    const loadConfig = async () => {
+      const { data } = await supabase
+        .from('iasted_config')
+        .select('agent_id')
+        .limit(1)
+        .single();
+      
+      if (data?.agent_id) {
+        setAgentId(data.agent_id);
+      }
+    };
+    loadConfig();
+  }, []);
 
-  // Hook pour la conversation vocale en temps réel via WebRTC
-  const { voiceState, isConnected, toggleConversation } = useRealtimeVoiceWebRTC();
+  // Hook pour la conversation vocale avec ElevenLabs
+  const {
+    isConnected,
+    isSpeaking,
+    isLoading,
+    conversationStarted,
+    startConversation,
+    stopConversation
+  } = useElevenLabsAgent({
+    agentId,
+    userRole: 'president',
+    onSpeakingChange: (speaking) => {
+      console.log('🎙️ [iAsted] État de parole:', speaking);
+    }
+  });
+  
+  // États dérivés pour la compatibilité
+  const voiceState = isLoading ? 'thinking' : isSpeaking ? 'speaking' : isConnected ? 'listening' : 'idle';
+  const toggleConversation = async () => {
+    if (isConnected) {
+      await stopConversation();
+    } else {
+      if (!agentId) {
+        console.error('❌ [iAsted] Agent ID non configuré');
+        return;
+      }
+      await startConversation();
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
