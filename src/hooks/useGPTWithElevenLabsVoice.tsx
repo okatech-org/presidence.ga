@@ -22,6 +22,7 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   
   const { toast } = useToast();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -132,25 +133,31 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
       // 3. Obtenir la réponse de GPT
       console.log('🤖 [GPT+ElevenLabs] Appel GPT...');
       
+      // Créer une session si elle n'existe pas
+      let currentSessionId = sessionId;
+      if (!currentSessionId) {
+        currentSessionId = crypto.randomUUID();
+        setSessionId(currentSessionId);
+        console.log('📝 [GPT+ElevenLabs] Nouvelle session créée:', currentSessionId);
+      }
+      
       const { data: chatResponse, error: chatError } = await supabase.functions.invoke(
         'chat-with-iasted',
         {
           body: {
-            message: userText,
+            sessionId: currentSessionId,
+            transcriptOverride: userText,
             userRole,
-            conversationHistory: messages.map(m => ({
-              role: m.role,
-              content: m.content
-            }))
+            generateAudio: false // On génère l'audio avec ElevenLabs après
           }
         }
       );
 
-      if (chatError || !chatResponse?.reply) {
+      if (chatError || !chatResponse?.answer) {
         throw new Error('Erreur de réponse GPT');
       }
 
-      const assistantText = chatResponse.reply;
+      const assistantText = chatResponse.answer;
       console.log('✅ [GPT+ElevenLabs] Réponse GPT:', assistantText);
 
       // Ajouter le message assistant
@@ -254,6 +261,7 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
     }
     setVoiceState('idle');
     setMessages([]);
+    setSessionId(null); // Réinitialiser la session
   }, [stopRecording]);
 
   const toggleConversation = useCallback(() => {
