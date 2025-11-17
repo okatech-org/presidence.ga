@@ -735,6 +735,8 @@ export default function PresidentSpace() {
       <IAstedPresidentModal
         isOpen={iastedOpen}
         onClose={() => setIastedOpen(false)}
+        voiceModeToggleTimestamp={voiceModeToggleTimestamp}
+        isVoiceModeActive={isVoiceModeActive}
       />
     </div>
   );
