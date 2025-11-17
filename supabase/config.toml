@@ -1,1 +1,7 @@
 project_id = "sfsoqoeunivgorrgioap"
+
+[functions.initialize-demo-accounts]
+verify_jwt = false
+
+[functions.get-realtime-token]
+verify_jwt = false
