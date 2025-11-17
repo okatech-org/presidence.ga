@@ -137,9 +137,10 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     const normalizedLevel = Math.min(100, (average / 255) * 100);
     setAudioLevel(normalizedLevel);
 
-    // Détection de silence
+    // Détection de silence automatique
     if (normalizedLevel < silenceThreshold) {
       if (!silenceTimerRef.current) {
+        console.log('🔇 Début de silence détecté');
         setSilenceDetected(true);
         let timeRemaining = silenceDuration;
         
@@ -147,14 +148,23 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
           timeRemaining -= 100;
           setSilenceTimeRemaining(timeRemaining);
           
+          // Quand le silence atteint la durée configurée, arrêter l'écoute automatiquement
           if (timeRemaining <= 0 && voiceState === 'listening') {
-            console.log('🔇 Silence détecté, arrêt automatique');
-            stopListening();
+            console.log('🔇 Silence confirmé - arrêt automatique de l\'écoute');
+            clearInterval(silenceTimerRef.current!);
+            silenceTimerRef.current = null;
             setSilenceDetected(false);
+            setSilenceTimeRemaining(0);
+            // Arrêter l'enregistrement - ceci va déclencher processAudio via mediaRecorder.onstop
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+              mediaRecorderRef.current.stop();
+              setVoiceState('thinking');
+            }
           }
         }, 100);
       }
     } else {
+      // L'utilisateur parle à nouveau, réinitialiser le timer
       if (silenceTimerRef.current) {
         clearInterval(silenceTimerRef.current);
         silenceTimerRef.current = null;
@@ -166,7 +176,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     if (voiceState === 'listening') {
       requestAnimationFrame(analyzeAudioLevel);
     }
-  }, [voiceState, silenceThreshold, silenceDuration]);
+  }, [voiceState, silenceThreshold, silenceDuration]); // stopListening n'est pas inclus car on utilise directement mediaRecorderRef
 
   // Démarrer l'écoute
   const startListening = useCallback(async () => {
@@ -253,6 +263,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
 
     try {
       console.log('📝 Traitement de l\'audio...');
+      setVoiceState('thinking');
 
       // Convertir en base64
       const reader = new FileReader();
@@ -264,6 +275,19 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
         reader.onerror = reject;
         reader.readAsDataURL(audioBlob);
       });
+
+      // Calculer la durée de l'audio pour estimer la complexité
+      const audioDurationMs = audioBlob.size / 16; // Estimation approximative
+      
+      // Temps de réflexion adaptatif (2-5 secondes selon la longueur)
+      // Audio court (< 2s) = 2s de réflexion
+      // Audio moyen (2-5s) = 3s de réflexion  
+      // Audio long (> 5s) = 4-5s de réflexion
+      let thinkingTime = 2000; // minimum 2 secondes
+      if (audioDurationMs > 2000) thinkingTime = 3000;
+      if (audioDurationMs > 5000) thinkingTime = Math.min(5000, 4000 + (audioDurationMs - 5000) / 10);
+      
+      console.log(`🤔 Temps de réflexion: ${thinkingTime}ms (durée audio estimée: ${audioDurationMs}ms)`);
 
       // Appeler chat-with-iasted
       const { data, error } = await supabase.functions.invoke('chat-with-iasted', {
@@ -280,6 +304,9 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       if (error) throw error;
 
       console.log('✅ Réponse reçue:', data);
+
+      // Simuler le temps de réflexion avant de répondre
+      await new Promise(resolve => setTimeout(resolve, thinkingTime));
 
       // Ajouter les messages à l'historique de la conversation
       if (data.transcript) {
