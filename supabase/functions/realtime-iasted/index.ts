@@ -8,12 +8,20 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('📥 [realtime-iasted] Requête reçue');
+  console.log('📥 [realtime-iasted] Method:', req.method);
+  console.log('📥 [realtime-iasted] URL:', req.url);
+  
   if (req.method === 'OPTIONS') {
+    console.log('✅ [realtime-iasted] OPTIONS - returning CORS headers');
     return new Response(null, { headers: corsHeaders });
   }
 
   const upgrade = req.headers.get('upgrade') || '';
+  console.log('📥 [realtime-iasted] Upgrade header:', upgrade);
+  
   if (upgrade.toLowerCase() !== 'websocket') {
+    console.error('❌ [realtime-iasted] Not a websocket request');
     return new Response('Expected websocket', { status: 426 });
   }
 
@@ -21,12 +29,14 @@ serve(async (req) => {
   const url = new URL(req.url);
   const jwt = url.searchParams.get('jwt');
   
+  console.log('🔑 [realtime-iasted] JWT present:', !!jwt);
+  
   if (!jwt) {
-    console.error('❌ JWT token not provided');
+    console.error('❌ [realtime-iasted] JWT token not provided');
     return new Response('JWT token required', { status: 401 });
   }
 
-  console.log('✅ JWT token received, upgrading to WebSocket');
+  console.log('✅ [realtime-iasted] JWT token received, upgrading to WebSocket');
 
   const { socket, response } = Deno.upgradeWebSocket(req);
   
