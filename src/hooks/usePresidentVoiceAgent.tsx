@@ -303,6 +303,17 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
   };
 
   const processAudioInput = async (audioBlob: Blob) => {
+    // Vérifier que la session est prête
+    if (!session?.id) {
+      toast({
+        title: 'Session non prête',
+        description: 'Veuillez patienter pendant l\'initialisation...',
+        variant: 'destructive',
+      });
+      setVoiceState('idle');
+      return;
+    }
+
     setIsProcessing(true);
     const startTime = Date.now();
 
@@ -409,6 +420,17 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
     tokensUsed: number;
     detectedStyle: string;
   }> => {
+    // CRITIQUE : Vérifier que la session est initialisée
+    if (!session?.id) {
+      console.error('❌ [generatePresidentResponse] Session non initialisée');
+      toast({
+        title: 'Session non prête',
+        description: 'Veuillez patienter pendant l\'initialisation de la session...',
+        variant: 'destructive',
+      });
+      throw new Error('Session non initialisée');
+    }
+
     const conversationHistory = messages.slice(-10).map(m => ({
       role: m.role,
       content: m.content,
@@ -442,9 +464,10 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
     }
 
     // 3. Génération de la réponse avec le style adapté
+    console.log('📤 [generatePresidentResponse] Appel chat-with-iasted avec sessionId:', session.id);
     const { data, error } = await supabase.functions.invoke('chat-with-iasted', {
       body: {
-        sessionId: session?.id,
+        sessionId: session.id,
         transcriptOverride: userInput,
         conversationHistory,
         userRole: 'president',
@@ -544,6 +567,16 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
 
   const sendTextMessage = async (text: string) => {
     if (!text.trim() || isProcessing) return;
+
+    // Vérifier que la session est prête
+    if (!session?.id) {
+      toast({
+        title: 'Session non prête',
+        description: 'Veuillez patienter pendant l\'initialisation...',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsProcessing(true);
     const startTime = Date.now();
