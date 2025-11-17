@@ -43,7 +43,8 @@ import {
   Wrench,
   Target,
 } from "lucide-react";
-import IAstedMainButton from "@/components/iasted/IAstedMainButton";
+import { IAstedPresidentModal } from '@/components/iasted/IAstedPresidentModal';
+import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -705,7 +706,36 @@ export default function PresidentSpace() {
       </div>
 
       {/* Bouton IAsted flottant */}
-      <IAstedMainButton className="fixed bottom-8 right-8 z-50" />
+      <IAstedButtonFull
+        onSingleClick={() => {
+          console.log('🖱️ [IAstedButton] Clic simple détecté');
+          if (iastedOpen) {
+            console.log('🔄 [IAstedButton] Modal ouverte, toggle mode vocal');
+            setVoiceModeToggleTimestamp(Date.now());
+          } else {
+            console.log('🚀 [IAstedButton] Ouverture modal en mode vocal');
+            setIastedOpen(true);
+            setIsVoiceModeActive(true);
+          }
+        }}
+        onDoubleClick={() => {
+          console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal mode texte');
+          setIastedOpen(true);
+          setIsVoiceModeActive(false);
+        }}
+            size="lg"
+        voiceListening={isVoiceModeActive && !isAgentSpeaking}
+            voiceSpeaking={isAgentSpeaking}
+            voiceProcessing={false}
+        isInterfaceOpen={iastedOpen}
+            isVoiceModeActive={isVoiceModeActive}
+          />
+
+      {/* Interface iAsted avec chat et vocal */}
+      <IAstedPresidentModal
+        isOpen={iastedOpen}
+        onClose={() => setIastedOpen(false)}
+      />
     </div>
   );
 }
