@@ -79,6 +79,20 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
     }
   }, [isRecording]);
 
+  // Convertir ArrayBuffer en base64 par chunks pour éviter stack overflow
+  const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 32768; // 32KB chunks
+    let binary = '';
+    
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.slice(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    
+    return btoa(binary);
+  };
+
   // Traiter l'enregistrement
   const processRecording = useCallback(async () => {
     try {
@@ -87,9 +101,7 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
       // 1. Convertir audio en base64
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       const arrayBuffer = await audioBlob.arrayBuffer();
-      const base64Audio = btoa(
-        String.fromCharCode(...new Uint8Array(arrayBuffer))
-      );
+      const base64Audio = arrayBufferToBase64(arrayBuffer);
 
       console.log('📝 [GPT+ElevenLabs] Transcription...');
 
@@ -182,6 +194,18 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
     }
   }, [messages, userRole, toast]);
 
+  // Convertir base64 en Uint8Array par chunks
+  const base64ToUint8Array = (base64: string): Uint8Array => {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    return bytes;
+  };
+
   // Jouer l'audio
   const playAudio = useCallback(async (base64Audio: string) => {
     return new Promise<void>((resolve, reject) => {
@@ -192,10 +216,8 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
           currentAudioRef.current = null;
         }
 
-        const audioBlob = new Blob(
-          [Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))],
-          { type: 'audio/mpeg' }
-        );
+        const audioBytes = base64ToUint8Array(base64Audio);
+        const audioBlob = new Blob([audioBytes.buffer as ArrayBuffer], { type: 'audio/mpeg' });
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
         currentAudioRef.current = audio;
