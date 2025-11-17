@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
+import { useElevenLabsVoice } from '@/hooks/useElevenLabsVoice';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -130,8 +130,8 @@ export default function PresidentSpace() {
   const [iastedOpen, setIastedOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Hook pour la conversation vocale en temps réel via WebRTC
-  const { voiceState, isConnected, toggleConversation } = useRealtimeVoiceWebRTC();
+  // Hook pour la conversation vocale ElevenLabs
+  const { voiceState, isConnected, toggleConversation } = useElevenLabsVoice();
 
   useEffect(() => {
     setMounted(true);
