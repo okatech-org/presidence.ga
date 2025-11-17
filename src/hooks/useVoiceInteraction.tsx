@@ -473,6 +473,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       console.log('🚀 [startConversation] Début...');
       console.log('🔧 [startConversation] selectedVoiceId:', selectedVoiceId);
       console.log('👤 [startConversation] userId actuel:', userId);
+      console.log('📊 [startConversation] État actuel voiceState:', voiceState);
 
       // Vérifier l'authentification avant de créer la session
       if (!userId) {
