@@ -43,8 +43,9 @@ import {
   Wrench,
   Target,
 } from "lucide-react";
-import { IAstedPresidentModal } from '@/components/iasted/IAstedPresidentModal';
+import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
+import { useRealtimeVoiceChat } from '@/hooks/useRealtimeVoiceChat';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -127,10 +128,10 @@ export default function PresidentSpace() {
   });
   const [activeSection, setActiveSection] = useState("dashboard");
   const [iastedOpen, setIastedOpen] = useState(false);
-  const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
-  const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
-  const [voiceModeToggleTimestamp, setVoiceModeToggleTimestamp] = useState(0);
   const navigate = useNavigate();
+
+  // Hook pour la conversation vocale en temps réel
+  const { voiceState, isConnected, toggleConversation } = useRealtimeVoiceChat();
 
   useEffect(() => {
     setMounted(true);
@@ -707,36 +708,34 @@ export default function PresidentSpace() {
 
       {/* Bouton IAsted flottant */}
       <IAstedButtonFull
-        onSingleClick={() => {
-          console.log('🖱️ [IAstedButton] Clic simple détecté');
+        onSingleClick={async () => {
+          console.log('🖱️ [IAstedButton] Clic simple - conversation vocale directe');
           if (iastedOpen) {
-            console.log('🔄 [IAstedButton] Modal ouverte, toggle mode vocal');
-            setVoiceModeToggleTimestamp(Date.now());
+            // Si modal ouvert, toggle la conversation vocale
+            console.log('🔄 [IAstedButton] Modal ouverte, toggle conversation');
+            await toggleConversation();
           } else {
-            console.log('🚀 [IAstedButton] Ouverture modal en mode vocal');
-            setIastedOpen(true);
-            setIsVoiceModeActive(true);
+            // Sinon, démarre la conversation vocale directement sans modal
+            console.log('🎤 [IAstedButton] Démarrage conversation vocale directe');
+            await toggleConversation();
           }
         }}
         onDoubleClick={() => {
-          console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal mode texte');
+          console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal chat');
           setIastedOpen(true);
-          setIsVoiceModeActive(false);
         }}
-            size="lg"
-        voiceListening={isVoiceModeActive && !isAgentSpeaking}
-            voiceSpeaking={isAgentSpeaking}
-            voiceProcessing={false}
+        size="lg"
+        voiceListening={voiceState === 'listening'}
+        voiceSpeaking={voiceState === 'speaking'}
+        voiceProcessing={voiceState === 'thinking'}
         isInterfaceOpen={iastedOpen}
-            isVoiceModeActive={isVoiceModeActive}
-          />
+        isVoiceModeActive={isConnected}
+      />
 
-      {/* Interface iAsted avec chat et vocal */}
-      <IAstedPresidentModal
+      {/* Interface iAsted avec chat et documents */}
+      <IAstedChatModal
         isOpen={iastedOpen}
         onClose={() => setIastedOpen(false)}
-        voiceModeToggleTimestamp={voiceModeToggleTimestamp}
-        isVoiceModeActive={isVoiceModeActive}
       />
     </div>
   );
