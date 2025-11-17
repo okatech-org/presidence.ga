@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useGPTWithElevenLabsVoice } from '@/hooks/useGPTWithElevenLabsVoice';
+import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -130,15 +130,8 @@ export default function PresidentSpace() {
   const [iastedOpen, setIastedOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Hook pour la conversation vocale GPT + ElevenLabs
-  const [showChat, setShowChat] = useState(false);
-  const {
-    voiceState,
-    isSpeaking,
-    isRecording,
-    toggleConversation,
-    stopRecording,
-  } = useGPTWithElevenLabsVoice('president');
+  // Hook pour la conversation vocale en temps réel via WebRTC
+  const { voiceState, isConnected, toggleConversation } = useRealtimeVoiceWebRTC();
 
   useEffect(() => {
     setMounted(true);
@@ -734,9 +727,9 @@ export default function PresidentSpace() {
         size="lg"
         voiceListening={voiceState === 'listening'}
         voiceSpeaking={voiceState === 'speaking'}
-        voiceProcessing={voiceState === 'processing'}
+        voiceProcessing={voiceState === 'thinking'}
         isInterfaceOpen={iastedOpen}
-        isVoiceModeActive={isRecording || isSpeaking}
+        isVoiceModeActive={isConnected}
       />
 
       {/* Interface iAsted avec chat et documents */}
