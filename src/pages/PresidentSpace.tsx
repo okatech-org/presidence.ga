@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useGPTWithElevenLabsVoice } from '@/hooks/useGPTWithElevenLabsVoice';
+import { useRealtimeVoice } from '@/hooks/useRealtimeVoice';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -130,15 +130,16 @@ export default function PresidentSpace() {
   const [iastedOpen, setIastedOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Hook pour la conversation vocale GPT + ElevenLabs
+  // Hook pour la conversation vocale en temps réel
   const [showChat, setShowChat] = useState(false);
   const {
     voiceState,
     isSpeaking,
-    isRecording,
+    isListening,
+    isConnected,
     toggleConversation,
-    stopRecording,
-  } = useGPTWithElevenLabsVoice('president');
+    stopConversation,
+  } = useRealtimeVoice();
 
   useEffect(() => {
     setMounted(true);
@@ -716,27 +717,30 @@ export default function PresidentSpace() {
       {/* Bouton IAsted flottant */}
       <IAstedButtonFull
         onSingleClick={async () => {
-          console.log('🖱️ [IAstedButton] Clic simple - conversation vocale directe');
-          if (iastedOpen) {
-            // Si modal ouvert, toggle la conversation vocale
-            console.log('🔄 [IAstedButton] Modal ouverte, toggle conversation');
-            await toggleConversation();
+          console.log('🖱️ [IAstedButton] Clic simple');
+          if (isConnected) {
+            // Si déjà connecté, arrêter la conversation
+            console.log('🛑 [IAstedButton] Arrêt conversation');
+            stopConversation();
           } else {
-            // Sinon, démarre la conversation vocale directement sans modal
-            console.log('🎤 [IAstedButton] Démarrage conversation vocale directe');
+            // Sinon, démarrer la conversation (iAsted va se présenter automatiquement)
+            console.log('🎤 [IAstedButton] Démarrage conversation avec présentation');
             await toggleConversation();
           }
         }}
         onDoubleClick={() => {
           console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal chat');
+          if (isConnected) {
+            stopConversation();
+          }
           setIastedOpen(true);
         }}
         size="lg"
-        voiceListening={voiceState === 'listening'}
-        voiceSpeaking={voiceState === 'speaking'}
-        voiceProcessing={voiceState === 'processing'}
+        voiceListening={isListening || voiceState === 'connected'}
+        voiceSpeaking={isSpeaking}
+        voiceProcessing={voiceState === 'connecting'}
         isInterfaceOpen={iastedOpen}
-        isVoiceModeActive={isRecording || isSpeaking}
+        isVoiceModeActive={isConnected}
       />
 
       {/* Interface iAsted avec chat et documents */}
