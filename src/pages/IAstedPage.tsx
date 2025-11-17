@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, MessageCircle, History, Settings, Activity } from 'lucide-react';
-import { useVoiceInteraction, Message } from '@/hooks/useVoiceInteraction';
+import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
 import { ChatDock } from '@/components/ChatDock';
 import { VoiceSettings } from '@/components/VoiceSettings';
 import { usePresidentRole } from '@/hooks/usePresidentRole';
@@ -37,7 +37,7 @@ const IAstedPage = () => {
   const {
     voiceState,
     sessionId,
-    messages,
+    conversationMessages,
     audioLevel,
     isPaused,
     isIdle,
@@ -49,8 +49,7 @@ const IAstedPage = () => {
     stopConversation,
     startListening,
     stopListening,
-    cancelAll,
-    newQuestion,
+    cancelInteraction,
     setSelectedVoiceId: setVoiceId,
     togglePause,
   } = useVoiceInteraction({
@@ -58,10 +57,6 @@ const IAstedPage = () => {
     silenceThreshold: voiceConfig.silenceThreshold,
     continuousMode: voiceConfig.continuousMode,
     voiceId: selectedVoiceId,
-    userRole,
-    onMessage: (msg) => {
-      console.log('Nouveau message:', msg);
-    },
   });
 
   useEffect(() => {
@@ -251,18 +246,15 @@ const IAstedPage = () => {
                           </Button>
                         )}
                         {isSpeaking && (
-                          <Button variant="outline" onClick={cancelAll}>
+                          <Button variant="outline" onClick={cancelInteraction}>
                             Interrompre
                           </Button>
                         )}
                         {isThinking && (
-                          <Button variant="outline" onClick={cancelAll}>
+                          <Button variant="outline" onClick={cancelInteraction}>
                             Annuler
                           </Button>
                         )}
-                        <Button variant="outline" onClick={newQuestion}>
-                          Nouvelle question
-                        </Button>
                         <Button variant="destructive" onClick={handleStopConversation}>
                           Terminer
                         </Button>
@@ -272,7 +264,7 @@ const IAstedPage = () => {
                 </div>
 
                 <div className="h-[500px]">
-                  <ChatDock messages={messages} />
+                  <ChatDock messages={conversationMessages} />
                 </div>
               </CardContent>
             </Card>
@@ -334,11 +326,7 @@ const IAstedPage = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">
-            <VoiceSettings
-              onVoiceChange={setSelectedVoiceId}
-              onConfigChange={handleVoiceConfigChange}
-              userRole={userRole}
-            />
+            <VoiceSettings />
           </TabsContent>
         </Tabs>
       </div>
