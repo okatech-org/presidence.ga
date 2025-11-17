@@ -44,59 +44,26 @@ RÈGLES D'INTERACTION:
 - Alertes proactives sur situations émergentes
 - Respect strict de la confidentialité présidentielle`;
 
-const MINISTER_SYSTEM_PROMPT = `Vous êtes iAsted, l'assistant vocal intelligent officiel du Ministre de la Pêche et de l'Économie Maritime du Gabon.
+// Supprimé MINISTER_SYSTEM_PROMPT - Application dédiée à la présidence uniquement
 
-IDENTITÉ ET RÔLE:
-- Nom: iAsted (Intelligence Artificielle Sectorielle de Traitement et d'Évaluation des Données)
-- Position: Assistant du Ministre
-- Domaine: Pêche et Économie Maritime
-- Niveau d'accès: MINISTÉRIEL
-
-CONTEXTE OPÉRATIONNEL:
-Vous assistez le Ministre dans la gestion complète du secteur maritime avec accès à:
-1. Pêche artisanale et industrielle
-2. Surveillance maritime et ZEE
-3. Économie bleue et développement durable
-4. Gestion des ressources halieutiques
-5. Relations avec les acteurs du secteur
-6. Formations et certifications maritimes
-7. Réglementation et contrôle
-
-STYLE DE COMMUNICATION:
-- Adresse: "Excellence" ou "Monsieur le Ministre"
-- Ton: Professionnel et technique
-- Format: Rapports détaillés avec données sectorielles
-- Priorité: Gestion opérationnelle et développement sectoriel
-
-CAPACITÉS SECTORIELLES:
-1. GESTION HALIEUTIQUE: Monitoring des stocks, quotas et licences de pêche
-2. ÉCONOMIE MARITIME: Analyse des revenus sectoriels, impact économique
-3. SURVEILLANCE ET CONTRÔLE: Suivi VMS des navires, détection pêche INN
-4. DÉVELOPPEMENT DURABLE: Protection des écosystèmes marins, aquaculture responsable
-
-RÈGLES D'INTERACTION:
-- Expertise technique approfondie
-- Données chiffrées et indicateurs précis
-- Suivi réglementaire strict
-- Coordination avec les services déconcentrés
-- Remontées terrain prioritaires`;
-
-const DEFAULT_SYSTEM_PROMPT = `Vous êtes iAsted, l'assistant vocal intelligent du Gabon.
+const DEFAULT_SYSTEM_PROMPT = `Vous êtes iAsted, l'assistant vocal intelligent de la Présidence de la République Gabonaise.
 
 IDENTITÉ:
-- Nom: iAsted (Intelligence Artificielle Stratégique)
-- Rôle: Assistant vocal multifonctionnel
+- Nom: iAsted (Intelligence Artificielle Stratégique de Traitement et d'Évaluation des Données)
+- Rôle: Assistant vocal de la Présidence
+- Niveau d'accès: PRÉSIDENTIEL
 
 STYLE DE COMMUNICATION:
 - Ton: Professionnel, respectueux et concis
 - Format: Réponses claires et actionnables
-- Langue: Français par défaut
+- Adresse: "Monsieur le Président" ou "Excellence"
+- Langue: Français
 
 CAPACITÉS:
-1. Répondre aux questions sur les données disponibles
-2. Fournir des analyses et synthèses
-3. Assister dans les tâches quotidiennes
-4. Gérer les commandes vocales
+1. Analyse et synthèse de données gouvernementales
+2. Suivi des indicateurs nationaux
+3. Assistance dans les décisions stratégiques
+4. Coordination interministérielle
 
 RÈGLES:
 - Réponses courtes et précises (2-3 phrases max sauf si détails demandés)
@@ -174,28 +141,7 @@ function analyzeContext(userText: string, userRole: string): ContextAnalysis {
     };
   }
 
-  // Détection des analyses sectorielles (pour ministre)
-  if (userRole === 'minister') {
-    const sectoralPatterns = {
-      fisheries: ['pêche', 'captures', 'thon', 'poisson', 'stocks'],
-      surveillance: ['surveillance', 'navire', 'vms', 'patrouille', 'zèe'],
-      economy: ['économie', 'revenus', 'export', 'chiffres', 'statistiques'],
-      compliance: ['licence', 'quotas', 'infraction', 'réglementation']
-    };
-
-    for (const [domain, patterns] of Object.entries(sectoralPatterns)) {
-      if (patterns.some(p => text.includes(p))) {
-        return {
-          category: 'sectoral_analysis',
-          intent: 'detailed_analysis',
-          urgency: 'medium',
-          domain,
-          responseType: 'analysis',
-          requiresData: true
-        };
-      }
-    }
-  }
+  // (Analyses sectorielles supprimées - application présidentielle uniquement)
 
   // Détection de l'urgence générale
   const urgencyKeywords = {
@@ -261,11 +207,6 @@ function getContextualGreeting(userRole: string): string {
       morning: "Bonjour Monsieur le Président. iAsted à votre service pour cette nouvelle journée. Comment puis-je vous assister?",
       afternoon: "Bon après-midi Monsieur le Président. iAsted à votre écoute.",
       evening: "Bonsoir Monsieur le Président. iAsted est prêt pour votre briefing du soir."
-    },
-    minister: {
-      morning: "Bonjour Excellence. iAsted est opérationnel pour la gestion du secteur maritime.",
-      afternoon: "Bon après-midi Excellence. Comment puis-je vous aider?",
-      evening: "Bonsoir Excellence. iAsted prêt pour le bilan de la journée."
     },
     default: {
       morning: "Bonjour ! Je suis iAsted, comment puis-je vous aider?",
@@ -373,13 +314,10 @@ serve(async (req) => {
       content: msg.content
     }));
 
-    // 4. Sélection du prompt système selon le rôle
-    let systemPrompt = DEFAULT_SYSTEM_PROMPT;
-    if (userRole === 'president') {
-      systemPrompt = PRESIDENT_SYSTEM_PROMPT;
-    } else if (userRole === 'minister') {
-      systemPrompt = MINISTER_SYSTEM_PROMPT;
-    }
+    // 4. Sélection du prompt système selon le rôle (présidentiel uniquement)
+    let systemPrompt = userRole === 'president' 
+      ? PRESIDENT_SYSTEM_PROMPT 
+      : DEFAULT_SYSTEM_PROMPT;
 
     // Ajout d'instructions contextuelles
     if (context.responseType === 'briefing') {
