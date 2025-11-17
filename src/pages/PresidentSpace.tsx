@@ -710,10 +710,14 @@ export default function PresidentSpace() {
       {/* Bouton IAsted flottant */}
       <IAstedButtonFull
         onSingleClick={() => {
+          console.log('🖱️ [IAstedButton] Clic simple détecté');
+          console.log('📊 [IAstedButton] États actuels:', { iastedOpen, isVoiceModeActive });
           if (iastedOpen) {
+            console.log('🔄 [IAstedButton] Modal déjà ouverte, toggle mode vocal');
             setIsVoiceModeActive(!isVoiceModeActive);
-              } else {
-                setIastedOpen(true);
+          } else {
+            console.log('🚀 [IAstedButton] Ouverture modal + activation mode vocal');
+            setIastedOpen(true);
             setIsVoiceModeActive(true);
           }
         }}
@@ -740,7 +744,7 @@ export default function PresidentSpace() {
               ref={voiceConversationRef}
               userRole="president"
               onSpeakingChange={setIsAgentSpeaking}
-              autoActivate={voiceOnlyMode}
+              autoActivate={isVoiceModeActive}
               onVoiceModeChange={setIsVoiceModeActive}
             />
           </DialogContent>
