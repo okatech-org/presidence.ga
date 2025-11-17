@@ -43,16 +43,16 @@ const AudioLevelIndicator: React.FC<{ level: number; state: string }> = ({ level
       {[...Array(5)].map((_, i) => (
         <motion.div
           key={i}
-          className="w-1.5 bg-green-500 rounded-full"
+          className="w-1.5 rounded-full"
           animate={{
             height: state === 'listening' ? `${20 + (level / 100) * (i + 1) * 10}px` : '20px',
-            backgroundColor: state === 'speaking' ? '#3B82F6' : '#22C55E',
+            backgroundColor: state === 'speaking' ? 'hsl(var(--primary))' : 'hsl(var(--success))',
           }}
           transition={{ duration: 0.1 }}
         />
       ))}
     </div>
-    <span className="text-xs text-gray-500">
+    <span className="text-xs text-muted-foreground">
       {state === 'listening' && 'Écoute...'}
       {state === 'thinking' && 'Analyse...'}
       {state === 'speaking' && 'Parle...'}
@@ -72,19 +72,19 @@ const MessageBubble: React.FC<{ message: any }> = ({ message }) => {
       <div className={`max-w-[80%] ${isUser ? 'order-2' : 'order-1'}`}>
         <div className="flex items-start gap-2">
           {!isUser && (
-            <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-              <Bot className="w-4 h-4 text-white" />
+            <div className="neu-raised w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-success/10">
+              <Bot className="w-4 h-4 text-success" />
             </div>
           )}
           <div
             className={`rounded-2xl px-4 py-3 ${
               isUser
-                ? 'bg-blue-600 text-white rounded-br-none'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-none'
+                ? 'neu-raised bg-primary/10 text-foreground rounded-br-none'
+                : 'neu-inset text-foreground rounded-bl-none'
             }`}
           >
             <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-opacity-20">
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
               <span className="text-xs opacity-70">
                 {new Date(message.timestamp).toLocaleTimeString('fr-FR', {
                   hour: '2-digit',
@@ -94,8 +94,8 @@ const MessageBubble: React.FC<{ message: any }> = ({ message }) => {
             </div>
           </div>
           {isUser && (
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-              <User className="w-4 h-4 text-white" />
+            <div className="neu-raised w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10">
+              <User className="w-4 h-4 text-primary" />
             </div>
           )}
         </div>
@@ -159,24 +159,24 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden"
+        className="neu-card w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
-          <div className="flex items-center justify-between">
+        <div className="neu-card p-6 rounded-t-2xl rounded-b-none">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                <Brain className="w-7 h-7" />
+              <div className="neu-raised w-14 h-14 rounded-full flex items-center justify-center p-3">
+                <Brain className="w-7 h-7 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">iAsted - Assistant Présidentiel</h2>
-                <p className="text-sm opacity-90">Niveau d'accès : TOP SECRET</p>
+                <h2 className="text-xl font-bold text-foreground">iAsted - Assistant Présidentiel</h2>
+                <p className="text-sm text-muted-foreground">Niveau d'accès : TOP SECRET</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               {session?.focus_mode && (
-                <span className="bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                <span className="neu-raised bg-warning/10 text-warning px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
                   <Target className="w-3 h-3" />
                   Focus Actif
                 </span>
@@ -184,15 +184,15 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
               <AudioLevelIndicator level={audioLevel} state={voiceState} />
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                className="neu-raised p-2 rounded-lg hover:shadow-neo-md transition-all"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-foreground" />
               </button>
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2">
             {[
               { id: 'chat', label: 'Conversation', icon: MessageSquare },
               { id: 'settings', label: 'Paramètres', icon: Settings },
@@ -201,10 +201,10 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                   activeTab === tab.id
-                    ? 'bg-white text-green-700 font-semibold'
-                    : 'bg-white/20 hover:bg-white/30'
+                    ? 'neu-inset text-primary font-semibold'
+                    : 'neu-raised hover:shadow-neo-md'
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
@@ -230,7 +230,7 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex items-center gap-2 text-gray-500"
+                    className="flex items-center gap-2 text-muted-foreground"
                   >
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">iAsted réfléchit...</span>
@@ -238,7 +238,7 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
                 )}
 
                 {transcript && voiceState === 'thinking' && (
-                  <div className="text-sm text-gray-500 italic">
+                  <div className="text-sm text-muted-foreground italic">
                     Transcription : "{transcript}"
                   </div>
                 )}
@@ -247,15 +247,15 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
               </div>
 
               {/* Controls */}
-              <div className="border-t dark:border-gray-800 p-4 space-y-4">
+              <div className="neu-card rounded-t-none rounded-b-2xl p-4 space-y-4">
                 {/* Quick Actions */}
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setShowFocusModal(true)}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                       session?.focus_mode
-                        ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'neu-inset bg-warning/10 text-warning'
+                        : 'neu-raised hover:shadow-neo-md'
                     }`}
                   >
                     <Target className="w-4 h-4" />
@@ -264,7 +264,7 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
 
                   <button
                     onClick={() => sendTextMessage('Protocole XR-7 : statut actuel')}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                    className="neu-raised flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-destructive/10 text-destructive hover:shadow-neo-md transition-all"
                   >
                     <Shield className="w-4 h-4" />
                     Protocole XR-7
@@ -272,7 +272,7 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
 
                   <button
                     onClick={() => sendTextMessage('Synthèse nationale du jour')}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                    className="neu-raised flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:shadow-neo-md transition-all"
                   >
                     <Globe className="w-4 h-4" />
                     Synthèse nationale
@@ -280,7 +280,7 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
 
                   <button
                     onClick={clearSessionHistory}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                    className="neu-raised flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium hover:shadow-neo-md transition-all"
                   >
                     <RotateCcw className="w-4 h-4" />
                     Réinitialiser
@@ -294,8 +294,8 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Écrivez votre message ou utilisez le micro..."
-                      className="w-full p-3 border rounded-xl resize-none dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-green-500"
+                      placeholder="Écrivez votre message..."
+                      className="w-full p-3 neu-inset rounded-xl resize-none focus:ring-2 focus:ring-primary"
                       rows={2}
                       disabled={isProcessing}
                     />
@@ -304,13 +304,13 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
                   <button
                     onClick={voiceState === 'listening' ? stopListening : startListening}
                     disabled={isProcessing && voiceState !== 'listening'}
-                    className={`p-4 rounded-xl transition-all ${
+                    className={`neu-raised p-4 rounded-xl transition-all ${
                       voiceState === 'listening'
-                        ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                        ? 'bg-destructive text-destructive-foreground animate-pulse shadow-neo-lg'
                         : voiceState === 'speaking'
-                        ? 'bg-blue-500'
-                        : 'bg-green-600 hover:bg-green-700'
-                    } text-white shadow-lg`}
+                        ? 'bg-primary text-primary-foreground shadow-neo-md'
+                        : 'bg-success text-success-foreground hover:shadow-neo-lg'
+                    }`}
                   >
                     {voiceState === 'listening' ? (
                       <MicOff className="w-6 h-6" />
@@ -324,7 +324,7 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
                   <button
                     onClick={handleSendMessage}
                     disabled={!inputText.trim() || isProcessing}
-                    className="p-4 bg-green-600 hover:bg-green-700 text-white rounded-xl disabled:opacity-50 shadow-lg"
+                    className="neu-raised p-4 bg-success text-success-foreground rounded-xl hover:shadow-neo-lg transition-all disabled:opacity-50"
                   >
                     {isProcessing ? (
                       <Loader2 className="w-6 h-6 animate-spin" />
@@ -334,7 +334,7 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
                   </button>
                 </div>
 
-                <div className="text-center text-sm text-gray-500">
+                <div className="text-center text-sm text-muted-foreground">
                   {voiceState === 'idle' && 'Prêt à vous assister'}
                   {voiceState === 'listening' && '🎙️ Je vous écoute...'}
                   {voiceState === 'thinking' && '🧠 Analyse en cours...'}
@@ -381,25 +381,23 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
 
           {activeTab === 'analytics' && (
             <div className="p-6 overflow-y-auto h-full">
-              <h3 className="text-lg font-semibold mb-4">Analytique de Session</h3>
+              <h3 className="text-lg font-semibold mb-4 text-foreground">Analytique de Session</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                  <div className="flex items-center gap-2 text-gray-600 mb-2">
+                <div className="neu-card p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-2">
                     <MessageSquare className="w-4 h-4" />
                     <span className="text-sm font-medium">Messages</span>
                   </div>
-                  <p className="text-3xl font-bold">{messages.length}</p>
+                  <p className="text-3xl font-bold text-foreground">{messages.length}</p>
                 </div>
 
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl">
-                  <div className="flex items-center gap-2 text-gray-600 mb-2">
+                <div className="neu-card p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-2">
                     <Clock className="w-4 h-4" />
                     <span className="text-sm font-medium">Durée</span>
                   </div>
-                  <p className="text-3xl font-bold">
-                    {session
-                      ? Math.round((Date.now() - new Date(session.created_at).getTime()) / 60000)
-                      : 0} min
+                  <p className="text-3xl font-bold text-foreground">
+                    {session ? Math.round((Date.now() - new Date(session.created_at).getTime()) / 60000) : 0} min
                   </p>
                 </div>
               </div>
@@ -421,7 +419,7 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
                 initial={{ scale: 0.95 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0.95 }}
-                className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-2xl w-full max-w-md m-4"
+                className="neu-card p-6 w-full max-w-md m-4"
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 className="text-xl font-bold mb-4">Mode Focus</h3>
