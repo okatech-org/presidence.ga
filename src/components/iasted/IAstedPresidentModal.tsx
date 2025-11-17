@@ -134,6 +134,7 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({
     audioLevel,
     transcript,
     isProcessing,
+    isSessionReady,
     startListening,
     stopListening,
     sendTextMessage,
@@ -158,13 +159,13 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({
 
   // Démarrer automatiquement l'écoute si le modal s'ouvre en mode vocal
   useEffect(() => {
-    if (isOpen && isVoiceModeActive && voiceState === 'idle') {
-      console.log('🚀 [IAstedModal] Modal ouvert en mode vocal, démarrage auto de l\'écoute');
+    if (isOpen && isVoiceModeActive && voiceState === 'idle' && isSessionReady) {
+      console.log('🚀 [IAstedModal] Modal ouvert en mode vocal, session prête, démarrage de l\'écoute');
       setTimeout(() => {
         startListening();
-      }, 300); // Petit délai pour laisser le modal s'ouvrir
+      }, 500); // Délai pour laisser le modal s'ouvrir
     }
-  }, [isOpen, isVoiceModeActive]);
+  }, [isOpen, isVoiceModeActive, isSessionReady]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

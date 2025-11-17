@@ -175,6 +175,7 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
   const [audioLevel, setAudioLevel] = useState(0);
   const [transcript, setTranscript] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSessionReady, setIsSessionReady] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -196,6 +197,7 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
 
   const initializeSession = async () => {
     try {
+      console.log('🔄 [initializeSession] Début initialisation...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Utilisateur non authentifié');
 
@@ -235,13 +237,17 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
           await generateGreeting();
         }
       }
+      
+      setIsSessionReady(true);
+      console.log('✅ [initializeSession] Session prête!');
     } catch (error) {
-      console.error('Erreur initialisation session:', error);
+      console.error('❌ [initializeSession] Erreur:', error);
       toast({
         title: 'Erreur de session',
         description: 'Impossible d\'initialiser la session iAsted',
         variant: 'destructive',
       });
+      setIsSessionReady(false);
     }
   };
 
@@ -299,7 +305,17 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
   };
 
   const startListening = useCallback(async () => {
+    if (!isSessionReady || !session) {
+      console.warn('⚠️ [startListening] Session non prête, attente...');
+      toast({
+        title: 'Initialisation en cours',
+        description: 'iAsted se prépare, veuillez patienter...',
+      });
+      return;
+    }
+    
     try {
+      console.log('🎤 [startListening] Démarrage de l\'écoute...');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 24000,
@@ -859,6 +875,7 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
     audioLevel,
     transcript,
     isProcessing,
+    isSessionReady,
     startListening,
     stopListening,
     sendTextMessage,
