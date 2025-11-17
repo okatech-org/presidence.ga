@@ -19,6 +19,8 @@ import {
   Zap,
   Brain,
   X,
+  FileText,
+  Download,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -76,29 +78,49 @@ const MessageBubble: React.FC<{ message: any }> = ({ message }) => {
               <Bot className="w-4 h-4 text-success" />
             </div>
           )}
-          <div
-            className={`rounded-2xl px-4 py-3 ${
-              isUser
-                ? 'neu-raised bg-primary/10 text-foreground rounded-br-none'
-                : 'neu-inset text-foreground rounded-bl-none'
-            }`}
-          >
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
-              <span className="text-xs opacity-70">
-                {new Date(message.timestamp).toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
-              {!isUser && message.metadata?.responseStyle && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                  {message.metadata.responseStyle === 'concis' && '⚡ Concis'}
-                  {message.metadata.responseStyle === 'detaille' && '📊 Détaillé'}
-                  {message.metadata.responseStyle === 'strategique' && '🎯 Stratégique'}
+          <div className="flex flex-col gap-2 flex-1">
+            <div
+              className={`rounded-2xl px-4 py-3 ${
+                isUser
+                  ? 'neu-raised bg-primary/10 text-foreground rounded-br-none'
+                  : 'neu-inset text-foreground rounded-bl-none'
+              }`}
+            >
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
+                <span className="text-xs opacity-70">
+                  {new Date(message.timestamp).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </span>
-              )}
+                {!isUser && message.metadata?.responseStyle && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                    {message.metadata.responseStyle === 'concis' && '⚡ Concis'}
+                    {message.metadata.responseStyle === 'detaille' && '📊 Détaillé'}
+                    {message.metadata.responseStyle === 'strategique' && '🎯 Stratégique'}
+                  </span>
+                )}
+              </div>
             </div>
+            
+            {/* Affichage des documents */}
+            {!isUser && message.documents && message.documents.length > 0 && (
+              <div className="flex flex-col gap-2 pl-10">
+                {message.documents.map((doc: any, idx: number) => (
+                  <a
+                    key={idx}
+                    href={doc.url || doc.path}
+                    download={doc.filename}
+                    className="neu-raised flex items-center gap-2 px-3 py-2 rounded-lg hover:shadow-neo-md transition-all group"
+                  >
+                    <FileText className="w-4 h-4 text-primary" />
+                    <span className="text-sm text-foreground flex-1">{doc.filename}</span>
+                    <Download className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
           {isUser && (
             <div className="neu-raised w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10">
