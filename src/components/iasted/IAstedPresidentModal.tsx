@@ -195,7 +195,6 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
           <div className="flex gap-2">
             {[
               { id: 'chat', label: 'Conversation', icon: MessageSquare },
-              { id: 'settings', label: 'Paramètres', icon: Settings },
               { id: 'analytics', label: 'Analytique', icon: Activity },
             ].map((tab) => (
               <button
@@ -344,40 +343,6 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({ isOp
             </div>
           )}
 
-          {activeTab === 'settings' && (
-            <div className="p-6 overflow-y-auto h-full space-y-4">
-              <h3 className="text-lg font-semibold mb-4">Configuration vocale</h3>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">Style de réponse</label>
-                <select
-                  value={voiceSettings.responseStyle}
-                  onChange={(e) => setVoiceSettings({ ...voiceSettings, responseStyle: e.target.value as any })}
-                  className="w-full p-2 border rounded-lg dark:bg-gray-800"
-                >
-                  <option value="concis">Concis</option>
-                  <option value="detaille">Détaillé</option>
-                  <option value="strategique">Stratégique</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Mode continu</span>
-                <button
-                  onClick={() => setVoiceSettings({ ...voiceSettings, continuousMode: !voiceSettings.continuousMode })}
-                  className={`w-12 h-6 rounded-full transition-colors ${
-                    voiceSettings.continuousMode ? 'bg-green-600' : 'bg-gray-300'
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 bg-white rounded-full transform transition-transform ${
-                      voiceSettings.continuousMode ? 'translate-x-6' : 'translate-x-0.5'
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-          )}
 
           {activeTab === 'analytics' && (
             <div className="p-6 overflow-y-auto h-full">
