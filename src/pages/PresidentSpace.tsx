@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useRealtimeVoice } from '@/hooks/useRealtimeVoice';
+import { useRealtimeIasted } from '@/hooks/useRealtimeIasted';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -130,16 +130,17 @@ export default function PresidentSpace() {
   const [iastedOpen, setIastedOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Hook pour la conversation vocale en temps réel
+  // Hook pour la conversation vocale fluide avec voix iAsted
   const [showChat, setShowChat] = useState(false);
   const {
     voiceState,
     isSpeaking,
     isListening,
+    isProcessing,
     isConnected,
     toggleConversation,
     stopConversation,
-  } = useRealtimeVoice();
+  } = useRealtimeIasted();
 
   useEffect(() => {
     setMounted(true);
@@ -736,9 +737,9 @@ export default function PresidentSpace() {
           setIastedOpen(true);
         }}
         size="lg"
-        voiceListening={isListening || voiceState === 'connected'}
+        voiceListening={isListening}
         voiceSpeaking={isSpeaking}
-        voiceProcessing={voiceState === 'connecting'}
+        voiceProcessing={isProcessing}
         isInterfaceOpen={iastedOpen}
         isVoiceModeActive={isConnected}
       />
