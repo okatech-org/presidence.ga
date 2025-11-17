@@ -108,8 +108,6 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       .from('conversation_sessions')
       .insert({
         user_id: currentUserId,
-        language: 'fr',
-        title: `Session ${new Date().toLocaleString('fr-FR')}`,
         started_at: new Date().toISOString(),
         settings: {
           voiceId: selectedVoiceId,
