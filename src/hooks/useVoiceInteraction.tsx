@@ -334,14 +334,11 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
         await playAudioResponse(data.audioContent);
       }
 
-      // Mode continu
-      if (continuousMode && !isPaused) {
-        setTimeout(() => {
-          startListening();
-        }, 500);
-      } else {
-        setVoiceState('idle');
-      }
+      // Mode continu - relancer l'écoute après avoir parlé
+      console.log('🔄 Mode continu activé, relance de l\'écoute...');
+      setTimeout(() => {
+        startListening();
+      }, 500);
 
     } catch (error) {
       console.error('❌ Erreur traitement:', error);
@@ -356,48 +353,48 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
 
   // Jouer la réponse audio
   const playAudioResponse = async (audioBase64: string) => {
-    try {
-      console.log('🔊 [playAudioResponse] Démarrage lecture audio');
-      console.log('📊 [playAudioResponse] Longueur base64:', audioBase64.length);
-      console.log('🔍 [playAudioResponse] Premiers chars:', audioBase64.substring(0, 50));
-      
-      setVoiceState('speaking');
-      onSpeakingChange?.(true);
+    return new Promise<void>((resolve, reject) => {
+      try {
+        console.log('🔊 [playAudioResponse] Démarrage lecture audio');
+        console.log('📊 [playAudioResponse] Longueur base64:', audioBase64.length);
+        console.log('🔍 [playAudioResponse] Premiers chars:', audioBase64.substring(0, 50));
+        
+        setVoiceState('speaking');
+        onSpeakingChange?.(true);
 
-      const audio = new Audio(`data:audio/mpeg;base64,${audioBase64}`);
-      currentAudioRef.current = audio;
+        const audio = new Audio(`data:audio/mpeg;base64,${audioBase64}`);
+        currentAudioRef.current = audio;
 
-      audio.onloadeddata = () => {
-        console.log('✅ [playAudioResponse] Audio chargé, durée:', audio.duration);
-      };
+        audio.onloadeddata = () => {
+          console.log('✅ [playAudioResponse] Audio chargé, durée:', audio.duration);
+        };
 
-      audio.onended = () => {
-        console.log('✅ [playAudioResponse] Lecture terminée');
-        setVoiceState('idle');
+        audio.onended = () => {
+          console.log('✅ [playAudioResponse] Lecture terminée');
+          onSpeakingChange?.(false);
+          currentAudioRef.current = null;
+          resolve();
+        };
+
+        audio.onerror = (error) => {
+          console.error('❌ [playAudioResponse] Erreur audio:', error);
+          console.error('❌ [playAudioResponse] Audio error code:', audio.error?.code);
+          console.error('❌ [playAudioResponse] Audio error message:', audio.error?.message);
+          onSpeakingChange?.(false);
+          currentAudioRef.current = null;
+          reject(error);
+        };
+
+        console.log('▶️ [playAudioResponse] Appel audio.play()...');
+        audio.play().then(() => {
+          console.log('🎵 [playAudioResponse] Audio en lecture');
+        }).catch(reject);
+      } catch (error) {
+        console.error('❌ [playAudioResponse] Exception:', error);
         onSpeakingChange?.(false);
-      };
-
-      audio.onerror = (error) => {
-        console.error('❌ [playAudioResponse] Erreur audio:', error);
-        console.error('❌ [playAudioResponse] Audio error code:', audio.error?.code);
-        console.error('❌ [playAudioResponse] Audio error message:', audio.error?.message);
-        setVoiceState('idle');
-        onSpeakingChange?.(false);
-      };
-
-      console.log('▶️ [playAudioResponse] Appel audio.play()...');
-      await audio.play();
-      console.log('🎵 [playAudioResponse] Audio en lecture');
-    } catch (error) {
-      console.error('❌ [playAudioResponse] Exception:', error);
-      setVoiceState('idle');
-      onSpeakingChange?.(false);
-      toast({
-        title: "Erreur audio",
-        description: error instanceof Error ? error.message : "Impossible de lire l'audio",
-        variant: "destructive",
-      });
-    }
+        reject(error);
+      }
+    });
   };
 
   // Gérer les commandes vocales
