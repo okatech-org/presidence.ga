@@ -42,6 +42,132 @@ interface Session {
   updated_at: string;
 }
 
+// Types pour les réponses des edge functions
+interface IntentAnalysisResponse {
+  intent: string;
+  responseStyle: string;
+  continuousMode: boolean;
+  reasoning?: string;
+}
+
+interface ChatResponse {
+  response: string;
+  tokensUsed?: number;
+}
+
+interface SpeechToTextResponse {
+  text: string;
+}
+
+interface TextToSpeechResponse {
+  audio?: string;
+  audioContent?: string;
+}
+
+// Utilitaire pour retry automatique avec backoff exponentiel
+const invokeWithRetry = async <T,>(
+  functionName: string,
+  body: any,
+  maxRetries = 3,
+  initialDelay = 1000
+): Promise<{ data: T | null; error: any }> => {
+  let lastError: any;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      console.log(`🔄 [invokeWithRetry] Tentative ${attempt + 1}/${maxRetries} pour ${functionName}`);
+      
+      const { data, error } = await supabase.functions.invoke(functionName, { body });
+      
+      if (!error) {
+        console.log(`✅ [invokeWithRetry] Succès pour ${functionName}`);
+        return { data, error: null };
+      }
+      
+      lastError = error;
+      
+      // Erreurs non retriables (4xx sauf 429)
+      if (error.status && error.status >= 400 && error.status < 500 && error.status !== 429) {
+        console.error(`❌ [invokeWithRetry] Erreur client non retriable pour ${functionName}:`, error);
+        break;
+      }
+      
+      // Attendre avant retry avec backoff exponentiel
+      if (attempt < maxRetries - 1) {
+        const delay = initialDelay * Math.pow(2, attempt);
+        console.log(`⏳ [invokeWithRetry] Attente de ${delay}ms avant retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      
+    } catch (err) {
+      console.error(`❌ [invokeWithRetry] Exception sur ${functionName}:`, err);
+      lastError = err;
+      
+      if (attempt < maxRetries - 1) {
+        const delay = initialDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  return { data: null, error: lastError };
+};
+
+// Utilitaire pour formater les messages d'erreur
+const getErrorMessage = (error: any, functionName: string): { title: string; description: string } => {
+  // Erreurs réseau
+  if (!navigator.onLine) {
+    return {
+      title: 'Connexion perdue',
+      description: 'Vérifiez votre connexion internet et réessayez.',
+    };
+  }
+  
+  // Erreurs HTTP spécifiques
+  if (error.status) {
+    switch (error.status) {
+      case 429:
+        return {
+          title: 'Trop de requêtes',
+          description: 'Le système est temporairement surchargé. Veuillez patienter quelques instants.',
+        };
+      case 500:
+      case 502:
+      case 503:
+      case 504:
+        return {
+          title: 'Erreur serveur',
+          description: 'Le service iAsted rencontre des difficultés temporaires. Nouvelle tentative en cours...',
+        };
+      case 401:
+      case 403:
+        return {
+          title: 'Authentification requise',
+          description: 'Veuillez vous reconnecter à votre session.',
+        };
+      default:
+        return {
+          title: 'Erreur de communication',
+          description: `Code ${error.status}: ${error.message || 'Erreur inconnue'}`,
+        };
+    }
+  }
+  
+  // Erreurs de timeout
+  if (error.message?.includes('timeout') || error.message?.includes('ETIMEDOUT')) {
+    return {
+      title: 'Délai dépassé',
+      description: 'La requête a pris trop de temps. Nouvelle tentative...',
+    };
+  }
+  
+  // Erreur générique
+  return {
+    title: `Erreur ${functionName}`,
+    description: error.message || 'Une erreur inattendue s\'est produite.',
+  };
+};
+
 export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
   const [voiceState, setVoiceState] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -403,14 +529,25 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
     const arrayBuffer = await audioBlob.arrayBuffer();
     const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-    const { data, error } = await supabase.functions.invoke('speech-to-text', {
-      body: {
-        audio: base64Audio,
-        language: settings.language,
-      },
+    const { data, error } = await invokeWithRetry<SpeechToTextResponse>('speech-to-text', {
+      audio: base64Audio,
+      language: settings.language,
     });
 
-    if (error) throw error;
+    if (error) {
+      const errorMsg = getErrorMessage(error, 'speech-to-text');
+      toast({
+        title: errorMsg.title,
+        description: errorMsg.description,
+        variant: 'destructive',
+      });
+      throw error;
+    }
+    
+    if (!data) {
+      throw new Error('Pas de données reçues de speech-to-text');
+    }
+    
     return data.text;
   };
 
@@ -437,12 +574,14 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
     }));
 
     // 1. Analyse automatique de l'intention et du style optimal
-    const { data: intentAnalysis } = await supabase.functions.invoke('analyze-intent', {
-      body: {
-        userMessage: userInput,
-        conversationHistory,
-      },
+    const { data: intentAnalysis, error: intentError } = await invokeWithRetry<IntentAnalysisResponse>('analyze-intent', {
+      userMessage: userInput,
+      conversationHistory,
     });
+
+    if (intentError) {
+      console.warn('⚠️ [generatePresidentResponse] Erreur analyse intention, utilisation valeurs par défaut');
+    }
 
     const detectedStyle = intentAnalysis?.responseStyle || 'strategique';
     const detectedIntent = intentAnalysis?.intent || 'query';
@@ -465,22 +604,32 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
 
     // 3. Génération de la réponse avec le style adapté
     console.log('📤 [generatePresidentResponse] Appel chat-with-iasted avec sessionId:', session.id);
-    const { data, error } = await supabase.functions.invoke('chat-with-iasted', {
-      body: {
-        sessionId: session.id,
-        transcriptOverride: userInput,
-        conversationHistory,
-        userRole: 'president',
-        settings: {
-          responseStyle: detectedStyle,
-          maxTokens: detectedStyle === 'concis' ? 150 : detectedStyle === 'detaille' ? 400 : 300,
-          temperature: 0.7,
-          intent: detectedIntent,
-        },
+    const { data, error } = await invokeWithRetry<ChatResponse>('chat-with-iasted', {
+      sessionId: session.id,
+      transcriptOverride: userInput,
+      conversationHistory,
+      userRole: 'president',
+      settings: {
+        responseStyle: detectedStyle,
+        maxTokens: detectedStyle === 'concis' ? 150 : detectedStyle === 'detaille' ? 400 : 300,
+        temperature: 0.7,
+        intent: detectedIntent,
       },
-    });
+    }, 3, 1500); // 3 tentatives avec délai initial de 1.5s
 
-    if (error) throw error;
+    if (error) {
+      const errorMsg = getErrorMessage(error, 'chat-with-iasted');
+      toast({
+        title: errorMsg.title,
+        description: errorMsg.description,
+        variant: 'destructive',
+      });
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error('Pas de données reçues de chat-with-iasted');
+    }
 
     return {
       text: data.response,
@@ -493,26 +642,30 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
   const generateSpeech = async (text: string): Promise<string> => {
     console.log('🎤 [generateSpeech] Génération audio pour:', text.substring(0, 50) + '...');
     
-    const { data, error } = await supabase.functions.invoke('text-to-speech', {
-      body: {
-        text,
-        voiceId: settings.voiceId,
-        userRole: 'president',
-      },
-    });
+    const { data, error } = await invokeWithRetry<TextToSpeechResponse>('text-to-speech', {
+      text,
+      voiceId: settings.voiceId,
+    }, 2, 1000); // 2 tentatives pour TTS
 
     if (error) {
       console.error('❌ [generateSpeech] Erreur:', error);
+      const errorMsg = getErrorMessage(error, 'text-to-speech');
+      toast({
+        title: errorMsg.title,
+        description: errorMsg.description,
+        variant: 'destructive',
+      });
       throw error;
     }
-    
-    if (!data?.audioContent) {
-      console.error('❌ [generateSpeech] Pas de contenu audio reçu');
-      throw new Error('Pas de contenu audio reçu');
+
+    if (!data || (!data.audio && !data.audioContent)) {
+      console.error('❌ [generateSpeech] Pas de données audio dans la réponse');
+      throw new Error('Pas de données audio');
     }
-    
-    console.log('✅ [generateSpeech] Audio reçu, longueur base64:', data.audioContent.length);
-    return data.audioContent;
+
+    const audioData = data.audio || data.audioContent || '';
+    console.log('✅ [generateSpeech] Audio généré, taille:', audioData.length, 'caractères');
+    return audioData;
   };
 
   const playAudioResponse = async (base64Audio: string) => {
