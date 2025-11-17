@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 type VoiceState = 'idle' | 'connecting' | 'listening' | 'transcribing' | 'thinking' | 'speaking';
 
@@ -102,11 +103,20 @@ export const useRealtimeIasted = () => {
       console.log('🎤 [RealtimeIasted] Démarrage...');
       setVoiceState('connecting');
 
-      // Connexion WebSocket
+      // Récupérer le token JWT
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Non authentifié');
+      }
+
+      // Connexion WebSocket avec token JWT
       const projectId = 'bpaouvtlexhtschufshd';
       const wsUrl = `wss://${projectId}.supabase.co/functions/v1/realtime-iasted`;
       
-      const ws = new WebSocket(wsUrl);
+      const ws = new WebSocket(wsUrl, [
+        'Bearer',
+        session.access_token
+      ]);
       wsRef.current = ws;
 
       ws.onopen = () => {
