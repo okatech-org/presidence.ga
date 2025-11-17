@@ -22,7 +22,6 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   
   const { toast } = useToast();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -80,20 +79,6 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
     }
   }, [isRecording]);
 
-  // Convertir ArrayBuffer en base64 par chunks pour éviter stack overflow
-  const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
-    const bytes = new Uint8Array(buffer);
-    const chunkSize = 32768; // 32KB chunks
-    let binary = '';
-    
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      const chunk = bytes.slice(i, i + chunkSize);
-      binary += String.fromCharCode(...chunk);
-    }
-    
-    return btoa(binary);
-  };
-
   // Traiter l'enregistrement
   const processRecording = useCallback(async () => {
     try {
@@ -102,7 +87,9 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
       // 1. Convertir audio en base64
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       const arrayBuffer = await audioBlob.arrayBuffer();
-      const base64Audio = arrayBufferToBase64(arrayBuffer);
+      const base64Audio = btoa(
+        String.fromCharCode(...new Uint8Array(arrayBuffer))
+      );
 
       console.log('📝 [GPT+ElevenLabs] Transcription...');
 
@@ -133,31 +120,25 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
       // 3. Obtenir la réponse de GPT
       console.log('🤖 [GPT+ElevenLabs] Appel GPT...');
       
-      // Créer une session si elle n'existe pas
-      let currentSessionId = sessionId;
-      if (!currentSessionId) {
-        currentSessionId = crypto.randomUUID();
-        setSessionId(currentSessionId);
-        console.log('📝 [GPT+ElevenLabs] Nouvelle session créée:', currentSessionId);
-      }
-      
       const { data: chatResponse, error: chatError } = await supabase.functions.invoke(
         'chat-with-iasted',
         {
           body: {
-            sessionId: currentSessionId,
-            transcriptOverride: userText,
+            message: userText,
             userRole,
-            generateAudio: false // On génère l'audio avec ElevenLabs après
+            conversationHistory: messages.map(m => ({
+              role: m.role,
+              content: m.content
+            }))
           }
         }
       );
 
-      if (chatError || !chatResponse?.answer) {
+      if (chatError || !chatResponse?.reply) {
         throw new Error('Erreur de réponse GPT');
       }
 
-      const assistantText = chatResponse.answer;
+      const assistantText = chatResponse.reply;
       console.log('✅ [GPT+ElevenLabs] Réponse GPT:', assistantText);
 
       // Ajouter le message assistant
@@ -201,18 +182,6 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
     }
   }, [messages, userRole, toast]);
 
-  // Convertir base64 en Uint8Array par chunks
-  const base64ToUint8Array = (base64: string): Uint8Array => {
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
-    return bytes;
-  };
-
   // Jouer l'audio
   const playAudio = useCallback(async (base64Audio: string) => {
     return new Promise<void>((resolve, reject) => {
@@ -223,8 +192,10 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
           currentAudioRef.current = null;
         }
 
-        const audioBytes = base64ToUint8Array(base64Audio);
-        const audioBlob = new Blob([audioBytes.buffer as ArrayBuffer], { type: 'audio/mpeg' });
+        const audioBlob = new Blob(
+          [Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))],
+          { type: 'audio/mpeg' }
+        );
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
         currentAudioRef.current = audio;
@@ -261,7 +232,6 @@ export const useGPTWithElevenLabsVoice = (userRole: string = 'president') => {
     }
     setVoiceState('idle');
     setMessages([]);
-    setSessionId(null); // Réinitialiser la session
   }, [stopRecording]);
 
   const toggleConversation = useCallback(() => {

@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useIastedConversation } from '@/hooks/useIastedConversation';
+import { useGPTWithElevenLabsVoice } from '@/hooks/useGPTWithElevenLabsVoice';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -130,9 +130,15 @@ export default function PresidentSpace() {
   const [iastedOpen, setIastedOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Hook pour la conversation vocale fluide avec voix iAsted
+  // Hook pour la conversation vocale GPT + ElevenLabs
   const [showChat, setShowChat] = useState(false);
-  const iastedConversation = useIastedConversation();
+  const {
+    voiceState,
+    isSpeaking,
+    isRecording,
+    toggleConversation,
+    stopRecording,
+  } = useGPTWithElevenLabsVoice('president');
 
   useEffect(() => {
     setMounted(true);
@@ -709,20 +715,28 @@ export default function PresidentSpace() {
 
       {/* Bouton IAsted flottant */}
       <IAstedButtonFull
-        onSingleClick={iastedConversation.toggleConversation}
+        onSingleClick={async () => {
+          console.log('🖱️ [IAstedButton] Clic simple - conversation vocale directe');
+          if (iastedOpen) {
+            // Si modal ouvert, toggle la conversation vocale
+            console.log('🔄 [IAstedButton] Modal ouverte, toggle conversation');
+            await toggleConversation();
+          } else {
+            // Sinon, démarre la conversation vocale directement sans modal
+            console.log('🎤 [IAstedButton] Démarrage conversation vocale directe');
+            await toggleConversation();
+          }
+        }}
         onDoubleClick={() => {
           console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal chat');
-          if (iastedConversation.isConnected) {
-            iastedConversation.stopConversation();
-          }
           setIastedOpen(true);
         }}
         size="lg"
-        voiceListening={iastedConversation.isConnected && !iastedConversation.isSpeaking}
-        voiceSpeaking={iastedConversation.isSpeaking}
-        voiceProcessing={false}
+        voiceListening={voiceState === 'listening'}
+        voiceSpeaking={voiceState === 'speaking'}
+        voiceProcessing={voiceState === 'processing'}
         isInterfaceOpen={iastedOpen}
-        isVoiceModeActive={iastedConversation.isConnected}
+        isVoiceModeActive={isRecording || isSpeaking}
       />
 
       {/* Interface iAsted avec chat et documents */}
