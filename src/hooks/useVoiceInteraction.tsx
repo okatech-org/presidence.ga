@@ -47,9 +47,20 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   // Charger l'utilisateur
   useEffect(() => {
     const loadUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
+      // Essayer d'abord avec getSession qui est plus fiable
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserId(session.user.id);
+        console.log('[useVoiceInteraction] ✅ Utilisateur chargé via getSession:', session.user.id);
+      } else {
+        // Fallback sur getUser
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user.id);
+          console.log('[useVoiceInteraction] ✅ Utilisateur chargé via getUser:', user.id);
+        } else {
+          console.warn('[useVoiceInteraction] ⚠️ Aucun utilisateur trouvé');
+        }
       }
     };
     loadUser();
@@ -64,14 +75,35 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   }, [voiceId]);
 
   // Créer une nouvelle session
-  const createSession = async (): Promise<string> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+  const createSession = useCallback(async (): Promise<string> => {
+    // Vérifier d'abord si userId est déjà chargé
+    let currentUserId = userId;
+    
+    // Si userId n'est pas encore chargé, essayer de le récupérer
+    if (!currentUserId) {
+      // Essayer d'abord avec getSession qui est plus fiable
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.user) {
+        // Si getSession échoue, essayer getUser
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+          console.error('[createSession] Erreur authentification:', { sessionError, authError });
+          throw new Error('User not authenticated. Please log in first.');
+        }
+        currentUserId = user.id;
+        setUserId(currentUserId);
+      } else {
+        currentUserId = session.user.id;
+        setUserId(currentUserId);
+      }
+    }
 
     const { data, error } = await supabase
       .from('conversation_sessions')
       .insert({
-        user_id: user.id,
+        user_id: currentUserId,
+        language: 'fr',
+        title: `Session ${new Date().toLocaleString('fr-FR')}`,
         started_at: new Date().toISOString(),
         settings: {
           voiceId: selectedVoiceId,
@@ -83,9 +115,12 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[createSession] Erreur création session:', error);
+      throw error;
+    }
     return data.id;
-  };
+  }, [userId, selectedVoiceId, silenceDuration, silenceThreshold, continuousMode]);
 
   // Détecter le silence et mettre à jour les états
   const analyzeAudioLevel = useCallback(() => {
@@ -433,6 +468,27 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     try {
       console.log('🚀 [startConversation] Début...');
       console.log('🔧 [startConversation] selectedVoiceId:', selectedVoiceId);
+      console.log('👤 [startConversation] userId actuel:', userId);
+
+      // Vérifier l'authentification avant de créer la session
+      if (!userId) {
+        console.log('⏳ [startConversation] userId non chargé, récupération...');
+        // Essayer d'abord avec getSession qui est plus fiable
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session?.user) {
+          // Si getSession échoue, essayer getUser
+          const { data: { user }, error: authError } = await supabase.auth.getUser();
+          if (authError || !user) {
+            console.error('❌ [startConversation] Erreur authentification:', { sessionError, authError });
+            throw new Error('Vous devez être connecté pour utiliser iAsted. Veuillez vous connecter.');
+          }
+          setUserId(user.id);
+          console.log('✅ [startConversation] Utilisateur chargé via getUser:', user.id);
+        } else {
+          setUserId(session.user.id);
+          console.log('✅ [startConversation] Utilisateur chargé via getSession:', session.user.id);
+        }
+      }
 
       // Créer une session
       console.log('📝 [startConversation] Création session...');
@@ -500,7 +556,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       });
       setVoiceState('idle');
     }
-  }, [selectedVoiceId, startListening, toast, createSession]);
+  }, [createSession, selectedVoiceId, startListening, toast, userId]);
 
   // Arrêter la conversation
   const stopConversation = useCallback(async () => {

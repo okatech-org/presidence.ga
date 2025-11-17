@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
   SidebarContent,
+  SidebarHeader,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -132,6 +133,25 @@ export function AppSidebar() {
       collapsible="icon"
       className="rounded-3xl shadow-neo-lg bg-card border-0 overflow-hidden"
     >
+      <SidebarHeader className="px-4 py-4 border-b border-border/40">
+        <div className="flex items-center gap-3">
+          <div className="neu-raised w-12 h-12 rounded-full flex items-center justify-center p-2 shrink-0">
+            <img 
+              src={emblemGabon} 
+              alt="Emblème de la République Gabonaise" 
+              className="w-full h-full object-contain"
+            />
+          </div>
+          {open && (
+            <div>
+              <div className="font-bold text-sm">ADMIN.GA</div>
+              <div className="text-xs text-muted-foreground">
+                {isPresident ? "Espace Président" : "Tableau de Bord"}
+              </div>
+            </div>
+          )}
+        </div>
+      </SidebarHeader>
       <SidebarContent className="px-4 py-4 space-y-2">
         {isPresident ? (
           <>

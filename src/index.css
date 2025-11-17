@@ -9,30 +9,30 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* === DESIGN NEOMORPHIQUE ASTED === */
-    /* Arrière-plans neomorphiques */
-    --background: 220 14% 91%;
-    --foreground: 222 47% 11%;
+    /* Arrière-plans neomorphiques - Nuances de gris clairs avec plus de contraste */
+    --background: 0 0% 85%;
+    --foreground: 0 0% 8%;
     
-    --card: 220 14% 96%;
-    --card-foreground: 222 47% 11%;
+    --card: 0 0% 95%;
+    --card-foreground: 0 0% 8%;
     
-    --popover: 220 14% 96%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 0 0% 95%;
+    --popover-foreground: 0 0% 8%;
     
-    /* Bleu marine institutionnel (couleur principale) */
-    --primary: 215 85% 47%;
+    /* Gris moyen-foncé pour couleur principale - plus de contraste */
+    --primary: 0 0% 35%;
     --primary-foreground: 0 0% 100%;
     
-    /* Vert du drapeau gabonais */
-    --secondary: 150 60% 35%;
+    /* Gris foncé pour secondaire - plus de contraste */
+    --secondary: 0 0% 25%;
     --secondary-foreground: 0 0% 100%;
     
-    /* Jaune/Or du drapeau */
-    --accent: 45 95% 55%;
-    --accent-foreground: 222 47% 11%;
+    /* Gris moyen pour accent - plus de contraste */
+    --accent: 0 0% 45%;
+    --accent-foreground: 0 0% 8%;
     
-    --muted: 220 14% 86%;
-    --muted-foreground: 222 23% 46%;
+    --muted: 0 0% 75%;
+    --muted-foreground: 0 0% 35%;
     
     /* Rouge pour alertes critiques */
     --destructive: 0 84% 60%;
@@ -40,87 +40,94 @@ All colors MUST be HSL.
     
     /* Orange pour alertes moyennes */
     --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 11%;
+    --warning-foreground: 0 0% 8%;
     
     /* Vert pour statut OK */
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     
-    --border: 220 14% 86%;
-    --input: 220 14% 82%;
-    --ring: 215 85% 47%;
+    --border: 0 0% 70%;
+    --input: 0 0% 78%;
+    --ring: 0 0% 35%;
     
     --radius: 1rem;
     
-    /* === OMBRES NEOMORPHIQUES === */
-    --neo-shadow-sm: 4px 4px 8px rgba(197, 199, 202, 0.4), -4px -4px 8px rgba(255, 255, 255, 0.8);
-    --neo-shadow-md: 8px 8px 16px rgba(197, 199, 202, 0.5), -8px -8px 16px rgba(255, 255, 255, 0.9);
-    --neo-shadow-lg: 12px 12px 24px rgba(197, 199, 202, 0.6), -12px -12px 24px rgba(255, 255, 255, 1);
-    --neo-shadow-inset: inset 4px 4px 8px rgba(197, 199, 202, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 0.8);
-    --neo-shadow-inset-lg: inset 8px 8px 16px rgba(197, 199, 202, 0.5), inset -8px -8px 16px rgba(255, 255, 255, 0.9);
+    /* === OMBRES NEOMORPHIQUES - Plus de contraste === */
+    --neo-shadow-sm: 4px 4px 8px rgba(150, 150, 150, 0.5), -4px -4px 8px rgba(255, 255, 255, 1);
+    --neo-shadow-md: 8px 8px 16px rgba(140, 140, 140, 0.6), -8px -8px 16px rgba(255, 255, 255, 1);
+    --neo-shadow-lg: 12px 12px 24px rgba(130, 130, 130, 0.7), -12px -12px 24px rgba(255, 255, 255, 1);
+    --neo-shadow-inset: inset 4px 4px 8px rgba(150, 150, 150, 0.5), inset -4px -4px 8px rgba(255, 255, 255, 1);
+    --neo-shadow-inset-lg: inset 8px 8px 16px rgba(140, 140, 140, 0.6), inset -8px -8px 16px rgba(255, 255, 255, 1);
     
-    /* Gradients institutionnels */
-    --gradient-primary: linear-gradient(135deg, hsl(215 85% 47%), hsl(215 85% 57%));
-    --gradient-secondary: linear-gradient(135deg, hsl(150 60% 35%), hsl(150 60% 45%));
-    --gradient-gold: linear-gradient(135deg, hsl(45 95% 55%), hsl(45 95% 65%));
+    /* Gradients en nuances de gris avec plus de contraste */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 35%), hsl(0 0% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(0 0% 25%), hsl(0 0% 40%));
+    --gradient-gold: linear-gradient(135deg, hsl(0 0% 45%), hsl(0 0% 60%));
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     
-    --sidebar-background: 215 75% 25%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 215 75% 25%;
-    --sidebar-accent: 215 75% 30%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 215 75% 30%;
-    --sidebar-ring: 45 95% 55%;
+    --sidebar-background: 0 0% 80%;
+    --sidebar-foreground: 0 0% 8%;
+    --sidebar-primary: 0 0% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 75%;
+    --sidebar-accent-foreground: 0 0% 8%;
+    --sidebar-border: 0 0% 65%;
+    --sidebar-ring: 0 0% 45%;
   }
 
   .dark {
-    --background: 215 30% 8%;
+    --background: 0 0% 8%;
     --foreground: 0 0% 98%;
 
-    --card: 215 25% 12%;
+    --card: 0 0% 12%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 215 25% 12%;
+    --popover: 0 0% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 215 75% 45%;
+    --primary: 0 0% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 150 50% 40%;
+    --secondary: 0 0% 45%;
     --secondary-foreground: 0 0% 100%;
 
-    --accent: 45 95% 60%;
-    --accent-foreground: 215 30% 8%;
+    --accent: 0 0% 70%;
+    --accent-foreground: 0 0% 8%;
 
-    --muted: 215 20% 18%;
-    --muted-foreground: 215 15% 65%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 65%;
 
     --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
     
     --warning: 35 90% 60%;
-    --warning-foreground: 215 30% 8%;
+    --warning-foreground: 0 0% 8%;
     
     --success: 150 55% 50%;
     --success-foreground: 0 0% 100%;
 
-    --border: 215 20% 20%;
-    --input: 215 20% 20%;
-    --ring: 215 75% 45%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 60%;
 
-    --sidebar-background: 215 30% 10%;
+    --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 215 75% 45%;
+    --sidebar-primary: 0 0% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 18%;
+    --sidebar-accent: 0 0% 18%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 215 20% 20%;
-    --sidebar-ring: 45 95% 60%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 0% 70%;
+
+    /* Ombres néomorphiques pour mode sombre */
+    --neo-shadow-sm: 4px 4px 8px rgba(0, 0, 0, 0.5), -4px -4px 8px rgba(255, 255, 255, 0.05);
+    --neo-shadow-md: 8px 8px 16px rgba(0, 0, 0, 0.6), -8px -8px 16px rgba(255, 255, 255, 0.08);
+    --neo-shadow-lg: 12px 12px 24px rgba(0, 0, 0, 0.7), -12px -12px 24px rgba(255, 255, 255, 0.1);
+    --neo-shadow-inset: inset 4px 4px 8px rgba(0, 0, 0, 0.5), inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+    --neo-shadow-inset-lg: inset 8px 8px 16px rgba(0, 0, 0, 0.6), inset -8px -8px 16px rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -206,5 +213,111 @@ All colors MUST be HSL.
   
   .transition-fast {
     transition: var(--transition-fast);
+  }
+  
+  /* === CLASSES NEOMORPHIQUES ALTERNATIVES (neu-*) === */
+  .neu-card {
+    background: hsl(var(--card));
+    box-shadow: 
+      4px 4px 8px rgba(150, 150, 150, 0.5),
+      -4px -4px 8px rgba(255, 255, 255, 1),
+      inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+      inset -1px -1px 2px rgba(150, 150, 150, 0.3);
+    border-radius: var(--radius);
+    transition: var(--transition-smooth);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+  
+  .dark .neu-card {
+    box-shadow: 
+      4px 4px 8px rgba(0, 0, 0, 0.4),
+      -4px -4px 8px rgba(255, 255, 255, 0.05),
+      inset 1px 1px 2px rgba(0, 0, 0, 0.3),
+      inset -1px -1px 2px rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .neu-card:hover {
+    box-shadow: 
+      6px 6px 12px rgba(140, 140, 140, 0.6),
+      -6px -6px 12px rgba(255, 255, 255, 1),
+      inset 1px 1px 2px rgba(255, 255, 255, 0.9),
+      inset -1px -1px 2px rgba(140, 140, 140, 0.35);
+  }
+  
+  .dark .neu-card:hover {
+    box-shadow: 
+      6px 6px 12px rgba(0, 0, 0, 0.5),
+      -6px -6px 12px rgba(255, 255, 255, 0.06),
+      inset 1px 1px 2px rgba(0, 0, 0, 0.4),
+      inset -1px -1px 2px rgba(255, 255, 255, 0.04);
+  }
+  
+  .neu-raised {
+    background: hsl(var(--card));
+    box-shadow: 
+      3px 3px 6px rgba(150, 150, 150, 0.4),
+      -3px -3px 6px rgba(255, 255, 255, 0.9),
+      inset 1px 1px 1px rgba(255, 255, 255, 0.7),
+      inset -1px -1px 1px rgba(150, 150, 150, 0.25);
+    border-radius: var(--radius);
+    transition: var(--transition-fast);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  
+  .dark .neu-raised {
+    box-shadow: 
+      3px 3px 6px rgba(0, 0, 0, 0.3),
+      -3px -3px 6px rgba(255, 255, 255, 0.04),
+      inset 1px 1px 1px rgba(0, 0, 0, 0.25),
+      inset -1px -1px 1px rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  
+  .neu-raised:hover {
+    box-shadow: 
+      4px 4px 8px rgba(140, 140, 140, 0.5),
+      -4px -4px 8px rgba(255, 255, 255, 1),
+      inset 1px 1px 1px rgba(255, 255, 255, 0.8),
+      inset -1px -1px 1px rgba(140, 140, 140, 0.3);
+  }
+  
+  .dark .neu-raised:hover {
+    box-shadow: 
+      4px 4px 8px rgba(0, 0, 0, 0.4),
+      -4px -4px 8px rgba(255, 255, 255, 0.05),
+      inset 1px 1px 1px rgba(0, 0, 0, 0.3),
+      inset -1px -1px 1px rgba(255, 255, 255, 0.03);
+  }
+  
+  .neu-inset {
+    background: hsl(var(--card));
+    box-shadow: var(--neo-shadow-inset);
+    border-radius: var(--radius);
+    transition: var(--transition-fast);
+  }
+  
+  .neu-inset:hover {
+    box-shadow: var(--neo-shadow-inset-lg);
+  }
+  
+  .neu-button {
+    background: hsl(var(--card));
+    box-shadow: var(--neo-shadow-sm);
+    border-radius: var(--radius);
+    transition: var(--transition-fast);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .neu-button:hover {
+    box-shadow: var(--neo-shadow-md);
+  }
+  
+  .neu-button:active {
+    box-shadow: var(--neo-shadow-inset);
   }
 }

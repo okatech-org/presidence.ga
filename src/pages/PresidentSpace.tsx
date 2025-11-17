@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -29,13 +29,28 @@ import {
   AlertTriangle,
   Clock,
   DollarSign,
+  Crown,
+  FileCheck,
+  MapPin,
+  CheckCircle2,
+  LayoutDashboard,
+  Bot,
+  History,
+  UserCog,
+  Landmark,
+  Stethoscope,
+  Hammer,
+  Wrench,
+  Target,
 } from "lucide-react";
-import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { StatCard, CircularProgress, TimelineItem, SectionCard } from "@/components/president/PresidentSpaceComponents";
-import { ActivityItem } from "@/components/president/ActivityItem";
 import { VoiceConversationPanel } from "@/components/VoiceConversationPanel";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { SectionCard, StatCard } from "@/components/president/PresidentSpaceComponents";
+import { useTheme } from "next-themes";
+import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
+import emblemGabon from "@/assets/emblem_gabon.png";
 
 type ThemeConfig = {
   primary: string;
@@ -102,73 +117,67 @@ const themes: Record<"light" | "dark", ThemeConfig> = {
 };
 
 export default function PresidentSpace() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    navigation: false,
+    gouvernance: false,
+    economie: false,
+    affaires: false,
+    infrastructures: false,
+  });
   const [activeSection, setActiveSection] = useState("dashboard");
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(["gouvernance"]);
   const [iastedOpen, setIastedOpen] = useState(false);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [voiceOnlyMode, setVoiceOnlyMode] = useState(false);
   const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
   const voiceConversationRef = useRef<any>(null);
   const navigate = useNavigate();
-  const theme = useMemo(() => darkMode ? themes.dark : themes.light, [darkMode]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section as keyof typeof prev],
+    }));
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  const currentTheme = useMemo(() => {
+    const isDark = theme === "dark";
+    return isDark ? themes.dark : themes.light;
+  }, [theme]);
 
   const stats = useMemo(() => ({
-    population: 2341179,
-    ministeres: 42,
-    projetsActifs: 127,
-    budgetNational: "4.2T FCFA",
-    croissancePIB: 3.2,
-    tauxChomage: 19.8,
-    decretsSemaine: 7,
-    reunionsPrevues: 12,
+    totalAgents: 12543,
+    structures: 28,
+    postesVacants: 342,
+    actesEnAttente: 12,
   }), []);
 
-  const navigationItems = useMemo(() => [
-    { id: "dashboard", label: "Tableau de Bord", icon: Home, badge: null as string | null },
-    {
-      id: "gouvernance",
-      label: "Gouvernance",
-      icon: Building2,
-      expandable: true,
-      children: [
-        { id: "conseil-ministres", label: "Conseil des Ministres", icon: Users },
-        { id: "ministeres", label: "Ministères & Directions", icon: Building2 },
-        { id: "decrets", label: "Décrets & Ordonnances", icon: FileText },
-        { id: "nominations", label: "Nominations", icon: Award },
-      ],
-    },
-    {
-      id: "economie",
-      label: "Économie & Finances",
-      icon: TrendingUpIcon,
-      expandable: true,
-      children: [
-        { id: "budget", label: "Budget National", icon: DollarSign },
-        { id: "indicateurs", label: "Indicateurs Économiques", icon: BarChart3 },
-        { id: "investissements", label: "Investissements", icon: Briefcase },
-      ],
-    },
-    {
-      id: "social",
-      label: "Affaires Sociales",
-      icon: Heart,
-      expandable: true,
-      children: [
-        { id: "education", label: "Éducation", icon: GraduationCap },
-        { id: "sante", label: "Santé Publique", icon: Activity },
-        { id: "emploi", label: "Emploi & Formation", icon: Briefcase },
-      ],
-    },
-    { id: "international", label: "Relations Internationales", icon: Globe, badge: "3" },
-    { id: "securite", label: "Sécurité & Défense", icon: Shield },
-    { id: "agenda", label: "Agenda Présidentiel", icon: Calendar, badge: "8" },
+  const agentTypesData = useMemo(() => [
+    { name: "Cadres", value: 35, color: "hsl(var(--primary))" },
+    { name: "Techniciens", value: 28, color: "hsl(var(--secondary))" },
+    { name: "Agents", value: 22, color: "hsl(var(--accent))" },
+    { name: "Ouvriers", value: 15, color: "hsl(var(--warning))" },
   ], []);
 
-  const toggleMenu = useCallback((menuId: string) => {
-    setExpandedMenus((prev) => (prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [...prev, menuId]));
-  }, []);
+  const genderData = useMemo(() => [
+    { name: "Hommes", value: 58, color: "hsl(var(--primary))" },
+    { name: "Femmes", value: 42, color: "hsl(var(--accent))" },
+  ], []);
+
+
+  const navigationItems = useMemo(() => [
+    { id: "dashboard", label: "Tableau de Bord", icon: LayoutDashboard, active: true },
+    { id: "iasted", label: "Assistant iAsted", icon: Bot, active: false },
+  ], []);
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
@@ -176,616 +185,557 @@ export default function PresidentSpace() {
   }, [navigate]);
 
   return (
-      <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#F7F8FA",
-        color: theme.text,
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        transition: "all 0.3s ease",
-      }}
-    >
-      <header
-        style={{
-          backgroundColor: "#FFFFFF",
-          borderBottom: `1px solid ${theme.border}`,
-          padding: "10px 20px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-          boxShadow: "none",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "8px",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "background 0.2s ease",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.bgSecondary)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-          >
-            <Menu size={24} color={theme.text} />
-          </button>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                background: `linear-gradient(135deg, ${theme.primary}, ${theme.primaryGold})`,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Flag size={20} color="white" />
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="flex gap-6 max-w-[1600px] mx-auto">
+        {/* Sidebar détachée */}
+        <aside className="neu-card w-60 flex-shrink-0 p-6 flex flex-col min-h-[calc(100vh-3rem)] overflow-hidden">
+          {/* Logo et titre */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="neu-raised w-12 h-12 rounded-full flex items-center justify-center p-2">
+              <img 
+                src={emblemGabon} 
+                alt="Emblème de la République Gabonaise" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
-              <h1
-                style={{
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  background: `linear-gradient(135deg, ${theme.primary}, ${theme.primaryGold})`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  marginBottom: "2px",
-                }}
-              >
-                Espace Président
-              </h1>
-              <p style={{ fontSize: "12px", color: theme.textSecondary }}>République Gabonaise — Super-Admin</p>
-            </div>
+              <div className="font-bold text-sm">ADMIN.GA</div>
+              <div className="text-xs text-muted-foreground">Espace Président</div>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {/* Navigation */}
+          <div className="mb-4">
           <button
-            onClick={() => setDarkMode(!darkMode)}
-            style={{
-              background: theme.bgSecondary,
-              border: "none",
-              cursor: "pointer",
-              padding: "10px",
-              borderRadius: "10px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.bgTertiary)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.bgSecondary)}
-          >
-            {darkMode ? <Sun size={20} color={theme.primaryGold} /> : <Moon size={20} color={theme.text} />}
+              onClick={() => toggleSection('navigation')}
+              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+            >
+              NAVIGATION
+              {expandedSections.navigation ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
           </button>
-
-          <div style={{ position: "relative" }}>
+            {expandedSections.navigation && (
+              <nav className="space-y-1 ml-2">
+                {navigationItems.map((item, index) => (
             <button
-              style={{
-                background: theme.bgSecondary,
-                border: "none",
-                cursor: "pointer",
-                padding: "10px",
-                borderRadius: "10px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "all 0.2s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.bgTertiary)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = theme.bgSecondary)}
-            >
-              <Bell size={20} color={theme.text} />
-              <span
-                style={{
-                  position: "absolute",
-                  top: "6px",
-                  right: "6px",
-                  width: "8px",
-                  height: "8px",
-                  backgroundColor: theme.danger,
-                  borderRadius: "50%",
-                  border: `2px solid ${theme.bgCard}`,
-                }}
-              />
-            </button>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "8px 12px",
-              backgroundColor: theme.bgSecondary,
-              borderRadius: "12px",
-              cursor: "pointer",
-            }}
-          >
-            <div
-              style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                background: `linear-gradient(135deg, ${theme.primaryBlue}, ${theme.primary})`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                fontWeight: 600,
-              }}
-            >
-              PE
-            </div>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: "14px", fontWeight: 600, color: theme.text }}>Président</div>
-              <div style={{ fontSize: "12px", color: theme.textSecondary }}>Chef de l'État</div>
-            </div>
-            <ChevronDown size={16} color={theme.textSecondary} />
-          </div>
-        </div>
-      </header>
-
-      <div style={{ display: "flex", height: "calc(100vh - 56px)" }}>
-        <aside
-          style={{
-            width: sidebarOpen ? "280px" : "0",
-            backgroundColor: "#FFFFFF",
-            borderRight: `1px solid ${theme.border}`,
-            overflowY: "auto",
-            overflowX: "hidden",
-            transition: "width 0.3s ease",
-            position: "relative",
-          }}
-        >
-          <nav style={{ padding: sidebarOpen ? "20px" : "0" }}>
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 600,
-                color: theme.textTertiary,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                marginBottom: "12px",
-                opacity: sidebarOpen ? 1 : 0,
-                transition: "opacity 0.3s ease",
-              }}
-            >
-              Navigation
-            </div>
-
-            {navigationItems.map((item) => (
-              <div key={item.id}>
-                <button
-                  onClick={() => {
-                    if ((item as any).expandable) {
-                      toggleMenu(item.id);
-                    } else {
-                      setActiveSection(item.id);
-                    }
-                  }}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "12px 14px",
-                    marginBottom: "4px",
-                    backgroundColor: activeSection === item.id ? "#F3F4F6" : "transparent",
-                    border: "none",
-                    borderRadius: "10px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    opacity: sidebarOpen ? 1 : 0,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (activeSection !== item.id) {
-                      e.currentTarget.style.backgroundColor = "#F3F4F6";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (activeSection !== item.id) {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                    }
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <item.icon size={20} color={activeSection === item.id ? theme.primary : theme.textSecondary} />
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: activeSection === item.id ? 600 : 400,
-                        color: activeSection === item.id ? theme.text : theme.textSecondary,
-                      }}
-                    >
-                      {item.label}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    {(item as any).badge && (
-                      <span
-                        style={{
-                          backgroundColor: "#EF4444",
-                          color: "white",
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          padding: "2px 6px",
-                          borderRadius: "10px",
-                        }}
-                      >
-                        {(item as any).badge}
-                      </span>
-                    )}
-                    {(item as any).expandable && (
-                      <ChevronRight
-                        size={16}
-                        color={theme.textTertiary}
-                        style={{
-                          transform: expandedMenus.includes(item.id) ? "rotate(90deg)" : "rotate(0)",
-                          transition: "transform 0.2s ease",
-                        }}
-                      />
-                    )}
-                  </div>
-                </button>
-
-                {(item as any).expandable && expandedMenus.includes(item.id) && (item as any).children && (
-                  <div
-                    style={{
-                      marginLeft: "32px",
-                      marginBottom: "8px",
-                      opacity: sidebarOpen ? 1 : 0,
-                      transition: "opacity 0.3s ease",
+                    key={index}
+                    onClick={() => {
+                      if (item.id === "iasted") {
+                        setIastedOpen(true);
+                      } else {
+                        setActiveSection(item.id);
+                      }
                     }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                      activeSection === item.id || (item.id === "iasted" && iastedOpen)
+                        ? "neu-inset text-primary font-semibold"
+                        : "neu-raised hover:shadow-neo-md"
+                    }`}
                   >
-                    {(item as any).children.map((child: any) => (
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+            </button>
+                ))}
+              </nav>
+            )}
+          </div>
+
+          {/* Gouvernance */}
+          <div className="mb-4">
+            <button
+              onClick={() => toggleSection('gouvernance')}
+              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+            >
+              GOUVERNANCE
+              {expandedSections.gouvernance ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+            </button>
+            {expandedSections.gouvernance && (
+              <nav className="space-y-1 ml-2">
+                <button
+                  onClick={() => setActiveSection("conseil-ministres")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "conseil-ministres"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <UserCog className="w-4 h-4" />
+                  Conseil des Ministres
+                </button>
+                <button
+                  onClick={() => setActiveSection("ministeres")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "ministeres"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <Building2 className="w-4 h-4" />
+                  Ministères & Directions
+                </button>
+                <button
+                  onClick={() => setActiveSection("decrets")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "decrets"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <FileCheck className="w-4 h-4" />
+                  Décrets & Ordonnances
+                </button>
+                <button
+                  onClick={() => setActiveSection("nominations")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "nominations"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  Nominations
+                </button>
+              </nav>
+            )}
+            </div>
+
+          {/* Économie & Finances */}
+          <div className="mb-4">
+                <button
+              onClick={() => toggleSection('economie')}
+              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+            >
+              ÉCONOMIE & FINANCES
+              {expandedSections.economie ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+                </button>
+            {expandedSections.economie && (
+              <nav className="space-y-1 ml-2">
+                <button
+                  onClick={() => setActiveSection("budget")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "budget"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Budget National
+                </button>
                       <button
-                        key={child.id}
-                        onClick={() => setActiveSection(child.id)}
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          padding: "10px 12px",
-                          marginBottom: "2px",
-                          backgroundColor: activeSection === child.id ? "#F3F4F6" : "transparent",
-                          border: "none",
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (activeSection !== child.id) {
-                            e.currentTarget.style.backgroundColor = "#F3F4F6";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (activeSection !== child.id) {
-                            e.currentTarget.style.backgroundColor = "transparent";
-                          }
-                        }}
-                      >
-                        <child.icon size={16} color={activeSection === child.id ? theme.primary : theme.textTertiary} />
-                        <span
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: activeSection === child.id ? 500 : 400,
-                            color: activeSection === child.id ? theme.text : theme.textSecondary,
-                          }}
-                        >
-                          {child.label}
-                        </span>
+                  onClick={() => setActiveSection("indicateurs")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "indicateurs"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <TrendingUpIcon className="w-4 h-4" />
+                  Indicateurs Économiques
+                </button>
+                <button
+                  onClick={() => setActiveSection("investissements")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "investissements"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <Landmark className="w-4 h-4" />
+                  Investissements
                       </button>
-                    ))}
+              </nav>
+                    )}
                   </div>
+
+          {/* Affaires Sociales */}
+          <div className="mb-4 flex-1">
+            <button
+              onClick={() => toggleSection('affaires')}
+              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+            >
+              AFFAIRES SOCIALES
+              {expandedSections.affaires ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+            </button>
+            {expandedSections.affaires && (
+              <nav className="space-y-1 ml-2">
+                      <button
+                  onClick={() => setActiveSection("education")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "education"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  Éducation
+              </button>
+                <button
+                  onClick={() => setActiveSection("sante")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "sante"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <Stethoscope className="w-4 h-4" />
+                  Santé Publique
+                      </button>
+                <button
+                  onClick={() => setActiveSection("emploi")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "emploi"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <Briefcase className="w-4 h-4" />
+                  Emploi & Formation
+                </button>
+              </nav>
                 )}
               </div>
-            ))}
 
-            <div
-              style={{
-                borderTop: `1px solid ${theme.border}`,
-                marginTop: "20px",
-                paddingTop: "20px",
-                opacity: sidebarOpen ? 1 : 0,
-                transition: "opacity 0.3s ease",
-              }}
+          {/* Infrastructures & Projets */}
+          <div className="mb-4">
+            <button
+              onClick={() => toggleSection('infrastructures')}
+              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
             >
+              INFRASTRUCTURES & PROJETS
+              {expandedSections.infrastructures ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+            </button>
+            {expandedSections.infrastructures && (
+              <nav className="space-y-1 ml-2">
               <button
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "12px 16px",
-                  marginBottom: "4px",
-                  backgroundColor: "transparent",
-                  border: "none",
-                  borderRadius: "10px",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${theme.bgTertiary}50`)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-              >
-                <Settings size={20} color={theme.textSecondary} />
-                <span style={{ fontSize: "14px", color: theme.textSecondary }}>Paramètres</span>
+                  onClick={() => setActiveSection("chantiers")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "chantiers"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <Hammer className="w-4 h-4" />
+                  Suivi des Chantiers
               </button>
+                <button
+                  onClick={() => setActiveSection("projets-presidentiels")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "projets-presidentiels"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <Crown className="w-4 h-4" />
+                  Projets Présidentiels
+                </button>
+                <button
+                  onClick={() => setActiveSection("projets-etat")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                    activeSection === "projets-etat"
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                  }`}
+                >
+                  <Target className="w-4 h-4" />
+                  Projets d'État
+                </button>
+              </nav>
+            )}
+          </div>
 
+          {/* Paramètres et Déconnexion */}
+          <div className="mt-auto pt-4 border-t border-border">
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm neu-raised hover:shadow-neo-md transition-all mb-1"
+            >
+              {mounted && theme === "dark" ? (
+                <>
+                  <Sun className="w-4 h-4" />
+                  Mode clair
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4" />
+                  Mode sombre
+                </>
+              )}
+            </button>
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm neu-raised hover:shadow-neo-md transition-all mb-1">
+              <Settings className="w-4 h-4" />
+              Paramètres
+            </button>
               <button
                 onClick={handleLogout}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "12px 16px",
-                  backgroundColor: "transparent",
-                  border: "none",
-                  borderRadius: "10px",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${theme.danger}20`)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-              >
-                <LogOut size={20} color={theme.danger} />
-                <span style={{ fontSize: "14px", color: theme.danger }}>Déconnexion</span>
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-destructive neu-raised hover:shadow-neo-md transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              Déconnexion
               </button>
             </div>
-          </nav>
         </aside>
 
-        <main
-          style={{
-            flex: 1,
-            padding: "32px",
-            overflowY: "auto",
-            backgroundColor: "#F7F8FA",
-          }}
-        >
-          {activeSection === "dashboard" && (
+        {/* Contenu principal */}
+        <main className="flex-1">
+          <div className="neu-card p-8 min-h-[calc(100vh-3rem)]">
+            {/* En-tête */}
+            <div className="flex items-start gap-4 mb-10">
+              <div className="neu-raised w-20 h-20 rounded-full flex items-center justify-center p-3 shrink-0">
+                <img 
+                  src={emblemGabon} 
+                  alt="Emblème de la République Gabonaise" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
             <div>
-              <div style={{ marginBottom: "32px" }}>
-                <h2 style={{ fontSize: "28px", fontWeight: 700, color: theme.text, marginBottom: "8px" }}>
-                  Tableau de Bord Présidentiel
-                </h2>
-                <p style={{ color: theme.textSecondary }}>
-                  Vue d'ensemble de la République -{" "}
-                  {new Date().toLocaleDateString("fr-FR", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                <h1 className="text-4xl font-bold mb-2">
+                  Espace Président
+                </h1>
+                <p className="text-base text-muted-foreground">
+                  Présidence de la République - République Gabonaise
                 </p>
               </div>
+              </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                  gap: "24px",
-                  marginBottom: "32px",
-                }}
-              >
-                <StatCard title="Population Nationale" value={stats.population.toLocaleString("fr-FR")} subtitle="Recensement 2025" icon={Users} color={theme.primary} theme={theme} />
-                <StatCard title="Ministères & Institutions" value={stats.ministeres} subtitle="Structures gouvernementales" icon={Building2} color={theme.primaryBlue} theme={theme} />
-                <StatCard title="Projets en Cours" value={stats.projetsActifs} subtitle="Projets nationaux actifs" icon={Briefcase} color={theme.primaryGold} theme={theme} />
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <StatCard title="Budget National" value={stats.budgetNational} subtitle="Exercice 2025" icon={DollarSign} color={theme.success} theme={theme} />
+            {/* Statistiques principales - Style avec séparateurs */}
+            <div className="neu-card p-6 mb-8">
+              <div className="grid grid-cols-4 divide-x divide-border">
+                <div className="px-6 first:pl-0">
+                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
+                    <Users className="w-6 h-6 text-primary" />
+                </div>
+                  <div className="text-4xl font-bold mb-2">
+                    {stats.totalAgents}
+                  </div>
+                  <div className="text-sm font-medium">Total Agents</div>
+                  <div className="text-xs text-muted-foreground">Fonction publique gabonaise</div>
+              </div>
+
+                <div className="px-6">
+                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
+                    <Building2 className="w-6 h-6 text-secondary" />
+                  </div>
+                  <div className="text-4xl font-bold mb-2">
+                    {stats.structures}
+                  </div>
+                  <div className="text-sm font-medium">Structures</div>
+                  <div className="text-xs text-muted-foreground">Ministères et directions</div>
+                </div>
+
+                <div className="px-6">
+                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
+                    <UserCog className="w-6 h-6 text-warning" />
+                  </div>
+                  <div className="text-4xl font-bold mb-2">
+                    {stats.postesVacants}
+                  </div>
+                  <div className="text-sm font-medium">Postes Vacants</div>
+                  <div className="text-xs text-muted-foreground">Sur 0 postes</div>
+                </div>
+
+                <div className="px-6 last:pr-0">
+                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
+                    <FileCheck className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="text-4xl font-bold mb-2">
+                    {stats.actesEnAttente}
+                  </div>
+                  <div className="text-sm font-medium">Actes en attente</div>
+                  <div className="text-xs text-muted-foreground">Nécessitent votre validation</div>
+                </div>
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "24px",
-                  marginBottom: "32px",
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: `1px solid ${theme.border}`,
-                    borderRadius: "16px",
-                    padding: "24px",
-                    boxShadow: theme.shadow,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: 600, color: theme.text }}>Indicateurs Économiques</h3>
-                    <BarChart3 size={20} color={theme.textSecondary} />
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-                    <CircularProgress percentage={stats.croissancePIB} label="Croissance PIB" color={theme.success} theme={theme} />
-                    <CircularProgress percentage={100 - stats.tauxChomage} label="Taux d'Emploi" color={theme.primaryBlue} theme={theme} />
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: `1px solid ${theme.border}`,
-                    borderRadius: "16px",
-                    padding: "24px",
-                    boxShadow: theme.shadow,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: 600, color: theme.text }}>Activités Récentes</h3>
-                    <Activity size={20} color={theme.textSecondary} />
-                  </div>
-                  <div>
-                    <ActivityItem type="decree" title="Décret N°2025/047 - Nomination au Ministère" time="Il y a 2 heures" status="completed" theme={theme} />
-                    <ActivityItem type="meeting" title="Conseil des Ministres Extraordinaire" time="Demain à 10h00" status="pending" theme={theme} />
-                    <ActivityItem type="nomination" title="Nomination Directeur Général SEEG" time="Il y a 1 jour" status="completed" theme={theme} />
-                    <ActivityItem type="decree" title="Ordonnance Budget Rectificatif" time="En attente de signature" status="urgent" theme={theme} />
-                  </div>
+            {/* Contenu conditionnel selon la section active */}
+            {activeSection === "dashboard" && (
+              <>
+                {/* Sections de données */}
+                <div className="grid gap-6 md:grid-cols-2">
+              <div className="neu-card p-6 min-h-[300px]">
+                <h3 className="text-xl font-semibold mb-2">
+                  Répartition par Type d'Agent
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Catégories de personnels
+                </p>
+                <div className="h-64 mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={agentTypesData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {agentTypesData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
 
-              <div
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  border: `1px solid ${theme.border}`,
-                  borderRadius: "16px",
-                  padding: "24px",
-                  boxShadow: theme.shadow,
-                }}
-              >
-                <h3 style={{ fontSize: "18px", fontWeight: 600, color: theme.text, marginBottom: "20px" }}>Actions Rapides</h3>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                    gap: "12px",
-                  }}
-                >
-                  {[
-                    { label: "Nouveau Décret", icon: FileText, color: theme.primaryBlue },
-                    { label: "Convoquer Conseil", icon: Users, color: theme.primary },
-                    { label: "Planifier Réunion", icon: Calendar, color: theme.primaryGold },
-                    { label: "Voir Rapports", icon: BarChart3, color: theme.info },
-                    { label: "Messages Urgents", icon: Bell, color: theme.danger },
-                    { label: "Nominations", icon: Award, color: theme.success },
-                  ].map((action, index) => (
-                    <button
-                      key={index}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        padding: "14px 18px",
-                        backgroundColor: "#F7F8FA",
-                        border: `1px solid ${theme.border}`,
-                        borderRadius: "10px",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = `${action.color}20`;
-                        e.currentTarget.style.borderColor = action.color;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "#F7F8FA";
-                        e.currentTarget.style.borderColor = theme.border;
-                      }}
-                    >
-                      <action.icon size={18} color={action.color} />
-                      <span style={{ fontSize: "14px", fontWeight: 500, color: theme.text }}>{action.label}</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="neu-card p-6 min-h-[300px]">
+                <h3 className="text-xl font-semibold mb-2">
+                  Équilibre Homme/Femme
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Répartition par genre
+                </p>
+                <div className="h-64 mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={genderData}>
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]}>
+                        {genderData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+            </div>
               </div>
             </div>
-          )}
+              </>
+            )}
 
-          {activeSection !== "dashboard" && (
-            <>
-              {activeSection === "conseil-ministres" && <ConseilMinistres theme={theme} />}
-              {activeSection === "ministeres" && <MinisteresDirections theme={theme} />}
-              {activeSection === "decrets" && <DecretsOrdonnances theme={theme} />}
-              {activeSection === "nominations" && <Nominations theme={theme} />}
-              {activeSection === "budget" && <BudgetNationalSection theme={theme} />}
-              {activeSection === "indicateurs" && <IndicateursEconomiquesSection theme={theme} />}
-              {activeSection === "investissements" && <InvestissementsSection theme={theme} />}
-              {activeSection === "education" && <EducationSection theme={theme} />}
-              {activeSection === "sante" && <SantePubliqueSection theme={theme} />}
-              {activeSection === "emploi" && <EmploiFormationSection theme={theme} />}
-              {activeSection === "international" && <RelationsInternationalesSection theme={theme} />}
-              {activeSection === "securite" && <SecuriteDefenseSection theme={theme} />}
-              {activeSection === "agenda" && <AgendaPresidentielSection theme={theme} />}
-            </>
-          )}
+            {activeSection === "conseil-ministres" && (
+              <div className="space-y-6">
+                <ConseilMinistres theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "ministeres" && (
+              <div className="space-y-6">
+                <MinisteresDirections theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "decrets" && (
+              <div className="space-y-6">
+                <DecretsOrdonnances theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "nominations" && (
+              <div className="space-y-6">
+                <Nominations theme={currentTheme} />
+        </div>
+            )}
+
+            {activeSection === "budget" && (
+              <div className="space-y-6">
+                <BudgetNationalSection theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "indicateurs" && (
+              <div className="space-y-6">
+                <IndicateursEconomiquesSection theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "investissements" && (
+              <div className="space-y-6">
+                <InvestissementsSection theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "education" && (
+              <div className="space-y-6">
+                <EducationSection theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "sante" && (
+              <div className="space-y-6">
+                <SantePubliqueSection theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "emploi" && (
+              <div className="space-y-6">
+                <EmploiFormationSection theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "chantiers" && (
+              <div className="space-y-6">
+                <ChantiersSection theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "projets-presidentiels" && (
+              <div className="space-y-6">
+                <ProjetsPresidentielsSection theme={currentTheme} />
+              </div>
+            )}
+
+            {activeSection === "projets-etat" && (
+              <div className="space-y-6">
+                <ProjetsEtatSection theme={currentTheme} />
+              </div>
+            )}
+          </div>
         </main>
-        {/* Bouton iAsted - visible sur toutes les pages de l'espace Président */}
-        <div
-          style={{
-            position: "fixed",
-            right: 24,
-            bottom: 24,
-            zIndex: 200,
-          }}
-        >
-          <IAstedButtonFull
-            onSingleClick={async () => {
-              console.log('[PresidentSpace] 🖱️ IAstedButtonFull Single Click');
-              console.log('[PresidentSpace] États: voiceOnlyMode=', voiceOnlyMode, ', iastedOpen=', iastedOpen);
-              
-              // Activer le contexte audio lors du clic
-              try {
-                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-                if (audioContext.state === 'suspended') {
-                  await audioContext.resume();
-                  console.log('[PresidentSpace] ✅ Contexte audio activé au clic');
-                }
-              } catch (error) {
-                console.error('[PresidentSpace] Erreur activation audio:', error);
-              }
-              
-              if (voiceOnlyMode) {
-                // Mode vocal pur actif : fermer
-                console.log('[PresidentSpace] ⏹️ Fermeture du mode vocal pur');
-                setIastedOpen(false);
-                setVoiceOnlyMode(false);
-              } else if (iastedOpen && !voiceOnlyMode) {
-                // Modal déjà ouvert en mode texte : basculer le mode vocal
-                console.log('[PresidentSpace] 🔄 Basculer vers mode vocal (modal déjà ouvert)');
-                voiceConversationRef.current?.toggleVoiceMode();
+      </div>
+
+      {/* Bouton IAsted flottant */}
+      <IAstedButtonFull
+        onSingleClick={() => {
+          if (iastedOpen) {
+            setIsVoiceModeActive(!isVoiceModeActive);
               } else {
-                // Modal fermé : activer le mode vocal pur
-                console.log('[PresidentSpace] 🎙️ Activation du mode vocal pur');
-                setVoiceOnlyMode(true);
                 setIastedOpen(true);
-              }
-            }}
-            onDoubleClick={async () => {
-              // Activer le contexte audio lors du double clic
-              try {
-                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-                if (audioContext.state === 'suspended') {
-                  await audioContext.resume();
-                  console.log('[PresidentSpace] ✅ Contexte audio activé au double clic');
-                }
-              } catch (error) {
-                console.error('[PresidentSpace] Erreur activation audio:', error);
-              }
-              
-              // Ouvrir le modal en mode texte
-              setVoiceOnlyMode(false);
+            setIsVoiceModeActive(true);
+          }
+        }}
+        onDoubleClick={() => {
               setIastedOpen(true);
+          setIsVoiceModeActive(false);
             }}
             size="lg"
-            voiceListening={false}
+        voiceListening={isVoiceModeActive && !isAgentSpeaking}
             voiceSpeaking={isAgentSpeaking}
             voiceProcessing={false}
-            isInterfaceOpen={iastedOpen && !voiceOnlyMode}
+        isInterfaceOpen={iastedOpen}
             isVoiceModeActive={isVoiceModeActive}
           />
-        </div>
-        
-        {/* Interface iAsted avec conversation vocale */}
-        <Dialog open={iastedOpen} onOpenChange={(open) => {
-          setIastedOpen(open);
-          if (!open) {
-            setVoiceOnlyMode(false);
-          }
-        }}>
+
+      {/* Dialog iAsted */}
+      <Dialog open={iastedOpen} onOpenChange={setIastedOpen}>
           <DialogContent className={cn("max-w-3xl", voiceOnlyMode && "opacity-0 pointer-events-none absolute")}>
+          <DialogTitle className="sr-only">iAsted - Assistant Vocal Intelligent</DialogTitle>
+          <DialogDescription className="sr-only">
+            Conversation vocale avec l'assistant iAsted
+          </DialogDescription>
             <VoiceConversationPanel 
               ref={voiceConversationRef}
               userRole="president"
@@ -795,11 +745,11 @@ export default function PresidentSpace() {
             />
           </DialogContent>
         </Dialog>
-      </div>
     </div>
   );
 }
 
+// Fonctions de sections exportées pour compatibilité (utilisées dans d'autres parties de l'application)
 export function ConseilMinistres({ theme }: { theme: ThemeConfig }) {
   return (
     <div style={{ display: "grid", gap: "24px" }}>
@@ -1148,6 +1098,139 @@ export function AgendaPresidentielSection({ theme }: { theme: ThemeConfig }) {
               <span style={{ color: theme.textSecondary }}>{e.heure}</span>
               <span style={{ color: theme.textSecondary }}>{e.lieu}</span>
               <span style={{ color: theme.textSecondary }}>{e.type}</span>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+export function ChantiersSection({ theme }: { theme: ThemeConfig }) {
+  const chantiers = [
+    { nom: "Hôpital de Libreville", localisation: "Libreville", avancement: 75, statut: "En cours", budget: "45B FCFA", dateDebut: "01/2024", dateFin: "06/2025" },
+    { nom: "Route nationale N1", localisation: "Libreville - Port-Gentil", avancement: 42, statut: "En cours", budget: "120B FCFA", dateDebut: "03/2024", dateFin: "12/2026" },
+    { nom: "Aéroport international", localisation: "Libreville", avancement: 28, statut: "En cours", budget: "280B FCFA", dateDebut: "06/2024", dateFin: "03/2027" },
+    { nom: "Palais présidentiel", localisation: "Libreville", avancement: 90, statut: "Finalisation", budget: "85B FCFA", dateDebut: "01/2023", dateFin: "03/2025" },
+  ];
+  return (
+    <div style={{ display: "grid", gap: 24 }}>
+      <SectionCard title="Suivi des Chantiers" theme={theme} right={<Hammer size={18} color={theme.textSecondary} />}>
+        <div style={{ display: "grid", gap: 16 }}>
+          {chantiers.map((c, idx) => (
+            <div key={idx} style={{ padding: "16px", background: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 12 }}>
+                <div>
+                  <h4 style={{ color: theme.text, fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{c.nom}</h4>
+                  <p style={{ color: theme.textSecondary, fontSize: 13 }}>{c.localisation}</p>
+                </div>
+                <span style={{ background: `${c.statut === "Finalisation" ? theme.success : theme.primary}20`, color: c.statut === "Finalisation" ? theme.success : theme.primary, padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600 }}>
+                  {c.statut}
+                </span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 12, marginTop: 12 }}>
+                <div>
+                  <p style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 4 }}>Avancement</p>
+                  <div style={{ width: "100%", height: 8, background: theme.bgTertiary, borderRadius: 4, overflow: "hidden" }}>
+                    <div style={{ width: `${c.avancement}%`, height: "100%", background: theme.primary, transition: "width 0.3s ease" }} />
+                  </div>
+                  <p style={{ color: theme.text, fontSize: 14, fontWeight: 600, marginTop: 4 }}>{c.avancement}%</p>
+                </div>
+                <div>
+                  <p style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 4 }}>Budget</p>
+                  <p style={{ color: theme.text, fontSize: 14, fontWeight: 600 }}>{c.budget}</p>
+                </div>
+                <div>
+                  <p style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 4 }}>Début</p>
+                  <p style={{ color: theme.text, fontSize: 14 }}>{c.dateDebut}</p>
+                </div>
+                <div>
+                  <p style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 4 }}>Fin prévue</p>
+                  <p style={{ color: theme.text, fontSize: 14 }}>{c.dateFin}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+export function ProjetsPresidentielsSection({ theme }: { theme: ThemeConfig }) {
+  const projets = [
+    { nom: "Gabon Numérique 2025", description: "Transformation digitale de l'administration", priorite: "Haute", budget: "150B FCFA", statut: "En cours", responsable: "Ministère du Numérique" },
+    { nom: "Énergie Renouvelable", description: "Transition vers les énergies vertes", priorite: "Critique", budget: "320B FCFA", statut: "Lancé", responsable: "Ministère de l'Énergie" },
+    { nom: "Éducation pour Tous", description: "Accès universel à l'éducation", priorite: "Haute", budget: "95B FCFA", statut: "Planification", responsable: "Ministère de l'Éducation" },
+    { nom: "Santé Publique Renforcée", description: "Amélioration du système de santé", priorite: "Haute", budget: "180B FCFA", statut: "En cours", responsable: "Ministère de la Santé" },
+  ];
+  return (
+    <div style={{ display: "grid", gap: 24 }}>
+      <SectionCard title="Projets Présidentiels" theme={theme} right={<Crown size={18} color={theme.textSecondary} />}>
+        <div style={{ display: "grid", gap: 16 }}>
+          {projets.map((p, idx) => (
+            <div key={idx} style={{ padding: "16px", background: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ color: theme.text, fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{p.nom}</h4>
+                  <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 8 }}>{p.description}</p>
+                  <p style={{ color: theme.textTertiary, fontSize: 12 }}>Responsable: {p.responsable}</p>
+                </div>
+                <span style={{ background: `${p.priorite === "Critique" ? theme.danger : theme.warning}20`, color: p.priorite === "Critique" ? theme.danger : theme.warning, padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, marginLeft: 12 }}>
+                  {p.priorite}
+                </span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${theme.border}` }}>
+                <div>
+                  <p style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 4 }}>Budget</p>
+                  <p style={{ color: theme.text, fontSize: 14, fontWeight: 600 }}>{p.budget}</p>
+                </div>
+                <div>
+                  <p style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 4 }}>Statut</p>
+                  <span style={{ background: `${p.statut === "En cours" ? theme.primary : p.statut === "Lancé" ? theme.success : theme.warning}20`, color: p.statut === "En cours" ? theme.primary : p.statut === "Lancé" ? theme.success : theme.warning, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600 }}>
+                    {p.statut}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+export function ProjetsEtatSection({ theme }: { theme: ThemeConfig }) {
+  const projets = [
+    { nom: "Port en eau profonde", secteur: "Infrastructures", montant: "380B FCFA", statut: "En cours", avancement: 65, echeance: "12/2026" },
+    { nom: "Parc solaire Estuaire", secteur: "Énergie", montant: "210B FCFA", statut: "Lancé", avancement: 35, echeance: "09/2027" },
+    { nom: "Fibre nationale", secteur: "Télécom", montant: "145B FCFA", statut: "Étude", avancement: 15, echeance: "06/2028" },
+    { nom: "Autoroute côtière", secteur: "Infrastructures", montant: "520B FCFA", statut: "Planification", avancement: 5, echeance: "12/2029" },
+    { nom: "Centres de santé ruraux", secteur: "Santé", montant: "95B FCFA", statut: "En cours", avancement: 48, echeance: "03/2026" },
+  ];
+  return (
+    <div style={{ display: "grid", gap: 24 }}>
+      <SectionCard title="Projets d'État" theme={theme} right={<Target size={18} color={theme.textSecondary} />}>
+        <div style={{ display: "grid", gap: 12 }}>
+          {projets.map((p, idx) => (
+            <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: 12, padding: "14px 16px", background: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: 12 }}>
+              <div>
+                <div style={{ color: theme.text, fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{p.nom}</div>
+                <div style={{ color: theme.textSecondary, fontSize: 12 }}>{p.secteur}</div>
+              </div>
+              <div style={{ color: theme.text, fontSize: 14, fontWeight: 600 }}>{p.montant}</div>
+              <div>
+                <span style={{ background: `${p.statut === "En cours" ? theme.primary : p.statut === "Lancé" ? theme.success : p.statut === "Étude" ? theme.warning : theme.info}20`, color: p.statut === "En cours" ? theme.primary : p.statut === "Lancé" ? theme.success : p.statut === "Étude" ? theme.warning : theme.info, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600 }}>
+                  {p.statut}
+                </span>
+              </div>
+              <div>
+                <div style={{ width: "100%", height: 6, background: theme.bgTertiary, borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
+                  <div style={{ width: `${p.avancement}%`, height: "100%", background: theme.primary }} />
+                </div>
+                <div style={{ color: theme.textSecondary, fontSize: 11 }}>{p.avancement}%</div>
+              </div>
+              <div style={{ textAlign: "right", color: theme.textSecondary, fontSize: 12 }}>{p.echeance}</div>
             </div>
           ))}
         </div>
