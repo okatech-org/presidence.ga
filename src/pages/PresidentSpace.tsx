@@ -43,7 +43,7 @@ import {
   Wrench,
   Target,
 } from "lucide-react";
-import { VoiceConversationPanel } from "@/components/VoiceConversationPanel";
+import IAstedChatInterface from "@/components/iasted/IAstedChatInterface";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -129,9 +129,8 @@ export default function PresidentSpace() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [iastedOpen, setIastedOpen] = useState(false);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
-  const [voiceOnlyMode, setVoiceOnlyMode] = useState(false);
   const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
-  const voiceConversationRef = useRef<any>(null);
+  const [voiceModeToggleTimestamp, setVoiceModeToggleTimestamp] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -711,20 +710,20 @@ export default function PresidentSpace() {
       <IAstedButtonFull
         onSingleClick={() => {
           console.log('🖱️ [IAstedButton] Clic simple détecté');
-          console.log('📊 [IAstedButton] États actuels:', { iastedOpen, isVoiceModeActive });
           if (iastedOpen) {
-            console.log('🔄 [IAstedButton] Modal déjà ouverte, toggle mode vocal');
-            setIsVoiceModeActive(!isVoiceModeActive);
+            console.log('🔄 [IAstedButton] Modal ouverte, toggle mode vocal');
+            setVoiceModeToggleTimestamp(Date.now());
           } else {
-            console.log('🚀 [IAstedButton] Ouverture modal + activation mode vocal');
+            console.log('🚀 [IAstedButton] Ouverture modal en mode vocal');
             setIastedOpen(true);
             setIsVoiceModeActive(true);
           }
         }}
         onDoubleClick={() => {
-              setIastedOpen(true);
+          console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal mode texte');
+          setIastedOpen(true);
           setIsVoiceModeActive(false);
-            }}
+        }}
             size="lg"
         voiceListening={isVoiceModeActive && !isAgentSpeaking}
             voiceSpeaking={isAgentSpeaking}
@@ -733,22 +732,15 @@ export default function PresidentSpace() {
             isVoiceModeActive={isVoiceModeActive}
           />
 
-      {/* Dialog iAsted */}
-      <Dialog open={iastedOpen} onOpenChange={setIastedOpen}>
-          <DialogContent className={cn("max-w-3xl", voiceOnlyMode && "opacity-0 pointer-events-none absolute")}>
-          <DialogTitle className="sr-only">iAsted - Assistant Vocal Intelligent</DialogTitle>
-          <DialogDescription className="sr-only">
-            Conversation vocale avec l'assistant iAsted
-          </DialogDescription>
-            <VoiceConversationPanel 
-              ref={voiceConversationRef}
-              userRole="president"
-              onSpeakingChange={setIsAgentSpeaking}
-              autoActivate={isVoiceModeActive}
-              onVoiceModeChange={setIsVoiceModeActive}
-            />
-          </DialogContent>
-        </Dialog>
+      {/* Interface iAsted avec chat et vocal */}
+      <IAstedChatInterface
+        isOpen={iastedOpen}
+        onClose={() => setIastedOpen(false)}
+        userRole="president"
+        onSpeakingChange={setIsAgentSpeaking}
+        voiceModeToggleTimestamp={voiceModeToggleTimestamp}
+        onVoiceModeChange={setIsVoiceModeActive}
+      />
     </div>
   );
 }
