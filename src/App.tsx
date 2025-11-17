@@ -16,6 +16,8 @@ import IAstedPage from "./pages/IAstedPage";
 import NotFound from "./pages/NotFound";
 import { LoadingScreen } from "@/components/ErrorBoundary";
 
+import IAstedConfigWizard from "./pages/IAstedConfigWizard";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -34,6 +36,7 @@ const App = () => (
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
               <Route path="/president-space" element={<PresidentSpace />} />
               <Route path="/iasted-config" element={<IAstedConfig />} />
+              <Route path="/iasted-setup" element={<IAstedConfigWizard />} />
               <Route path="/iasted" element={<IAstedPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

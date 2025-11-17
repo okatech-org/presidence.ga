@@ -29,6 +29,20 @@ const IAstedChatInterface: React.FC<IAstedChatInterfaceProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState('');
   const [isTextLoading, setIsTextLoading] = useState(false);
+  const [agentConfigured, setAgentConfigured] = useState<boolean | null>(null);
+
+  // Vérifier si l'agent est configuré
+  useEffect(() => {
+    const checkAgentConfig = async () => {
+      const { data } = await supabase
+        .from('iasted_config')
+        .select('agent_id')
+        .single();
+      
+      setAgentConfigured(!!data?.agent_id);
+    };
+    checkAgentConfig();
+  }, [isOpen]);
 
   // Hook vocal avec toutes les fonctionnalités demandées
   const {
@@ -128,7 +142,32 @@ const IAstedChatInterface: React.FC<IAstedChatInterfaceProps> = ({
           Intelligence Artificielle Stratégique de Traitement et d'Évaluation des Données
         </DialogDescription>
 
-        {/* Header */}
+        {/* Agent non configuré */}
+        {agentConfigured === false ? (
+          <div className="flex flex-col items-center justify-center h-full p-8 space-y-6">
+            <Bot className="w-24 h-24 text-muted-foreground" />
+            <div className="text-center space-y-2">
+              <h3 className="text-2xl font-bold">Agent iAsted non configuré</h3>
+              <p className="text-muted-foreground max-w-md">
+                Vous devez d'abord créer un agent ElevenLabs pour utiliser les fonctionnalités vocales d'iAsted.
+              </p>
+            </div>
+            <Button 
+              size="lg"
+              onClick={() => window.location.href = '/iasted-setup'}
+              className="gap-2"
+            >
+              <Bot className="w-5 h-5" />
+              Configurer iAsted
+            </Button>
+          </div>
+        ) : agentConfigured === null ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            {/* Header */}
         <div className="p-6 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5 shrink-0">
           <div className="flex items-center justify-between">
             <div>
@@ -304,6 +343,8 @@ const IAstedChatInterface: React.FC<IAstedChatInterfaceProps> = ({
             }
           </p>
         </div>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );
