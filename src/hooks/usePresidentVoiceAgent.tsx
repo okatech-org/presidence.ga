@@ -308,9 +308,12 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
 
     try {
       setVoiceState('thinking');
+      console.log('🎙️ [processAudioInput] Transcription audio, taille:', audioBlob.size, 'bytes');
+      
       const transcribedText = await transcribeAudio(audioBlob);
       
       if (!transcribedText || transcribedText.trim().length < 2) {
+        console.warn('⚠️ [processAudioInput] Transcription vide ou trop courte:', transcribedText);
         toast({
           title: 'Audio non détecté',
           description: 'Je n\'ai pas capté votre message.',
@@ -321,6 +324,7 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
         return;
       }
 
+      console.log('✅ [processAudioInput] Transcription:', transcribedText);
       setTranscript(transcribedText);
 
       const userMessage: Message = {
@@ -333,7 +337,11 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
       setMessages(prev => [...prev, userMessage]);
       await saveMessage(userMessage);
 
+      console.log('🧠 [processAudioInput] Génération réponse...');
       const response = await generatePresidentResponse(transcribedText);
+      console.log('✅ [processAudioInput] Réponse:', response.text.substring(0, 100) + '...');
+      
+      console.log('🎵 [processAudioInput] Génération audio...');
       const audioBase64 = await generateSpeech(response.text);
 
       const assistantMessage: Message = {
@@ -354,17 +362,21 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
       await saveMessage(assistantMessage);
 
       if (audioBase64) {
+        console.log('▶️ [processAudioInput] Lecture audio...');
         await playAudioResponse(audioBase64);
+      } else {
+        console.warn('⚠️ [processAudioInput] Pas d\'audio à jouer');
       }
 
       if (settings.continuousMode && voiceState === 'idle') {
+        console.log('🔄 [processAudioInput] Mode continu activé, relance écoute...');
         setTimeout(() => {
           startListening();
         }, 1000);
       }
 
     } catch (error) {
-      console.error('Erreur traitement audio:', error);
+      console.error('❌ [processAudioInput] Erreur traitement audio:', error);
       toast({
         title: 'Erreur de traitement',
         description: 'Une erreur est survenue.',
@@ -456,6 +468,8 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
   };
 
   const generateSpeech = async (text: string): Promise<string> => {
+    console.log('🎤 [generateSpeech] Génération audio pour:', text.substring(0, 50) + '...');
+    
     const { data, error } = await supabase.functions.invoke('text-to-speech', {
       body: {
         text,
@@ -464,31 +478,64 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [generateSpeech] Erreur:', error);
+      throw error;
+    }
+    
+    if (!data?.audioContent) {
+      console.error('❌ [generateSpeech] Pas de contenu audio reçu');
+      throw new Error('Pas de contenu audio reçu');
+    }
+    
+    console.log('✅ [generateSpeech] Audio reçu, longueur base64:', data.audioContent.length);
     return data.audioContent;
   };
 
   const playAudioResponse = async (base64Audio: string) => {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
+      console.log('🔊 [playAudioResponse] Début lecture audio, longueur:', base64Audio.length);
       setVoiceState('speaking');
 
-      const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
+      // Utiliser audio/mpeg au lieu de audio/mp3 (MIME type correct pour MP3)
+      const audio = new Audio(`data:audio/mpeg;base64,${base64Audio}`);
       audioElementRef.current = audio;
 
+      audio.onloadedmetadata = () => {
+        console.log('✅ [playAudioResponse] Métadonnées chargées, durée:', audio.duration, 's');
+      };
+
+      audio.oncanplaythrough = () => {
+        console.log('✅ [playAudioResponse] Audio prêt à être joué');
+      };
+
       audio.onended = () => {
+        console.log('✅ [playAudioResponse] Lecture terminée');
         setVoiceState('idle');
         audioElementRef.current = null;
         resolve();
       };
 
-      audio.onerror = () => {
+      audio.onerror = (e) => {
+        console.error('❌ [playAudioResponse] Erreur lecture audio:', e);
+        console.error('❌ [playAudioResponse] Audio error details:', audio.error);
         setVoiceState('idle');
         audioElementRef.current = null;
-        resolve();
+        toast({
+          title: 'Erreur audio',
+          description: 'Impossible de lire la réponse audio',
+          variant: 'destructive',
+        });
+        resolve(); // Résoudre quand même pour ne pas bloquer
       };
 
       audio.play().catch(error => {
-        console.error('Erreur lecture audio:', error);
+        console.error('❌ [playAudioResponse] Erreur play():', error);
+        toast({
+          title: 'Erreur de lecture',
+          description: 'Impossible de démarrer la lecture audio',
+          variant: 'destructive',
+        });
         setVoiceState('idle');
         resolve();
       });
@@ -502,6 +549,8 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
     const startTime = Date.now();
 
     try {
+      console.log('📤 [sendTextMessage] Envoi message:', text);
+      
       const userMessage: Message = {
         id: crypto.randomUUID(),
         role: 'user',
@@ -515,11 +564,18 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
       setVoiceState('thinking');
       const response = await generatePresidentResponse(text);
 
+      console.log('💬 [sendTextMessage] Réponse reçue:', response.text.substring(0, 100) + '...');
+
+      // Générer l'audio de la réponse
+      const audioBase64 = await generateSpeech(response.text);
+      console.log('🎵 [sendTextMessage] Audio généré pour la réponse');
+
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: response.text,
         timestamp: new Date().toISOString(),
+        audioUrl: audioBase64,
         metadata: {
           intent: response.intent,
           tokens: response.tokensUsed,
@@ -531,15 +587,24 @@ export const usePresidentVoiceAgent = (settings: VoiceSettings) => {
       setMessages(prev => [...prev, assistantMessage]);
       await saveMessage(assistantMessage);
 
+      // Jouer l'audio de la réponse
+      if (audioBase64) {
+        console.log('▶️ [sendTextMessage] Lecture audio de la réponse...');
+        await playAudioResponse(audioBase64);
+      } else {
+        console.warn('⚠️ [sendTextMessage] Pas d\'audio à jouer');
+      }
+
       setVoiceState('idle');
 
     } catch (error) {
-      console.error('Erreur envoi message:', error);
+      console.error('❌ [sendTextMessage] Erreur:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible d\'envoyer votre message.',
         variant: 'destructive',
       });
+      setVoiceState('idle');
     } finally {
       setIsProcessing(false);
     }
