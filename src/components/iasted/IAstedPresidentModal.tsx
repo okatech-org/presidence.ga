@@ -23,7 +23,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DEFAULT_SETTINGS = {
-  voiceId: 'alloy',
+  voiceId: 'nPczCjzI2devNBz1zQrb', // Brian - Voix masculine professionnelle pour iAsted
   silenceDuration: 2500,
   silenceThreshold: 15,
   continuousMode: false,
