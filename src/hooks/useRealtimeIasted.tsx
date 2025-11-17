@@ -105,6 +105,8 @@ export const useRealtimeIasted = () => {
 
       // Récupérer le token JWT
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔑 [RealtimeIasted] Session:', session ? 'trouvée' : 'non trouvée');
+      
       if (!session) {
         throw new Error('Non authentifié');
       }
@@ -113,11 +115,12 @@ export const useRealtimeIasted = () => {
       const projectId = 'bpaouvtlexhtschufshd';
       const wsUrl = `wss://${projectId}.supabase.co/functions/v1/realtime-iasted?jwt=${session.access_token}`;
       
+      console.log('🔌 [RealtimeIasted] Tentative de connexion WebSocket...');
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('✅ [RealtimeIasted] Connecté');
+        console.log('✅ [RealtimeIasted] WebSocket connecté avec succès');
       };
 
       ws.onmessage = async (event) => {
@@ -192,6 +195,8 @@ export const useRealtimeIasted = () => {
 
       ws.onerror = (error) => {
         console.error('❌ [RealtimeIasted] Erreur WebSocket:', error);
+        console.error('❌ [RealtimeIasted] WebSocket URL:', wsUrl);
+        console.error('❌ [RealtimeIasted] WebSocket readyState:', ws.readyState);
         toast({
           title: "Erreur de connexion",
           description: "Impossible de se connecter à iAsted",
@@ -200,7 +205,8 @@ export const useRealtimeIasted = () => {
       };
 
       ws.onclose = () => {
-        console.log('🔌 [RealtimeIasted] Déconnecté');
+        console.log('🔌 [RealtimeIasted] WebSocket fermé');
+        console.log('🔌 [RealtimeIasted] readyState:', ws.readyState);
         setVoiceState('idle');
       };
 
