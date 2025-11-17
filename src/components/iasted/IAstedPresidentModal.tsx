@@ -23,7 +23,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DEFAULT_SETTINGS = {
-  voiceId: 'nPczCjzI2devNBz1zQrb', // Brian - Voix masculine professionnelle pour iAsted
+  voiceId: 'EV6XgOdBELK29O2b4qyM', // iAsted Pro - Voix personnalisée professionnelle
   silenceDuration: 2500,
   silenceThreshold: 15,
   continuousMode: false,

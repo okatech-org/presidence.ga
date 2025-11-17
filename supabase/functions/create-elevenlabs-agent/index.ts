@@ -15,7 +15,7 @@ serve(async (req) => {
       agentName = 'iAsted',
       presidentVoiceId = '9BWtsMINqrJLrRacOk9x',
       ministerVoiceId = 'EXAVITQu4vr4xnSDxMaL',
-      defaultVoiceId = 'Xb7hH8MSUJpSbSDYk0k2'
+      defaultVoiceId = 'EV6XgOdBELK29O2b4qyM'
     } = await req.json();
 
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
