@@ -11,11 +11,11 @@ serve(async (req) => {
   }
 
   try {
-    const formData = await req.formData();
-    const audioFile = formData.get('audio');
+    const body = await req.json();
+    const { audio: audioBase64, language = 'fr' } = body;
     
-    if (!audioFile) {
-      throw new Error('Audio file is required');
+    if (!audioBase64) {
+      throw new Error('Audio (base64) is required');
     }
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
@@ -23,13 +23,17 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY not configured');
     }
 
-    console.log('Transcribing audio...');
+    console.log('[speech-to-text] Transcription audio...');
+
+    // Convertir base64 en Blob
+    const audioBuffer = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
+    const audioBlob = new Blob([audioBuffer], { type: 'audio/webm' });
 
     // Préparer le formData pour OpenAI
     const openaiFormData = new FormData();
-    openaiFormData.append('file', audioFile);
+    openaiFormData.append('file', audioBlob, 'audio.webm');
     openaiFormData.append('model', 'whisper-1');
-    openaiFormData.append('language', 'fr'); // Français par défaut
+    openaiFormData.append('language', language);
 
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
