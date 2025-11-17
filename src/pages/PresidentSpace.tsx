@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useRealtimeIasted } from '@/hooks/useRealtimeIasted';
+import { useIastedConversation } from '@/hooks/useIastedConversation';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -132,15 +132,7 @@ export default function PresidentSpace() {
 
   // Hook pour la conversation vocale fluide avec voix iAsted
   const [showChat, setShowChat] = useState(false);
-  const {
-    voiceState,
-    isSpeaking,
-    isListening,
-    isProcessing,
-    isConnected,
-    toggleConversation,
-    stopConversation,
-  } = useRealtimeIasted();
+  const iastedConversation = useIastedConversation();
 
   useEffect(() => {
     setMounted(true);
@@ -717,31 +709,20 @@ export default function PresidentSpace() {
 
       {/* Bouton IAsted flottant */}
       <IAstedButtonFull
-        onSingleClick={async () => {
-          console.log('🖱️ [IAstedButton] Clic simple');
-          if (isConnected) {
-            // Si déjà connecté, arrêter la conversation
-            console.log('🛑 [IAstedButton] Arrêt conversation');
-            stopConversation();
-          } else {
-            // Sinon, démarrer la conversation (iAsted va se présenter automatiquement)
-            console.log('🎤 [IAstedButton] Démarrage conversation avec présentation');
-            await toggleConversation();
-          }
-        }}
+        onSingleClick={iastedConversation.toggleConversation}
         onDoubleClick={() => {
           console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal chat');
-          if (isConnected) {
-            stopConversation();
+          if (iastedConversation.isConnected) {
+            iastedConversation.stopConversation();
           }
           setIastedOpen(true);
         }}
         size="lg"
-        voiceListening={isListening}
-        voiceSpeaking={isSpeaking}
-        voiceProcessing={isProcessing}
+        voiceListening={iastedConversation.isConnected && !iastedConversation.isSpeaking}
+        voiceSpeaking={iastedConversation.isSpeaking}
+        voiceProcessing={false}
         isInterfaceOpen={iastedOpen}
-        isVoiceModeActive={isConnected}
+        isVoiceModeActive={iastedConversation.isConnected}
       />
 
       {/* Interface iAsted avec chat et documents */}
