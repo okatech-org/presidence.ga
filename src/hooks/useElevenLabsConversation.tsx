@@ -22,33 +22,51 @@ export const useElevenLabsConversation = ({
   const [agentId, setAgentId] = useState<string | undefined>(providedAgentId);
   const conversationIdRef = useRef<string | null>(null);
 
-  // Charger l'agent ID depuis la base de données si non fourni
+  // Créer automatiquement l'agent si nécessaire
   useEffect(() => {
-    const loadAgentId = async () => {
+    const ensureAgent = async () => {
       if (providedAgentId) return;
+      if (agentId) return; // Déjà chargé
 
       try {
-        const { data, error } = await supabase
+        console.log('🔍 [ElevenLabs] Vérification agent...');
+        
+        // Vérifier si un agent existe
+        const { data: existingConfig, error: configError } = await supabase
           .from('iasted_config')
           .select('agent_id')
-          .single();
+          .maybeSingle();
 
-        if (error) {
-          console.log('⚠️ [ElevenLabs] Pas de config trouvée, il faut créer un agent');
+        if (configError) {
+          console.log('ℹ️ [ElevenLabs] Pas de config, création automatique...');
+        }
+
+        if (existingConfig?.agent_id) {
+          console.log('✅ [ElevenLabs] Agent existant trouvé:', existingConfig.agent_id);
+          setAgentId(existingConfig.agent_id);
           return;
         }
 
-        if (data?.agent_id) {
-          console.log('✅ [ElevenLabs] Agent ID chargé:', data.agent_id);
-          setAgentId(data.agent_id);
+        // Créer l'agent automatiquement
+        console.log('🚀 [ElevenLabs] Création automatique de l\'agent iAsted Pro...');
+        const { data: createData, error: createError } = await supabase.functions.invoke('create-elevenlabs-agent');
+
+        if (createError) {
+          console.error('❌ [ElevenLabs] Erreur création agent:', createError);
+          return;
+        }
+
+        if (createData?.agentId) {
+          console.log('✅ [ElevenLabs] Agent créé automatiquement:', createData.agentId);
+          setAgentId(createData.agentId);
         }
       } catch (error) {
-        console.error('❌ [ElevenLabs] Erreur chargement agent:', error);
+        console.error('❌ [ElevenLabs] Erreur setup agent:', error);
       }
     };
 
-    loadAgentId();
-  }, [providedAgentId]);
+    ensureAgent();
+  }, [providedAgentId, agentId]);
 
   const conversation = useConversation({
     onConnect: () => {

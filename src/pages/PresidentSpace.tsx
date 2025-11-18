@@ -45,7 +45,6 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { IAstedSetupModal } from '@/components/iasted/IAstedSetupModal';
 import { useElevenLabsConversation, ConversationState } from '@/hooks/useElevenLabsConversation';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -133,14 +132,12 @@ export default function PresidentSpace() {
 
   // Hook pour la conversation vocale temps réel avec ElevenLabs (voix iAsted Pro)
   const [conversationState, setConversationState] = useState<ConversationState>('disconnected');
-  const [setupModalOpen, setSetupModalOpen] = useState(false);
   
   const {
     startConversation,
     endConversation,
     isConnected,
     isSpeaking,
-    hasAgent,
   } = useElevenLabsConversation({
     onStateChange: (state) => {
       console.log('🔄 [PresidentSpace] État conversation:', state);
@@ -729,13 +726,6 @@ export default function PresidentSpace() {
         onSingleClick={async () => {
           console.log('🖱️ [IAstedButton] Clic simple - conversation vocale temps réel iAsted Pro');
           
-          // Vérifier si l'agent existe
-          if (!hasAgent) {
-            console.log('⚠️ [IAstedButton] Pas d\'agent configuré, ouverture modal setup');
-            setSetupModalOpen(true);
-            return;
-          }
-          
           if (isConnected) {
             // Si déjà connecté, on déconnecte
             console.log('🔄 [IAstedButton] Déconnexion conversation');
@@ -756,17 +746,6 @@ export default function PresidentSpace() {
         voiceProcessing={conversationState === 'connecting'}
         isInterfaceOpen={iastedOpen}
         isVoiceModeActive={isConnected}
-      />
-
-      {/* Modal de setup de l'agent */}
-      <IAstedSetupModal
-        open={setupModalOpen}
-        onOpenChange={setSetupModalOpen}
-        onSuccess={(agentId) => {
-          console.log('✅ [PresidentSpace] Agent créé:', agentId);
-          // Recharger la page pour récupérer le nouvel agent
-          window.location.reload();
-        }}
       />
 
       {/* Interface iAsted avec chat et documents */}
