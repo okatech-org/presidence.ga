@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
+import { useElevenLabsConversation, ConversationState } from '@/hooks/useElevenLabsConversation';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -130,17 +130,22 @@ export default function PresidentSpace() {
   const [iastedOpen, setIastedOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Hook pour la conversation vocale avec ElevenLabs (voix iAsted Pro)
+  // Hook pour la conversation vocale temps réel avec ElevenLabs (voix iAsted Pro)
+  const [conversationState, setConversationState] = useState<ConversationState>('disconnected');
+  
   const {
-    voiceState,
-    handleInteraction,
-    cancelInteraction,
-    stopListening,
-  } = useVoiceInteraction({
-    voiceId: 'EV6XgOdBELK29O2b4qyM', // iAsted Pro
-    silenceDuration: 2500,
-    silenceThreshold: 15,
-    continuousMode: false,
+    startConversation,
+    endConversation,
+    isConnected,
+    isSpeaking,
+  } = useElevenLabsConversation({
+    onStateChange: (state) => {
+      console.log('🔄 [PresidentSpace] État conversation:', state);
+      setConversationState(state);
+    },
+    onMessage: (message) => {
+      console.log('📨 [PresidentSpace] Message reçu:', message);
+    },
   });
 
   useEffect(() => {
@@ -719,15 +724,15 @@ export default function PresidentSpace() {
       {/* Bouton IAsted flottant */}
       <IAstedButtonFull
         onSingleClick={async () => {
-          console.log('🖱️ [IAstedButton] Clic simple - conversation vocale iAsted Pro (ElevenLabs)');
-          if (iastedOpen) {
-            // Si modal ouvert, arrête l'écoute vocale
-            console.log('🔄 [IAstedButton] Modal ouverte, arrêt écoute');
-            stopListening();
+          console.log('🖱️ [IAstedButton] Clic simple - conversation vocale temps réel iAsted Pro');
+          if (isConnected) {
+            // Si déjà connecté, on déconnecte
+            console.log('🔄 [IAstedButton] Déconnexion conversation');
+            await endConversation();
           } else {
-            // Sinon, démarre la conversation vocale avec iAsted Pro
-            console.log('🎤 [IAstedButton] Démarrage conversation vocale iAsted Pro');
-            handleInteraction();
+            // Sinon, démarre la conversation vocale temps réel
+            console.log('🎤 [IAstedButton] Démarrage conversation temps réel iAsted Pro');
+            await startConversation();
           }
         }}
         onDoubleClick={() => {
@@ -735,11 +740,11 @@ export default function PresidentSpace() {
           setIastedOpen(true);
         }}
         size="lg"
-        voiceListening={voiceState === 'listening'}
-        voiceSpeaking={voiceState === 'speaking'}
-        voiceProcessing={voiceState === 'thinking'}
+        voiceListening={conversationState === 'connected' && !isSpeaking}
+        voiceSpeaking={isSpeaking}
+        voiceProcessing={conversationState === 'connecting'}
         isInterfaceOpen={iastedOpen}
-        isVoiceModeActive={voiceState !== 'idle'}
+        isVoiceModeActive={isConnected}
       />
 
       {/* Interface iAsted avec chat et documents */}
