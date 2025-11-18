@@ -13,8 +13,11 @@ serve(async (req) => {
   try {
     const { agentId } = await req.json();
     
-    if (!agentId) {
-      throw new Error('Agent ID is required');
+    // Si pas d'agentId fourni, on peut utiliser un agent par défaut
+    const targetAgentId = agentId || Deno.env.get('IASTED_AGENT_ID');
+    
+    if (!targetAgentId) {
+      throw new Error('Agent ID is required or IASTED_AGENT_ID must be set');
     }
 
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
@@ -23,7 +26,7 @@ serve(async (req) => {
     }
 
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
+      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${targetAgentId}`,
       {
         method: "GET",
         headers: {
@@ -39,6 +42,8 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    
+    console.log('✅ [elevenlabs-signed-url] Signed URL généré avec succès');
 
     return new Response(
       JSON.stringify({ signedUrl: data.signed_url }),
