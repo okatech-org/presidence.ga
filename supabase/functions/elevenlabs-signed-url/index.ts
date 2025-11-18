@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,14 +12,24 @@ serve(async (req) => {
   }
 
   try {
-    const { agentId } = await req.json();
-    
-    // Si pas d'agentId fourni, on peut utiliser un agent par défaut
-    const targetAgentId = agentId || Deno.env.get('IASTED_AGENT_ID');
-    
-    if (!targetAgentId) {
-      throw new Error('Agent ID is required or IASTED_AGENT_ID must be set');
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Fetch agent ID from database
+    const { data: configData, error: configError } = await supabase
+      .from('iasted_config')
+      .select('agent_id')
+      .single();
+
+    if (configError || !configData?.agent_id) {
+      console.error('❌ [elevenlabs-signed-url] No agent configured:', configError);
+      throw new Error('No ElevenLabs agent configured. Please create an agent first.');
     }
+
+    const targetAgentId = configData.agent_id;
+    console.log('✅ [elevenlabs-signed-url] Using agent:', targetAgentId);
 
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
     if (!ELEVENLABS_API_KEY) {
