@@ -37,6 +37,9 @@ serve(async (req) => {
 
     console.log('🎙️ [text-to-speech] Génération avec voix:', selectedVoiceId);
     console.log('📝 [text-to-speech] Texte:', text.substring(0, 100) + '...');
+    console.log('👤 [text-to-speech] Rôle utilisateur:', userRole);
+    console.log('🎤 [text-to-speech] VoiceId reçu:', voiceId);
+    console.log('✅ [text-to-speech] VoiceId final sélectionné:', selectedVoiceId);
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}/stream`,

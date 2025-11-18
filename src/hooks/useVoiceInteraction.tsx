@@ -37,6 +37,11 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   const [isPaused, setIsPaused] = useState(false);
   // Utiliser le voiceId fourni ou la voix iAsted Pro par défaut
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>(voiceId || 'EV6XgOdBELK29O2b4qyM');
+  
+  // Log pour debug
+  useEffect(() => {
+    console.log('🎙️ [useVoiceInteraction] VoiceId actuel:', selectedVoiceId);
+  }, [selectedVoiceId]);
   const [silenceDetected, setSilenceDetected] = useState(false);
   const [silenceTimeRemaining, setSilenceTimeRemaining] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState<string>('');
@@ -534,6 +539,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
 
       console.log('🎙️ [startConversation] Message de bienvenue:', welcomeMessage);
       console.log('🎤 [startConversation] Appel text-to-speech...');
+      console.log('🎙️ [startConversation] VoiceId envoyé:', selectedVoiceId);
 
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: {
