@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
+import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -130,8 +130,18 @@ export default function PresidentSpace() {
   const [iastedOpen, setIastedOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Hook pour la conversation vocale en temps réel via WebRTC
-  const { voiceState, isConnected, toggleConversation } = useRealtimeVoiceWebRTC();
+  // Hook pour la conversation vocale avec ElevenLabs (voix iAsted Pro)
+  const {
+    voiceState,
+    handleInteraction,
+    cancelInteraction,
+    stopListening,
+  } = useVoiceInteraction({
+    voiceId: 'EV6XgOdBELK29O2b4qyM', // iAsted Pro
+    silenceDuration: 2500,
+    silenceThreshold: 15,
+    continuousMode: false,
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -709,15 +719,15 @@ export default function PresidentSpace() {
       {/* Bouton IAsted flottant */}
       <IAstedButtonFull
         onSingleClick={async () => {
-          console.log('🖱️ [IAstedButton] Clic simple - conversation vocale directe');
+          console.log('🖱️ [IAstedButton] Clic simple - conversation vocale iAsted Pro (ElevenLabs)');
           if (iastedOpen) {
-            // Si modal ouvert, toggle la conversation vocale
-            console.log('🔄 [IAstedButton] Modal ouverte, toggle conversation');
-            await toggleConversation();
+            // Si modal ouvert, arrête l'écoute vocale
+            console.log('🔄 [IAstedButton] Modal ouverte, arrêt écoute');
+            stopListening();
           } else {
-            // Sinon, démarre la conversation vocale directement sans modal
-            console.log('🎤 [IAstedButton] Démarrage conversation vocale directe');
-            await toggleConversation();
+            // Sinon, démarre la conversation vocale avec iAsted Pro
+            console.log('🎤 [IAstedButton] Démarrage conversation vocale iAsted Pro');
+            handleInteraction();
           }
         }}
         onDoubleClick={() => {
@@ -729,7 +739,7 @@ export default function PresidentSpace() {
         voiceSpeaking={voiceState === 'speaking'}
         voiceProcessing={voiceState === 'thinking'}
         isInterfaceOpen={iastedOpen}
-        isVoiceModeActive={isConnected}
+        isVoiceModeActive={voiceState !== 'idle'}
       />
 
       {/* Interface iAsted avec chat et documents */}
