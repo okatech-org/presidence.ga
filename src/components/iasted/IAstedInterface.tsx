@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { useContinuousConversation } from '@/hooks/useContinuousConversation';
+import { ConnectionStatusOverlay } from './ConnectionStatusOverlay';
 
 import { supabase } from '@/integrations/supabase/client';
 
@@ -65,6 +66,7 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [volume, setVolume] = useState(0.8);
+  const [connectionError, setConnectionError] = useState<string>('');
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isRecording, isTranscribing, startRecording, stopRecording } = useAudioRecording();
@@ -78,6 +80,14 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
     stopContinuousMode,
     setVolume: setAgentVolume,
   } = useContinuousConversation(userRole, elevenLabsAgentId || '');
+
+  // Map conversation status to overlay status
+  const getOverlayStatus = () => {
+    if (isContinuousMode && !isConversationActive) {
+      return connectionError ? 'error' : 'connecting';
+    }
+    return conversationStatus === 'connected' ? 'connected' : 'disconnected';
+  };
 
   // Notifier le parent quand l'agent parle
   useEffect(() => {
@@ -118,6 +128,7 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
       
       const timer = setTimeout(async () => {
         setIsContinuousMode(true);
+        setConnectionError('');
         try {
           console.log('[IAstedInterface] Appel startContinuousMode...');
           await startContinuousMode();
@@ -129,9 +140,11 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
         } catch (error) {
           console.error('[IAstedInterface] ❌ Erreur démarrage automatique:', error);
           setIsContinuousMode(false);
+          const errorMessage = error instanceof Error ? error.message : "Impossible de démarrer le mode vocal";
+          setConnectionError(errorMessage);
           toast({
-            title: "Erreur",
-            description: error instanceof Error ? error.message : "Impossible de démarrer le mode vocal",
+            title: "Erreur de connexion",
+            description: errorMessage,
             variant: "destructive",
           });
         }
@@ -177,6 +190,7 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
     setIsContinuousMode(enabled);
     
     if (enabled) {
+      setConnectionError('');
       try {
         await startContinuousMode();
         toast({
@@ -186,13 +200,16 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
       } catch (error) {
         console.error('Error starting continuous mode:', error);
         setIsContinuousMode(false);
+        const errorMessage = error instanceof Error ? error.message : "Impossible de démarrer le mode vocal.";
+        setConnectionError(errorMessage);
         toast({
-          title: "Erreur",
-          description: error instanceof Error ? error.message : "Impossible de démarrer le mode vocal.",
+          title: "Erreur de connexion",
+          description: errorMessage,
           variant: "destructive",
         });
       }
     } else {
+      setConnectionError('');
       await stopContinuousMode();
       toast({
         title: "Mode vocal désactivé",
@@ -469,11 +486,23 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 relative">
         <DialogTitle className="sr-only">{getRoleTitle()}</DialogTitle>
         <DialogDescription className="sr-only">
           Intelligence Artificielle Stratégique de Traitement et d'Évaluation des Données
         </DialogDescription>
+        
+        {/* Connection Status Overlay */}
+        <ConnectionStatusOverlay
+          status={getOverlayStatus()}
+          error={connectionError}
+          onRetry={async () => {
+            setConnectionError('');
+            await handleModeToggle(true);
+          }}
+          onClose={onClose}
+        />
+        
         {/* Header */}
         <div className="p-6 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5">
           <h2 className="text-2xl font-bold text-foreground">{getRoleTitle()}</h2>
