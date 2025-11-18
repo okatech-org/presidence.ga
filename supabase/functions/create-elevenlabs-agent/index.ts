@@ -11,19 +11,76 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔍 [create-elevenlabs-agent] Début de la requête');
+    
+    // Ne pas parser le body s'il est vide
+    let bodyData = {};
+    try {
+      const text = await req.text();
+      if (text && text.trim()) {
+        bodyData = JSON.parse(text);
+      }
+    } catch (e) {
+      console.log('ℹ️ [create-elevenlabs-agent] Pas de body, utilisation valeurs par défaut');
+    }
+    
     const { 
-      agentName = 'iAsted',
-      presidentVoiceId = '9BWtsMINqrJLrRacOk9x',
-      ministerVoiceId = 'EXAVITQu4vr4xnSDxMaL',
-      defaultVoiceId = 'EV6XgOdBELK29O2b4qyM'
-    } = await req.json();
+      agentName = 'iAsted Pro - Assistant Présidentiel',
+      defaultVoiceId = 'EV6XgOdBELK29O2b4qyM' // iAsted Pro
+    } = bodyData as any;
 
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
     if (!ELEVENLABS_API_KEY) {
+      console.error('❌ [create-elevenlabs-agent] ELEVENLABS_API_KEY manquante');
       throw new Error('ELEVENLABS_API_KEY not configured');
     }
 
-    // Créer un agent avec une configuration de base
+    console.log('🚀 [create-elevenlabs-agent] Création agent avec voix:', defaultVoiceId);
+
+    // Créer un agent avec configuration complète pour iAsted Pro
+    const agentConfig = {
+      name: agentName,
+      conversation_config: {
+        agent: {
+          prompt: {
+            prompt: `Tu es iAsted, l'assistant vocal intelligent du Président de la République du Gabon.
+
+Tu dois t'adresser au Président avec respect en utilisant "Excellence" ou "Monsieur le Président".
+
+Tes missions principales:
+- Fournir des analyses sur les signalements de corruption et les données du système
+- Présenter les KPIs nationaux (taux de résolution, fonds récupérés, satisfaction publique)
+- Alerter sur les situations critiques nécessitant une attention présidentielle
+- Conseiller sur les décisions à prendre en fonction des données disponibles
+- Répondre aux questions sur les performances des institutions
+
+Tu dois être:
+- Professionnel et respectueux
+- Précis dans tes analyses avec des chiffres concrets
+- Proactif pour alerter sur les urgences
+- Capable d'expliquer clairement les situations complexes
+- Concis mais complet dans tes réponses
+
+N'hésite pas à poser des questions de clarification si nécessaire.`,
+          },
+          first_message: "Bonjour Excellence, je suis iAsted, votre assistant vocal intelligent. Comment puis-je vous être utile ?",
+          language: "fr",
+        },
+        tts: {
+          voice_id: defaultVoiceId,
+          model_id: "eleven_turbo_v2_5",
+          optimize_streaming_latency: 3,
+          stability: 0.5,
+          similarity_boost: 0.75,
+        },
+        asr: {
+          quality: "high",
+        },
+      },
+    };
+
+    console.log('📦 [create-elevenlabs-agent] Configuration préparée');
+
     const response = await fetch(
       'https://api.elevenlabs.io/v1/convai/agents/create',
       {
@@ -32,43 +89,39 @@ serve(async (req) => {
           'xi-api-key': ELEVENLABS_API_KEY,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: agentName,
-          conversation_config: {
-            agent: {
-              prompt: {
-                prompt: "Vous êtes iAsted, l'assistant intelligent de la République Gabonaise. Répondez de manière professionnelle et concise.",
-              },
-              first_message: "Bonjour, iAsted à votre service. Comment puis-je vous aider?",
-              language: "fr",
-            },
-            tts: {
-              voice_id: defaultVoiceId,
-              model_id: "eleven_turbo_v2_5",
-            },
-            asr: {
-              quality: "high",
-            },
-          },
-        }),
+        body: JSON.stringify(agentConfig),
       }
     );
 
+    console.log('📡 [create-elevenlabs-agent] Statut réponse:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('ElevenLabs API error:', errorText);
-      throw new Error(`Failed to create agent: ${response.status}`);
+      console.error('❌ [create-elevenlabs-agent] Erreur ElevenLabs:', response.status, errorText);
+      throw new Error(`Failed to create agent: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const responseText = await response.text();
+    console.log('📄 [create-elevenlabs-agent] Réponse reçue, longueur:', responseText.length);
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('❌ [create-elevenlabs-agent] Erreur parsing JSON:', e);
+      console.error('📄 [create-elevenlabs-agent] Réponse brute:', responseText.substring(0, 200));
+      throw new Error('Invalid JSON response from ElevenLabs');
+    }
+
+    const agentId = data.agent_id;
+    console.log('✅ [create-elevenlabs-agent] Agent créé:', agentId);
 
     return new Response(
       JSON.stringify({
-        agentId: data.agent_id,
-        agentName: data.name,
-        presidentVoiceId,
-        ministerVoiceId,
-        defaultVoiceId,
+        agentId: agentId,
+        agentName: agentName,
+        voiceId: defaultVoiceId,
+        message: 'Agent créé avec succès'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -77,7 +130,8 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in create-elevenlabs-agent:', error);
+    console.error('❌ [create-elevenlabs-agent] Erreur complète:', error);
+    console.error('❌ [create-elevenlabs-agent] Stack:', error instanceof Error ? error.stack : 'N/A');
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),
