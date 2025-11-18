@@ -12,14 +12,43 @@ interface UseElevenLabsConversationProps {
 }
 
 export const useElevenLabsConversation = ({
-  agentId,
+  agentId: providedAgentId,
   onMessage,
   onStateChange
 }: UseElevenLabsConversationProps = {}) => {
   const { toast } = useToast();
   const [conversationState, setConversationState] = useState<ConversationState>('disconnected');
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [agentId, setAgentId] = useState<string | undefined>(providedAgentId);
   const conversationIdRef = useRef<string | null>(null);
+
+  // Charger l'agent ID depuis la base de données si non fourni
+  useEffect(() => {
+    const loadAgentId = async () => {
+      if (providedAgentId) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('iasted_config')
+          .select('agent_id')
+          .single();
+
+        if (error) {
+          console.log('⚠️ [ElevenLabs] Pas de config trouvée, il faut créer un agent');
+          return;
+        }
+
+        if (data?.agent_id) {
+          console.log('✅ [ElevenLabs] Agent ID chargé:', data.agent_id);
+          setAgentId(data.agent_id);
+        }
+      } catch (error) {
+        console.error('❌ [ElevenLabs] Erreur chargement agent:', error);
+      }
+    };
+
+    loadAgentId();
+  }, [providedAgentId]);
 
   const conversation = useConversation({
     onConnect: () => {
@@ -159,5 +188,7 @@ export const useElevenLabsConversation = ({
     endConversation,
     setVolume,
     status: conversation.status,
+    agentId,
+    hasAgent: !!agentId,
   };
 };
