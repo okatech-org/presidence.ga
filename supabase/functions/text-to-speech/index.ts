@@ -72,9 +72,17 @@ serve(async (req) => {
     const audioBuffer = await response.arrayBuffer();
     console.log('✅ [text-to-speech] Audio reçu, taille:', audioBuffer.byteLength, 'bytes');
     
-    // Convertir en base64
+    // Convertir en base64 en traitant par chunks pour éviter le dépassement de pile
     const audioArray = new Uint8Array(audioBuffer);
-    const base64Audio = btoa(String.fromCharCode(...audioArray));
+    const chunkSize = 8192;
+    let binaryString = '';
+    
+    for (let i = 0; i < audioArray.length; i += chunkSize) {
+      const chunk = audioArray.slice(i, i + chunkSize);
+      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    
+    const base64Audio = btoa(binaryString);
     console.log('✅ [text-to-speech] Audio encodé en base64, longueur:', base64Audio.length);
     
     // Retourner le JSON avec audioContent
