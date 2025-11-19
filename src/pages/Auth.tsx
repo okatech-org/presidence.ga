@@ -78,6 +78,21 @@ const Auth = () => {
           case 'minister':
             destination = "/protocol-director-space";
             break;
+          case 'cabinet_private':
+            destination = "/private-cabinet-director-space";
+            break;
+          case 'sec_gen':
+            destination = "/secretariat-general-space";
+            break;
+          case 'courrier':
+            destination = "/service-courriers-space";
+            break;
+          case 'reception':
+            destination = "/service-reception-space";
+            break;
+          case 'protocol':
+            destination = "/protocol-director-space";
+            break;
           case 'user':
             destination = "/dashboard";
             break;
