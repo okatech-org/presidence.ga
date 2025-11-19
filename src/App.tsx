@@ -19,7 +19,29 @@ const IAstedPage = lazy(() => import("./pages/IAstedPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const IAstedConfigWizard = lazy(() => import("./pages/IAstedConfigWizard"));
 
-const queryClient = new QueryClient();
+// Configuration optimisée de React Query avec cache intelligent
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Cache les données pendant 5 minutes par défaut
+      staleTime: 5 * 60 * 1000,
+      // Garde les données en cache pendant 10 minutes même si non utilisées
+      gcTime: 10 * 60 * 1000,
+      // Réessayer 1 fois en cas d'échec
+      retry: 1,
+      // Ne pas refetch automatiquement au focus de la fenêtre (économise les appels)
+      refetchOnWindowFocus: false,
+      // Ne pas refetch automatiquement au reconnect
+      refetchOnReconnect: false,
+      // Refetch en arrière-plan uniquement si les données sont stale
+      refetchOnMount: true,
+    },
+    mutations: {
+      // Retry les mutations une fois en cas d'échec
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
