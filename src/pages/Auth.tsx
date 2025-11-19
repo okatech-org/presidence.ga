@@ -50,22 +50,42 @@ const Auth = () => {
 
       if (error) throw error;
 
-      // Vérifier le rôle immédiatement pour éviter le flash
+      // Récupérer TOUS les rôles de l'utilisateur
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', data.user.id)
-        .in('role', ['president', 'admin']);
+        .eq('user_id', data.user.id);
 
-      const isPresident = roles?.some(r => r.role === 'president' || r.role === 'admin');
+      // Déterminer la page de destination selon le rôle
+      let destination = "/dashboard"; // Par défaut pour les utilisateurs standards
+      
+      if (roles && roles.length > 0) {
+        const userRole = roles[0].role; // Prendre le premier rôle
+        
+        switch (userRole) {
+          case 'president':
+            destination = "/president-space";
+            break;
+          case 'admin':
+            destination = "/admin-dashboard";
+            break;
+          case 'dgss':
+          case 'dgr':
+          case 'minister':
+          case 'user':
+          default:
+            destination = "/dashboard";
+            break;
+        }
+      }
 
       toast({
         title: "Connexion réussie",
         description: "Bienvenue dans l'application Présidence",
       });
       
-      // Redirection directe selon le rôle pour éviter tout flash
-      navigate(isPresident ? "/president-space" : "/dashboard", { replace: true });
+      // Redirection directe selon le rôle
+      navigate(destination, { replace: true });
     } catch (error: any) {
       toast({
         title: "Erreur de connexion",
