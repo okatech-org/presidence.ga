@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Shield, FileText, Download, Eye, Paperclip, FileSpreadsheet } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { useFeedbacks } from "@/hooks/useSupabaseQuery";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import {
   Table,
@@ -35,34 +35,20 @@ interface Feedback {
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
   const [showDocuments, setShowDocuments] = useState(false);
 
-  useEffect(() => {
-    fetchFeedbacks();
-  }, []);
+  // Utiliser React Query pour le cache automatique
+  const { data: feedbacks = [], isLoading: loading, error } = useFeedbacks();
 
-  const fetchFeedbacks = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("role_feedback")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setFeedbacks(data || []);
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les feedbacks",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Afficher les erreurs avec toast
+  if (error) {
+    toast({
+      title: "Erreur",
+      description: "Impossible de charger les feedbacks",
+      variant: "destructive",
+    });
+  }
 
   const getStatusBadge = (status: string | null) => {
     switch (status) {
