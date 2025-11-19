@@ -10,8 +10,12 @@ import {
   FileText,
   Download,
   Brain,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useElevenLabsAgent } from '@/hooks/useElevenLabsAgent';
+import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 
 interface Message {
   id: string;
@@ -112,9 +116,36 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>('elevenlabs');
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // ElevenLabs integration
+  const elevenLabs = useElevenLabsAgent({
+    agentId: 'EV6XgOdBELK29O2b4qyM', // iAsted Pro voice
+    userRole: 'president',
+    onSpeakingChange: (speaking) => {
+      console.log('🎙️ ElevenLabs speaking:', speaking);
+    },
+  });
+
+  // OpenAI WebRTC integration
+  const openaiRTC = useRealtimeVoiceWebRTC();
+
+  // Sync messages from OpenAI WebRTC
+  useEffect(() => {
+    if (voiceMode === 'openai' && openaiRTC.messages.length > 0) {
+      const lastMsg = openaiRTC.messages[openaiRTC.messages.length - 1];
+      setMessages(prev => {
+        const existing = prev.find(m => m.id === lastMsg.id);
+        if (!existing) {
+          return [...prev, lastMsg];
+        }
+        return prev.map(m => m.id === lastMsg.id ? lastMsg : m);
+      });
+    }
+  }, [openaiRTC.messages, voiceMode]);
 
   // Initialiser la session au montage
   useEffect(() => {
@@ -281,6 +312,65 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
     }
   };
 
+  const toggleVoiceMode = async () => {
+    if (isVoiceActive) {
+      // Stop current voice session
+      if (voiceMode === 'elevenlabs') {
+        await elevenLabs.stopConversation();
+      } else {
+        openaiRTC.disconnect();
+      }
+      setIsVoiceActive(false);
+    } else {
+      // Start voice session
+      try {
+        if (voiceMode === 'elevenlabs') {
+          await elevenLabs.startConversation();
+          setIsVoiceActive(true);
+        } else {
+          await openaiRTC.connect();
+          setIsVoiceActive(true);
+        }
+      } catch (error) {
+        console.error('❌ Erreur démarrage vocal:', error);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de démarrer le mode vocal',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  // Clean up voice connections on unmount
+  useEffect(() => {
+    return () => {
+      if (isVoiceActive) {
+        if (voiceMode === 'elevenlabs') {
+          elevenLabs.stopConversation();
+        } else {
+          openaiRTC.disconnect();
+        }
+      }
+    };
+  }, []);
+
+  // Handle voice mode switch - stop current session if active
+  useEffect(() => {
+    if (isVoiceActive) {
+      // Stop current session and restart with new mode
+      const switchMode = async () => {
+        if (voiceMode === 'elevenlabs') {
+          openaiRTC.disconnect();
+        } else {
+          await elevenLabs.stopConversation();
+        }
+        setIsVoiceActive(false);
+      };
+      switchMode();
+    }
+  }, [voiceMode]);
+
   if (!isOpen) return null;
 
   return (
@@ -366,6 +456,20 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
         {/* Input */}
         <div className="neu-card rounded-t-none rounded-b-2xl p-4">
           <div className="flex items-end gap-3">
+            <button
+              onClick={toggleVoiceMode}
+              className={`neu-raised p-4 rounded-xl hover:shadow-neo-lg transition-all ${
+                isVoiceActive ? 'bg-primary text-primary-foreground' : ''
+              }`}
+              title={isVoiceActive ? 'Arrêter le mode vocal' : 'Activer le mode vocal'}
+            >
+              {isVoiceActive ? (
+                <Mic className="w-6 h-6" />
+              ) : (
+                <MicOff className="w-6 h-6" />
+              )}
+            </button>
+
             <div className="flex-1">
               <textarea
                 value={inputText}
@@ -374,13 +478,13 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
                 placeholder="Posez votre question à iAsted..."
                 className="w-full p-3 neu-inset rounded-xl resize-none focus:ring-2 focus:ring-primary"
                 rows={2}
-                disabled={isProcessing}
+                disabled={isProcessing || isVoiceActive}
               />
             </div>
 
             <button
               onClick={handleSendMessage}
-              disabled={!inputText.trim() || isProcessing}
+              disabled={!inputText.trim() || isProcessing || isVoiceActive}
               className="neu-raised p-4 bg-success text-success-foreground rounded-xl hover:shadow-neo-lg transition-all disabled:opacity-50"
             >
               {isProcessing ? (
@@ -392,7 +496,9 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
           </div>
 
           <div className="text-center text-sm text-muted-foreground mt-3">
-            {isProcessing ? '🧠 iAsted analyse...' : '💬 Conversation stratégique'}
+            {isProcessing ? '🧠 iAsted analyse...' : 
+             isVoiceActive ? `🎙️ Mode vocal actif (${voiceMode === 'elevenlabs' ? 'iAsted Pro' : 'OpenAI RT'})` :
+             '💬 Conversation stratégique'}
           </div>
         </div>
       </motion.div>
