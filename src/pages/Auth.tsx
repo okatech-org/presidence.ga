@@ -67,12 +67,20 @@ const Auth = () => {
             destination = "/president-space";
             break;
           case 'admin':
-            destination = "/admin-dashboard";
+            destination = "/admin-system-space";
             break;
           case 'dgss':
+            destination = "/dgss-space";
+            break;
           case 'dgr':
+            destination = "/cabinet-director-space";
+            break;
           case 'minister':
+            destination = "/protocol-director-space";
+            break;
           case 'user':
+            destination = "/dashboard";
+            break;
           default:
             destination = "/dashboard";
             break;
