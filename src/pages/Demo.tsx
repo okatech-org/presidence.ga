@@ -211,6 +211,36 @@ const Demo = () => {
     setInitializingAccounts(true);
     
     try {
+      // Check if user is logged in
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Authentification requise",
+          description: "Veuillez d'abord vous connecter avec un compte administrateur",
+          variant: "destructive",
+        });
+        setInitializingAccounts(false);
+        return;
+      }
+
+      // Check if user has admin role
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin');
+
+      if (!roles || roles.length === 0) {
+        toast({
+          title: "Accès refusé",
+          description: "Seuls les administrateurs peuvent initialiser les comptes démo",
+          variant: "destructive",
+        });
+        setInitializingAccounts(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('initialize-demo-accounts', {
         body: {},
       });
