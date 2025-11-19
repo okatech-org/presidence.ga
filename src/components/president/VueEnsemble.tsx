@@ -2,85 +2,54 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/StatCard";
 import { AlertTriangle, TrendingUp, CheckCircle, DollarSign } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { NationalKPITrend, RegionData } from "@/types/analytics";
 import RegionHeatmap from "./RegionHeatmap";
+import { useNationalKPIs, useMonthlyTrends, useSignalements } from "@/hooks/useSupabaseQuery";
 
 export const VueEnsemble = () => {
-  const [kpis, setKpis] = useState<any>(null);
-  const [trend, setTrend] = useState<NationalKPITrend[]>([]);
-  const [regions, setRegions] = useState<RegionData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Utiliser React Query avec cache automatique
+  const { data: kpis, isLoading: kpisLoading, error: kpisError } = useNationalKPIs();
+  const { data: monthlyData = [], isLoading: trendsLoading } = useMonthlyTrends(12);
+  const { data: signalements = [], isLoading: signalementsLoading } = useSignalements();
 
-  const fetchAll = useCallback(async () => {
-    try {
-      setError(null);
-      // Dernier KPI (vue cartes)
-      const { data: lastKpi, error: kpiErr } = await supabase
-        .from('national_kpis')
-        .select('*')
-        .order('date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (kpiErr) throw kpiErr;
-      setKpis(lastKpi);
+  // Transformer les données mensuelles pour le graphique
+  const trend: NationalKPITrend[] = useMemo(() => {
+    return monthlyData.map((row: any) => {
+      const d = new Date(row.date);
+      const monthLabel = d.toLocaleDateString('fr-FR', { month: 'short' });
+      return {
+        monthLabel,
+        signalements_totaux: Number(row.signalements_totaux ?? 0),
+        taux_resolution: Number(row.taux_resolution ?? 0),
+      };
+    });
+  }, [monthlyData]);
 
-      // Tendances 12 derniers mois
-      const { data: trendRows, error: trendErr } = await supabase
-        .from('national_kpis')
-        .select('date, signalements_totaux, taux_resolution')
-        .order('date', { ascending: false })
-        .limit(12);
-      if (trendErr) throw trendErr;
-      const parsedTrend: NationalKPITrend[] = (trendRows || [])
-        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .map((row: any) => {
-          const d = new Date(row.date);
-          const monthLabel = d.toLocaleDateString('fr-FR', { month: 'short' });
-          return {
-            monthLabel,
-            signalements_totaux: Number(row.signalements_totaux ?? 0),
-            taux_resolution: Number(row.taux_resolution ?? 0),
-          };
-        });
-      setTrend(parsedTrend);
+  // Calculer les données régionales depuis les signalements
+  const regions: RegionData[] = useMemo(() => {
+    const counts = new Map<string, number>();
+    const provinces = [
+      "Estuaire", "Haut-Ogooué", "Moyen-Ogooué", "Ngounié", "Nyanga",
+      "Ogooué-Ivindo", "Ogooué-Lolo", "Ogooué-Maritime", "Woleu-Ntem"
+    ];
+    provinces.forEach(p => counts.set(p, 0));
+    signalements.forEach((r: any) => {
+      const p = r.province || "Estuaire";
+      counts.set(p, (counts.get(p) || 0) + 1);
+    });
+    const max = Math.max(...Array.from(counts.values()), 1);
+    return provinces.map((p) => {
+      const count = counts.get(p) || 0;
+      const score = Math.round((count / max) * 100);
+      return { province: p, count, score };
+    });
+  }, [signalements]);
 
-      // Signalements par province (agrégation client simple)
-      const { data: sigRows, error: sigErr } = await supabase
-        .from('signalements')
-        .select('province');
-      if (sigErr) throw sigErr;
-      const counts = new Map<string, number>();
-      const provinces = [
-        "Estuaire", "Haut-Ogooué", "Moyen-Ogooué", "Ngounié", "Nyanga",
-        "Ogooué-Ivindo", "Ogooué-Lolo", "Ogooué-Maritime", "Woleu-Ntem"
-      ];
-      provinces.forEach(p => counts.set(p, 0));
-      (sigRows || []).forEach((r: any) => {
-        const p = r.province || "Estuaire";
-        counts.set(p, (counts.get(p) || 0) + 1);
-      });
-      const max = Math.max(...Array.from(counts.values()));
-      const regionData: RegionData[] = provinces.map((p) => {
-        const count = counts.get(p) || 0;
-        const score = max > 0 ? Math.round((count / max) * 100) : 0;
-        return { province: p, count, score };
-      });
-      setRegions(regionData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setError("Impossible de récupérer les données.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+  const loading = kpisLoading || trendsLoading || signalementsLoading;
+  const error = kpisError ? "Impossible de récupérer les données." : null;
 
   if (loading) {
     return <div className="text-center py-8">Chargement des données...</div>;
