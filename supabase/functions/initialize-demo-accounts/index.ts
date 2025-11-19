@@ -23,7 +23,7 @@ const demoAccounts: DemoAccount[] = [
     email: 'directeur.cabinet@presidence.ga',
     password: 'Cabinet2025!',
     role: 'Directeur de Cabinet',
-    appRoles: ['admin'],
+    appRoles: ['dgr'],
   },
   {
     email: 'cabinet.prive@presidence.ga',
