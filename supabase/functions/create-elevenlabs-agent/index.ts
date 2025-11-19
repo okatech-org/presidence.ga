@@ -27,7 +27,7 @@ serve(async (req) => {
     
     const { 
       agentName = 'iAsted - Assistant Présidentiel',
-      defaultVoiceId = 'AWbzS1CRVezWHfMSsL69' // iAsted
+      defaultVoiceId = 'EV6XgOdBELK29O2b4qyM' // iAsted Pro
     } = bodyData as any;
 
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
