@@ -2,9 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -20,7 +17,16 @@ import {
   Target,
   Activity,
   BarChart3,
+  Plus,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import IAstedInterface from "@/components/iasted/IAstedInterface";
 import emblemGabon from "@/assets/emblem_gabon.png";
@@ -50,72 +56,138 @@ const CabinetDirectorSpace = () => {
   const [iastedOpen, setIastedOpen] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
 
-  // Mock data - à remplacer par des vraies données de la base
-  const [projects] = useState<MinisterialProject[]>([
-    {
-      id: "1",
-      ministry: "Ministère de l'Économie",
-      project: "Réforme fiscale 2025",
-      status: "en_cours",
-      progress: 65,
-      deadline: "2025-03-30",
-      priority: "haute",
-    },
-    {
-      id: "2",
-      ministry: "Ministère de la Santé",
-      project: "Digitalisation des hôpitaux",
-      status: "en_cours",
-      progress: 40,
-      deadline: "2025-06-15",
-      priority: "haute",
-    },
-    {
-      id: "3",
-      ministry: "Ministère de l'Éducation",
-      project: "Programme de bourses",
-      status: "bloque",
-      progress: 25,
-      deadline: "2025-02-28",
-      priority: "moyenne",
-    },
-    {
-      id: "4",
-      ministry: "Ministère des Infrastructures",
-      project: "Route Libreville-Port-Gentil",
-      status: "en_cours",
-      progress: 78,
-      deadline: "2025-12-31",
-      priority: "haute",
-    },
-  ]);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [instructions] = useState<PresidentialInstruction[]>([
-    {
-      id: "1",
-      instruction: "Accélérer la mise en œuvre de la réforme fiscale",
-      assignedTo: "Ministère de l'Économie",
-      status: "in_progress",
-      dueDate: "2025-02-15",
-      priority: "critical",
+  const { data: projects = [], isLoading: projectsLoading } = useQuery({
+    queryKey: ["ministerial_projects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ministerial_projects")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
     },
-    {
-      id: "2",
-      instruction: "Débloquer le projet de digitalisation hospitalière",
-      assignedTo: "Ministère de la Santé",
+  });
+
+  const { data: instructions = [], isLoading: instructionsLoading } = useQuery({
+    queryKey: ["presidential_instructions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("presidential_instructions")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: coordinations = [], isLoading: coordinationsLoading } = useQuery({
+    queryKey: ["interministerial_coordination"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("interministerial_coordination")
+        .select("*")
+        .order("date", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: conseils = [], isLoading: conseilsLoading } = useQuery({
+    queryKey: ["conseil_ministers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("conseil_ministers")
+        .select("*")
+        .order("date", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const createProjectMutation = useMutation({
+    mutationFn: async (newProject: any) => {
+      const { data, error } = await supabase
+        .from("ministerial_projects")
+        .insert([newProject])
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ministerial_projects"] });
+      toast({
+        title: "Projet créé",
+        description: "Le projet a été ajouté avec succès.",
+      });
+    },
+  });
+
+  const createInstructionMutation = useMutation({
+    mutationFn: async (newInstruction: any) => {
+      const { data, error } = await supabase
+        .from("presidential_instructions")
+        .insert([newInstruction])
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["presidential_instructions"] });
+      toast({
+        title: "Instruction créée",
+        description: "L'instruction a été ajoutée avec succès.",
+      });
+    },
+  });
+
+  const [newProject, setNewProject] = useState({
+    ministry: "",
+    project: "",
+    status: "en_cours",
+    progress: 0,
+    deadline: "",
+    priority: "moyenne",
+  });
+
+  const [newInstruction, setNewInstruction] = useState({
+    instruction: "",
+    assigned_to: "",
+    status: "pending",
+    due_date: "",
+    priority: "normal",
+  });
+
+  const handleCreateProject = (e: React.FormEvent) => {
+    e.preventDefault();
+    createProjectMutation.mutate(newProject);
+    setNewProject({
+      ministry: "",
+      project: "",
+      status: "en_cours",
+      progress: 0,
+      deadline: "",
+      priority: "moyenne",
+    });
+  };
+
+  const handleCreateInstruction = (e: React.FormEvent) => {
+    e.preventDefault();
+    createInstructionMutation.mutate(newInstruction);
+    setNewInstruction({
+      instruction: "",
+      assigned_to: "",
       status: "pending",
-      dueDate: "2025-02-10",
-      priority: "high",
-    },
-    {
-      id: "3",
-      instruction: "Préparer l'ordre du jour du prochain Conseil des Ministres",
-      assignedTo: "Secrétariat Général",
-      status: "in_progress",
-      dueDate: "2025-02-05",
-      priority: "critical",
-    },
-  ]);
+      due_date: "",
+      priority: "normal",
+    });
+  };
 
   useEffect(() => {
     checkUser();
@@ -137,7 +209,7 @@ const CabinetDirectorSpace = () => {
     if (roles && roles.length > 0) {
       const role = roles[0].role;
       setUserRole(role);
-      
+
       // Vérifier que l'utilisateur a bien le rôle dgr
       if (role !== "dgr" && role !== "admin") {
         navigate("/dashboard");
@@ -177,6 +249,26 @@ const CabinetDirectorSpace = () => {
     return priorityConfig[priority as keyof typeof priorityConfig] || priorityConfig.normal;
   };
 
+  const [activeSection, setActiveSection] = useState("instructions");
+  const [expandedSections, setExpandedSections] = useState({
+    navigation: true,
+    gouvernance: true,
+  });
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section as keyof typeof prev],
+    }));
+  };
+
+  const navigationItems = [
+    { id: "instructions", label: "Instructions", icon: Target },
+    { id: "projects", label: "Projets", icon: Building2 },
+    { id: "coordination", label: "Coordination", icon: Users },
+    { id: "conseil", label: "Conseil des Ministres", icon: Calendar },
+  ];
+
   if (loading) {
     return null;
   }
@@ -187,187 +279,344 @@ const CabinetDirectorSpace = () => {
   const pendingInstructions = instructions.filter(i => i.status === "pending").length;
 
   return (
-    <DashboardLayout>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="gradient-primary text-primary-foreground shadow-lg">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-2 rounded-full bg-white">
-                  <img
-                    src={emblemGabon}
-                    alt="Emblème de la République Gabonaise"
-                    className="h-12 w-12 object-contain"
-                  />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold">Directeur de Cabinet</h1>
-                  <p className="text-sm text-primary-foreground/80">
-                    Coordination & Suivi Gouvernemental
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="bg-transparent border-primary-foreground/20 hover:bg-primary-foreground/10"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Déconnexion
-              </Button>
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="flex gap-6 max-w-[1600px] mx-auto">
+        {/* Sidebar détachée */}
+        <aside className="neu-card w-60 flex-shrink-0 p-6 flex flex-col min-h-[calc(100vh-3rem)] overflow-hidden">
+          {/* Logo et titre */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="neu-raised w-12 h-12 rounded-full flex items-center justify-center p-2">
+              <img
+                src={emblemGabon}
+                alt="Emblème de la République Gabonaise"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div>
+              <div className="font-bold text-sm">CABINET.GA</div>
+              <div className="text-xs text-muted-foreground">Directeur Cabinet</div>
             </div>
           </div>
-        </header>
 
-        <main className="container mx-auto px-6 py-8">
-          {/* Statistiques Clés */}
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Projets en cours</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{inProgressProjects}</div>
-                <p className="text-xs text-muted-foreground">Suivi actif</p>
-              </CardContent>
-            </Card>
+          {/* Navigation */}
+          <div className="mb-4">
+            <button
+              onClick={() => toggleSection('navigation')}
+              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+            >
+              NAVIGATION
+              {expandedSections.navigation ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+            </button>
+            {expandedSections.navigation && (
+              <nav className="space-y-1 ml-2">
+                {navigationItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === item.id
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                      }`}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+            )}
+          </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Projets bloqués</CardTitle>
-                <AlertCircle className="h-4 w-4 text-destructive" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-destructive">{blockedProjects}</div>
-                <p className="text-xs text-muted-foreground">Nécessitent intervention</p>
-              </CardContent>
-            </Card>
+          {/* Paramètres et Déconnexion */}
+          <div className="mt-auto pt-4 border-t border-border">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-destructive neu-raised hover:shadow-neo-md transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              Déconnexion
+            </button>
+          </div>
+        </aside>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Instructions en attente</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{pendingInstructions}</div>
-                <p className="text-xs text-muted-foreground">Présidentielles</p>
-              </CardContent>
-            </Card>
+        {/* Contenu principal */}
+        <main className="flex-1">
+          <div className="neu-card p-8 min-h-[calc(100vh-3rem)]">
+            {/* En-tête */}
+            <div className="flex items-start gap-4 mb-10">
+              <div className="neu-raised w-20 h-20 rounded-full flex items-center justify-center p-3 shrink-0">
+                <img
+                  src={emblemGabon}
+                  alt="Emblème de la République Gabonaise"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold mb-2">
+                  Directeur de Cabinet
+                </h1>
+                <p className="text-base text-muted-foreground">
+                  Coordination & Suivi Gouvernemental
+                </p>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Taux de réalisation</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">76%</div>
-                <p className="text-xs text-muted-foreground">Objectifs 2025</p>
-              </CardContent>
-            </Card>
-          </section>
+            {/* Statistiques principales */}
+            <div className="neu-card p-6 mb-8">
+              <div className="grid grid-cols-4 divide-x divide-border">
+                <div className="px-6 first:pl-0">
+                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
+                    <Activity className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="text-4xl font-bold mb-2">
+                    {inProgressProjects}
+                  </div>
+                  <div className="text-sm font-medium">Projets en cours</div>
+                  <div className="text-xs text-muted-foreground">Suivi actif</div>
+                </div>
 
-          {/* Contenu Principal avec Tabs */}
-          <Tabs defaultValue="instructions" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="instructions">
-                <Target className="h-4 w-4 mr-2" />
-                Instructions
-              </TabsTrigger>
-              <TabsTrigger value="projects">
-                <Building2 className="h-4 w-4 mr-2" />
-                Projets
-              </TabsTrigger>
-              <TabsTrigger value="coordination">
-                <Users className="h-4 w-4 mr-2" />
-                Coordination
-              </TabsTrigger>
-              <TabsTrigger value="conseil">
-                <Calendar className="h-4 w-4 mr-2" />
-                Conseil des Ministres
-              </TabsTrigger>
-            </TabsList>
+                <div className="px-6">
+                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
+                    <AlertCircle className="w-6 h-6 text-destructive" />
+                  </div>
+                  <div className="text-4xl font-bold mb-2 text-destructive">
+                    {blockedProjects}
+                  </div>
+                  <div className="text-sm font-medium">Projets bloqués</div>
+                  <div className="text-xs text-muted-foreground">Nécessitent intervention</div>
+                </div>
 
-            {/* Instructions Présidentielles */}
-            <TabsContent value="instructions" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    Instructions Présidentielles
-                  </CardTitle>
-                  <CardDescription>
-                    Suivi et exécution des directives du Président
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                <div className="px-6">
+                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
+                    <Clock className="w-6 h-6 text-warning" />
+                  </div>
+                  <div className="text-4xl font-bold mb-2">
+                    {pendingInstructions}
+                  </div>
+                  <div className="text-sm font-medium">Instructions en attente</div>
+                  <div className="text-xs text-muted-foreground">Présidentielles</div>
+                </div>
+
+                <div className="px-6 last:pr-0">
+                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
+                    <TrendingUp className="w-6 h-6 text-success" />
+                  </div>
+                  <div className="text-4xl font-bold mb-2">
+                    76%
+                  </div>
+                  <div className="text-sm font-medium">Taux de réalisation</div>
+                  <div className="text-xs text-muted-foreground">Objectifs 2025</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenu conditionnel selon la section active */}
+            {activeSection === "instructions" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <Target className="h-6 w-6" />
+                      Instructions Présidentielles
+                    </h2>
+                    <p className="text-muted-foreground">Suivi et exécution des directives du Président</p>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="neu-button px-4 py-2 flex items-center gap-2 text-sm font-medium hover:text-primary">
+                        <Plus className="h-4 w-4" />
+                        Nouvelle Instruction
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Nouvelle Instruction Présidentielle</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleCreateInstruction} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="instruction">Instruction</Label>
+                          <Input
+                            id="instruction"
+                            value={newInstruction.instruction}
+                            onChange={(e) => setNewInstruction({ ...newInstruction, instruction: e.target.value })}
+                            required
+                            className="neu-input"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="assigned_to">Assigné à</Label>
+                          <Input
+                            id="assigned_to"
+                            value={newInstruction.assigned_to}
+                            onChange={(e) => setNewInstruction({ ...newInstruction, assigned_to: e.target.value })}
+                            required
+                            className="neu-input"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="due_date">Échéance</Label>
+                            <Input
+                              id="due_date"
+                              type="date"
+                              value={newInstruction.due_date}
+                              onChange={(e) => setNewInstruction({ ...newInstruction, due_date: e.target.value })}
+                              required
+                              className="neu-input"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="priority">Priorité</Label>
+                            <Select
+                              value={newInstruction.priority}
+                              onValueChange={(value) => setNewInstruction({ ...newInstruction, priority: value })}
+                            >
+                              <SelectTrigger className="neu-input">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="normal">Normale</SelectItem>
+                                <SelectItem value="high">Haute</SelectItem>
+                                <SelectItem value="critical">Critique</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <Button type="submit" className="w-full">Créer</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <div className="grid gap-4">
                   {instructions.map((instruction) => (
-                    <Card key={instruction.id} className="border-l-4 border-l-primary">
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="text-base">{instruction.instruction}</CardTitle>
-                            <CardDescription className="mt-1">
-                              Assigné à: {instruction.assignedTo}
-                            </CardDescription>
-                          </div>
-                          <div className="flex flex-col gap-2 items-end">
-                            <Badge variant={getPriorityBadge(instruction.priority).variant}>
-                              {getPriorityBadge(instruction.priority).label}
-                            </Badge>
-                            <Badge variant={getStatusBadge(instruction.status).variant}>
-                              {getStatusBadge(instruction.status).label}
-                            </Badge>
+                    <div key={instruction.id} className="neu-raised p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold mb-2">{instruction.instruction}</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Assigné à: {instruction.assigned_to}
+                          </p>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            Échéance: {new Date(instruction.due_date).toLocaleDateString("fr-FR")}
                           </div>
                         </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          Échéance: {new Date(instruction.dueDate).toLocaleDateString("fr-FR")}
+                        <div className="flex flex-col gap-2 items-end">
+                          <Badge variant={getPriorityBadge(instruction.priority).variant}>
+                            {getPriorityBadge(instruction.priority).label}
+                          </Badge>
+                          <Badge variant={getStatusBadge(instruction.status).variant}>
+                            {getStatusBadge(instruction.status).label}
+                          </Badge>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                </div>
+              </div>
+            )}
 
-            {/* Projets Ministériels */}
-            <TabsContent value="projects" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    Projets Gouvernementaux
-                  </CardTitle>
-                  <CardDescription>
-                    Suivi de l'avancement des projets ministériels
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {projects.map((project) => (
-                    <Card key={project.id}>
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="text-base">{project.project}</CardTitle>
-                            <CardDescription className="mt-1">
-                              {project.ministry}
-                            </CardDescription>
+            {activeSection === "projects" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      <Building2 className="h-6 w-6" />
+                      Projets Gouvernementaux
+                    </h2>
+                    <p className="text-muted-foreground">Suivi de l'avancement des projets ministériels</p>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="neu-button px-4 py-2 flex items-center gap-2 text-sm font-medium hover:text-primary">
+                        <Plus className="h-4 w-4" />
+                        Nouveau Projet
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Nouveau Projet Ministériel</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleCreateProject} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="project">Projet</Label>
+                          <Input
+                            id="project"
+                            value={newProject.project}
+                            onChange={(e) => setNewProject({ ...newProject, project: e.target.value })}
+                            required
+                            className="neu-input"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="ministry">Ministère</Label>
+                          <Input
+                            id="ministry"
+                            value={newProject.ministry}
+                            onChange={(e) => setNewProject({ ...newProject, ministry: e.target.value })}
+                            required
+                            className="neu-input"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="deadline">Échéance</Label>
+                            <Input
+                              id="deadline"
+                              type="date"
+                              value={newProject.deadline}
+                              onChange={(e) => setNewProject({ ...newProject, deadline: e.target.value })}
+                              required
+                              className="neu-input"
+                            />
                           </div>
-                          <div className="flex flex-col gap-2 items-end">
-                            <Badge variant={getPriorityBadge(project.priority).variant}>
-                              {getPriorityBadge(project.priority).label}
-                            </Badge>
-                            <Badge variant={getStatusBadge(project.status).variant}>
-                              {getStatusBadge(project.status).label}
-                            </Badge>
+                          <div className="space-y-2">
+                            <Label htmlFor="priority">Priorité</Label>
+                            <Select
+                              value={newProject.priority}
+                              onValueChange={(value) => setNewProject({ ...newProject, priority: value })}
+                            >
+                              <SelectTrigger className="neu-input">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="basse">Basse</SelectItem>
+                                <SelectItem value="moyenne">Moyenne</SelectItem>
+                                <SelectItem value="haute">Haute</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                        <Button type="submit" className="w-full">Créer</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <div className="grid gap-4">
+                  {projects.map((project) => (
+                    <div key={project.id} className="neu-raised p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold mb-1">{project.project}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {project.ministry}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2 items-end">
+                          <Badge variant={getPriorityBadge(project.priority).variant}>
+                            {getPriorityBadge(project.priority).label}
+                          </Badge>
+                          <Badge variant={getStatusBadge(project.status).variant}>
+                            {getStatusBadge(project.status).label}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
                         <div>
                           <div className="flex items-center justify-between text-sm mb-2">
                             <span className="text-muted-foreground">Progression</span>
@@ -379,158 +628,119 @@ const CabinetDirectorSpace = () => {
                           <Clock className="h-4 w-4" />
                           Échéance: {new Date(project.deadline).toLocaleDateString("fr-FR")}
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                </div>
+              </div>
+            )}
 
-            {/* Coordination Interministérielle */}
-            <TabsContent value="coordination" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
+            {activeSection === "coordination" && (
+              <div className="space-y-6">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <Users className="h-6 w-6" />
                     Coordination Interministérielle
-                  </CardTitle>
-                  <CardDescription>
-                    Facilitation de la collaboration entre ministères
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Réunion de Coordination</CardTitle>
-                      <CardDescription>Économie, Finances & Budget</CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                  </h2>
+                  <p className="text-muted-foreground">Facilitation de la collaboration entre ministères</p>
+                </div>
+
+                <div className="grid gap-4">
+                  {coordinations.map((coordination: any) => (
+                    <div key={coordination.id} className="neu-raised p-6">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-semibold mb-1">{coordination.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {coordination.type === 'reunion' ? 'Réunion' : 'Point de blocage'}
+                        </p>
+                      </div>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm">
                           <Calendar className="h-4 w-4" />
-                          Jeudi 20 Novembre 2025, 10h00
+                          {new Date(coordination.date).toLocaleString("fr-FR")}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <FileText className="h-4 w-4" />
-                          Ordre du jour: Réforme fiscale et budget 2026
-                        </div>
+                        {coordination.description && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <FileText className="h-4 w-4" />
+                            {coordination.description}
+                          </div>
+                        )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  ))}
+                  {coordinations.length === 0 && (
+                    <div className="neu-inset p-8 text-center text-muted-foreground">
+                      Aucune coordination prévue.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Points de Blocage Identifiés</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-                        <div>
-                          <p className="font-medium">Conflit interministériel</p>
-                          <p className="text-sm text-muted-foreground">
-                            Santé vs Budget - Financement des hôpitaux
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-                        <div>
-                          <p className="font-medium">Retard de validation</p>
-                          <p className="text-sm text-muted-foreground">
-                            Éducation - Programme de bourses en attente
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Conseil des Ministres */}
-            <TabsContent value="conseil" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
+            {activeSection === "conseil" && (
+              <div className="space-y-6">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <Calendar className="h-6 w-6" />
                     Conseil des Ministres
-                  </CardTitle>
-                  <CardDescription>
-                    Préparation et suivi des décisions du Conseil
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Card className="border-l-4 border-l-primary">
-                    <CardHeader>
-                      <CardTitle className="text-base">Prochain Conseil</CardTitle>
-                      <CardDescription>Mercredi 5 Février 2025 à 9h00</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <h4 className="font-medium mb-2">Ordre du jour:</h4>
-                        <ul className="space-y-2 text-sm">
-                          <li className="flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-muted-foreground mt-0.5" />
-                            <span>Validation du budget rectificatif 2025</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-muted-foreground mt-0.5" />
-                            <span>Projet de loi sur la digitalisation</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-muted-foreground mt-0.5" />
-                            <span>Nomination aux postes stratégiques</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-muted-foreground mt-0.5" />
-                            <span>Point sur la sécurité nationale</span>
-                          </li>
-                        </ul>
-                      </div>
-                      <Button className="w-full">
-                        <FileText className="h-4 w-4 mr-2" />
-                        Voir le dossier complet
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  </h2>
+                  <p className="text-muted-foreground">Préparation et suivi des décisions du Conseil</p>
+                </div>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Décisions du dernier Conseil</CardTitle>
-                      <CardDescription>22 Janvier 2025</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                          <span className="text-sm">Décisions prises</span>
-                          <Badge>12 décisions</Badge>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                          <span className="text-sm">Taux d'exécution</span>
-                          <Badge variant="default">83%</Badge>
-                        </div>
+                <div className="grid gap-4">
+                  {conseils.map((conseil: any) => (
+                    <div key={conseil.id} className="neu-raised p-6 border-l-4 border-l-primary">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-semibold mb-1">{conseil.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(conseil.date).toLocaleString("fr-FR")}
+                        </p>
                       </div>
-                    </CardContent>
-                  </Card>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-medium mb-2">Ordre du jour:</h4>
+                          <ul className="space-y-2 text-sm">
+                            {conseil.agenda && Array.isArray(conseil.agenda) && conseil.agenda.map((item: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        {conseil.execution_rate !== null && (
+                          <div className="neu-inset p-3 rounded-lg flex items-center justify-between">
+                            <span className="text-sm">Taux d'exécution</span>
+                            <Badge variant="default">{conseil.execution_rate}%</Badge>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {conseils.length === 0 && (
+                    <div className="neu-inset p-8 text-center text-muted-foreground">
+                      Aucun conseil des ministres enregistré.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </main>
 
         {/* iAsted Button */}
-        <IAstedButtonFull 
+        <IAstedButtonFull
           onSingleClick={() => setIastedOpen(true)}
           onDoubleClick={() => setIastedOpen(true)}
         />
-        
+
         {/* iAsted Interface */}
-        <IAstedInterface 
-          isOpen={iastedOpen} 
-          onClose={() => setIastedOpen(false)} 
+        <IAstedInterface
+          isOpen={iastedOpen}
+          onClose={() => setIastedOpen(false)}
         />
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 
