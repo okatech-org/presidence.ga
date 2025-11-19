@@ -24,13 +24,9 @@ export const usePresidentRole = () => {
         .eq('user_id', user.id)
         .in('role', ['president', 'admin']);
 
-      // Métadonnées (fallback)
-      const metaRole = (user.user_metadata?.role as string | undefined) || '';
-      const metaLooksPresident = /président/i.test(metaRole);
-      const metaLooksSuperAdmin = /super[- ]?admin/i.test(metaRole);
-
-      const hasPresidentRole = roles?.some(r => r.role === 'president') || metaLooksPresident;
-      const hasAdminRole = roles?.some(r => r.role === 'admin') || metaLooksSuperAdmin;
+      // Only trust database roles, never client-controllable metadata
+      const hasPresidentRole = roles?.some(r => r.role === 'president') || false;
+      const hasAdminRole = roles?.some(r => r.role === 'admin') || false;
 
       setIsPresident(hasPresidentRole || hasAdminRole);
       setIsSuperAdmin(hasAdminRole);

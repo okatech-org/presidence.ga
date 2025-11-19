@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { usePrefetch } from "@/hooks/usePrefetch";
+import { z } from "zod";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -19,14 +20,32 @@ const Auth = () => {
   const { toast } = useToast();
   const { prefetchPresidentSpace, prefetchDashboard } = usePrefetch();
 
+  const authSchema = z.object({
+    email: z.string().trim().email({ message: "Adresse email invalide" }).max(255, { message: "L'email doit faire moins de 255 caractères" }),
+    password: z.string().min(8, { message: "Le mot de passe doit faire au moins 8 caractères" }).max(100, { message: "Le mot de passe doit faire moins de 100 caractères" })
+  });
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // Validate inputs
+      const validationResult = authSchema.safeParse({ email, password });
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          title: "Erreur de validation",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: validationResult.data.email,
+        password: validationResult.data.password,
       });
 
       if (error) throw error;
