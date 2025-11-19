@@ -111,6 +111,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>('elevenlabs');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -303,12 +304,40 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="neu-raised p-2 rounded-lg hover:shadow-neo-md transition-all"
-            >
-              <X className="w-5 h-5 text-foreground" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Mode selector */}
+              <div className="neu-inset rounded-lg p-1 flex items-center gap-1">
+                <button
+                  onClick={() => setVoiceMode('elevenlabs')}
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                    voiceMode === 'elevenlabs'
+                      ? 'neu-raised bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  title="ElevenLabs iAsted Pro - Voix de haute qualité"
+                >
+                  🎙️ iAsted Pro
+                </button>
+                <button
+                  onClick={() => setVoiceMode('openai')}
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                    voiceMode === 'openai'
+                      ? 'neu-raised bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  title="OpenAI Temps Réel - Latence ultra-faible"
+                >
+                  ⚡ OpenAI RT
+                </button>
+              </div>
+
+              <button
+                onClick={onClose}
+                className="neu-raised p-2 rounded-lg hover:shadow-neo-md transition-all"
+              >
+                <X className="w-5 h-5 text-foreground" />
+              </button>
+            </div>
           </div>
         </div>
 
