@@ -9,7 +9,7 @@ interface DemoAccount {
   email: string;
   password: string;
   role: string;
-  appRoles: ('admin' | 'president' | 'dgss' | 'dgr' | 'minister' | 'user')[];
+  appRoles: ('admin' | 'president' | 'dgss' | 'dgr' | 'minister' | 'user' | 'cabinet_private' | 'sec_gen' | 'protocol' | 'courrier' | 'reception')[];
 }
 
 const demoAccounts: DemoAccount[] = [
@@ -29,13 +29,13 @@ const demoAccounts: DemoAccount[] = [
     email: 'cabinet.prive@presidence.ga',
     password: 'Prive2025!',
     role: 'Directeur de Cabinet Privé',
-    appRoles: ['admin'],
+    appRoles: ['cabinet_private'],
   },
   {
     email: 'secretariat.general@presidence.ga',
     password: 'SecGen2025!',
     role: 'Secrétariat Général',
-    appRoles: ['admin'],
+    appRoles: ['sec_gen'],
   },
   {
     email: 'dgss@presidence.ga',
@@ -47,19 +47,19 @@ const demoAccounts: DemoAccount[] = [
     email: 'protocole@presidence.ga',
     password: 'Proto2025!',
     role: 'Directeur de Protocole',
-    appRoles: ['minister'],
+    appRoles: ['protocol'],
   },
   {
     email: 'courriers@presidence.ga',
     password: 'Courrier2025!',
     role: 'Service Courriers',
-    appRoles: ['user'],
+    appRoles: ['courrier'],
   },
   {
     email: 'reception@presidence.ga',
     password: 'Reception2025!',
     role: 'Service Réception',
-    appRoles: ['user'],
+    appRoles: ['reception'],
   },
 ];
 
