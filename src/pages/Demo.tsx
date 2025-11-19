@@ -134,12 +134,25 @@ const Demo = () => {
         return;
       }
 
-      if (data.session) {
+      if (data.session && data.user) {
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .in('role', ['president', 'admin']);
+
+        const isPresident = roles?.some(
+          (r) => r.role === 'president' || r.role === 'admin'
+        );
+
         toast({
           title: "Connexion réussie",
           description: `Bienvenue !`,
         });
-        navigate("/dashboard");
+
+        navigate(isPresident ? "/president-space" : "/dashboard", {
+          replace: true,
+        });
       }
     } catch (error) {
       toast({
@@ -151,7 +164,6 @@ const Demo = () => {
       setLoadingAccount(null);
     }
   };
-
   const copyCredentials = (email: string, password: string) => {
     const credentials = `Email: ${email}\nMot de passe: ${password}`;
     navigator.clipboard.writeText(credentials);
