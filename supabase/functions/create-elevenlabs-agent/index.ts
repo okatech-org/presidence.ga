@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -117,6 +118,34 @@ N'hésite pas à poser des questions de clarification si nécessaire.`,
 
     const agentId = data.agent_id;
     console.log('✅ [create-elevenlabs-agent] Agent créé:', agentId);
+
+    // Save agent_id to database
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    console.log('💾 [create-elevenlabs-agent] Sauvegarde dans la base de données...');
+
+    // Upsert into iasted_config (insert or update if exists)
+    const { error: dbError } = await supabase
+      .from('iasted_config')
+      .upsert({
+        id: '00000000-0000-0000-0000-000000000001', // Use fixed UUID to ensure single row
+        agent_id: agentId,
+        agent_name: agentName,
+        default_voice_id: defaultVoiceId,
+        president_voice_id: '9BWtsMINqrJLrRacOk9x', // Aria
+        minister_voice_id: 'EXAVITQu4vr4xnSDxMaL', // Sarah
+      }, {
+        onConflict: 'id'
+      });
+
+    if (dbError) {
+      console.error('❌ [create-elevenlabs-agent] Erreur sauvegarde DB:', dbError);
+      throw new Error(`Failed to save agent to database: ${dbError.message}`);
+    }
+
+    console.log('✅ [create-elevenlabs-agent] Agent sauvegardé dans la base');
 
     return new Response(
       JSON.stringify({
