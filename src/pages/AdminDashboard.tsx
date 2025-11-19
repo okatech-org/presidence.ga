@@ -6,6 +6,7 @@ import { ArrowLeft, Shield, FileText, Download, Eye, Paperclip, FileSpreadsheet 
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useFeedbacks } from "@/hooks/useSupabaseQuery";
+import { useRealtimeFeedbacks } from "@/hooks/useRealtimeSync";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import {
   Table,
@@ -40,6 +41,9 @@ const AdminDashboard = () => {
 
   // Utiliser React Query pour le cache automatique
   const { data: feedbacks = [], isLoading: loading, error } = useFeedbacks();
+
+  // Activer la synchronisation temps réel
+  useRealtimeFeedbacks();
 
   // Afficher les erreurs avec toast
   if (error) {

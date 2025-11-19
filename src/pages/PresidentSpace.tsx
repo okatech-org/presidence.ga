@@ -47,6 +47,7 @@ import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import { useElevenLabsConversation, ConversationState } from '@/hooks/useElevenLabsConversation';
 import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
+import { useRealtimePresidentDashboard } from '@/hooks/useRealtimeSync';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -133,6 +134,9 @@ export default function PresidentSpace() {
     return (localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai') || 'elevenlabs';
   });
   const navigate = useNavigate();
+
+  // Activer la synchronisation temps réel pour le dashboard présidentiel
+  useRealtimePresidentDashboard();
 
   // Hook pour la conversation vocale temps réel avec ElevenLabs (voix iAsted Pro)
   const [conversationState, setConversationState] = useState<ConversationState>('disconnected');

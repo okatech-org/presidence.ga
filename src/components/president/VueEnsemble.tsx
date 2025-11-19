@@ -8,12 +8,17 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import type { NationalKPITrend, RegionData } from "@/types/analytics";
 import RegionHeatmap from "./RegionHeatmap";
 import { useNationalKPIs, useMonthlyTrends, useSignalements } from "@/hooks/useSupabaseQuery";
+import { useRealtimeNationalKPIs, useRealtimeSignalements } from "@/hooks/useRealtimeSync";
 
 export const VueEnsemble = () => {
   // Utiliser React Query avec cache automatique
   const { data: kpis, isLoading: kpisLoading, error: kpisError } = useNationalKPIs();
   const { data: monthlyData = [], isLoading: trendsLoading } = useMonthlyTrends(12);
   const { data: signalements = [], isLoading: signalementsLoading } = useSignalements();
+
+  // Activer la synchronisation temps réel pour toutes les données
+  useRealtimeNationalKPIs();
+  useRealtimeSignalements();
 
   // Transformer les données mensuelles pour le graphique
   const trend: NationalKPITrend[] = useMemo(() => {
