@@ -154,7 +154,7 @@ const Demo = () => {
               destination = "/president-space";
               break;
             case 'admin':
-              destination = "/admin-system-space";
+              destination = "/admin-dashboard";
               break;
             case 'dgss':
               destination = "/dgss-space";
