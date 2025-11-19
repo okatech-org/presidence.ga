@@ -22,19 +22,29 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
+      // Vérifier le rôle immédiatement pour éviter le flash
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id)
+        .in('role', ['president', 'admin']);
+
+      const isPresident = roles?.some(r => r.role === 'president' || r.role === 'admin');
+
       toast({
         title: "Connexion réussie",
         description: "Bienvenue dans l'application Présidence",
       });
       
-      navigate("/dashboard");
+      // Redirection directe selon le rôle pour éviter tout flash
+      navigate(isPresident ? "/president-space" : "/dashboard", { replace: true });
     } catch (error: any) {
       toast({
         title: "Erreur de connexion",

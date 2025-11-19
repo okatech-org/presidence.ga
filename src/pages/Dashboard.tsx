@@ -52,16 +52,9 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
-  // Ne rien afficher pendant la vérification ou si c'est un président (évite le flash)
+  // Rien n'est affiché si président (évite tout flash)
   if (loading || isPresident) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Activity className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Chargement...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
