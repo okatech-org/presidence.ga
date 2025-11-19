@@ -10,6 +10,7 @@ import { Loader2, ArrowLeft, Bot, Mic } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const VOICES = [
+  { id: 'EV6XgOdBELK29O2b4qyM', name: 'iAsted Pro' },
   { id: '9BWtsMINqrJLrRacOk9x', name: 'Aria' },
   { id: 'CwhRBWXzGAHq8TQ4Fs17', name: 'Roger' },
   { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah' },
@@ -37,7 +38,7 @@ const IAstedConfig: React.FC = () => {
     agentName: 'iAsted',
     presidentVoiceId: '9BWtsMINqrJLrRacOk9x',
     ministerVoiceId: 'EXAVITQu4vr4xnSDxMaL',
-    defaultVoiceId: 'Xb7hH8MSUJpSbSDYk0k2',
+    defaultVoiceId: 'EV6XgOdBELK29O2b4qyM',
   });
 
   useEffect(() => {
@@ -61,7 +62,7 @@ const IAstedConfig: React.FC = () => {
           agentName: data.agent_name || 'iAsted',
           presidentVoiceId: data.president_voice_id || '9BWtsMINqrJLrRacOk9x',
           ministerVoiceId: data.minister_voice_id || 'EXAVITQu4vr4xnSDxMaL',
-          defaultVoiceId: data.default_voice_id || 'Xb7hH8MSUJpSbSDYk0k2',
+          defaultVoiceId: data.default_voice_id || 'EV6XgOdBELK29O2b4qyM',
         });
       }
     } catch (error) {
