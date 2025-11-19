@@ -12,6 +12,52 @@ serve(async (req) => {
   }
 
   try {
+    // SECURITY: Verify JWT token is present
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    // Create client with user's JWT to verify authentication
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false }
+    });
+
+    // Verify the user is authenticated and has admin role
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ [create-elevenlabs-agent] Authentication failed:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if user has admin role (only admins can create agents)
+    const { data: roles, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (roleError || !roles) {
+      console.error('❌ [create-elevenlabs-agent] Authorization failed');
+      return new Response(
+        JSON.stringify({ error: 'Admin privileges required to create ElevenLabs agents' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`🔍 [create-elevenlabs-agent] Admin ${user.email} creating agent`);
+
     console.log('🔍 [create-elevenlabs-agent] Début de la requête');
     
     // Ne pas parser le body s'il est vide
@@ -119,15 +165,14 @@ N'hésite pas à poser des questions de clarification si nécessaire.`,
     const agentId = data.agent_id;
     console.log('✅ [create-elevenlabs-agent] Agent créé:', agentId);
 
-    // Save agent_id to database
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    // Save agent_id to database using service role key for admin operations
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log('💾 [create-elevenlabs-agent] Sauvegarde dans la base de données...');
 
     // Upsert into iasted_config (insert or update if exists)
-    const { error: dbError } = await supabase
+    const { error: dbError } = await supabaseAdmin
       .from('iasted_config')
       .upsert({
         id: '00000000-0000-0000-0000-000000000001', // Use fixed UUID to ensure single row
