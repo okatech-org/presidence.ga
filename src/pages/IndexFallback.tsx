@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import presidentialPalaceImage from "@/assets/presidential-palace.jpg";
+import { usePrefetch } from "@/hooks/usePrefetch";
 
 // Version de secours sans dépendances Radix UI
 const IndexFallback = () => {
   const navigate = useNavigate();
+  const { prefetchPresidentSpace, prefetchDashboard } = usePrefetch();
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,6 +46,11 @@ const IndexFallback = () => {
               <button 
                 className="gradient-gold text-accent-foreground text-sm md:text-lg px-4 py-4 md:px-8 md:py-6 rounded-md hover:opacity-90 transition-all font-medium"
                 onClick={() => navigate("/auth")}
+                onMouseEnter={() => {
+                  // Précharger les données des destinations possibles
+                  prefetchPresidentSpace();
+                  prefetchDashboard();
+                }}
               >
                 Accéder à la Plateforme →
               </button>

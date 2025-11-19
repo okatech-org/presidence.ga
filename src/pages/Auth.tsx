@@ -8,6 +8,7 @@ import { Shield, Lock, ArrowLeft, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import emblemGabon from "@/assets/emblem_gabon.png";
+import { usePrefetch } from "@/hooks/usePrefetch";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -16,6 +17,7 @@ const Auth = () => {
   const [initializingDemo, setInitializingDemo] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { prefetchPresidentSpace, prefetchDashboard } = usePrefetch();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,6 +163,11 @@ const Auth = () => {
                 type="submit"
                 className="w-full gradient-primary"
                 disabled={loading}
+                onMouseEnter={() => {
+                  // Précharger les données des deux destinations possibles
+                  prefetchPresidentSpace();
+                  prefetchDashboard();
+                }}
               >
                 {loading ? "Connexion..." : "Se connecter"}
               </Button>

@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleFeedbackModal } from "@/components/RoleFeedbackModal";
 import emblemGabon from "@/assets/emblem_gabon.png";
+import { usePrefetch } from "@/hooks/usePrefetch";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ interface DemoAccount {
 const Demo = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { prefetchPresidentSpace, prefetchDashboard } = usePrefetch();
   const [loadingAccount, setLoadingAccount] = useState<string | null>(null);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<{ role: string; email: string } | null>(null);
@@ -343,6 +345,14 @@ const Demo = () => {
                 <Button
                   className="flex-1 gradient-primary text-primary-foreground"
                   onClick={() => handleLogin(account.email, account.password)}
+                  onMouseEnter={() => {
+                    // Précharger les données selon le rôle
+                    if (account.role === "Président de la République") {
+                      prefetchPresidentSpace();
+                    } else {
+                      prefetchDashboard();
+                    }
+                  }}
                   disabled={loadingAccount === account.email}
                 >
                   <LogIn className="h-4 w-4 mr-2" />
