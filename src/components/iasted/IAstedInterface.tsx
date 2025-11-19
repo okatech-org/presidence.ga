@@ -11,6 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { useContinuousConversation } from '@/hooks/useContinuousConversation';
 import { ConnectionStatusOverlay } from './ConnectionStatusOverlay';
+import { IAstedSetupModal } from './IAstedSetupModal';
 
 import { supabase } from '@/integrations/supabase/client';
 
@@ -67,6 +68,7 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const [connectionError, setConnectionError] = useState<string>('');
+  const [showSetup, setShowSetup] = useState(false);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isRecording, isTranscribing, startRecording, stopRecording } = useAudioRecording();
@@ -141,12 +143,21 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
           console.error('[IAstedInterface] ❌ Erreur démarrage automatique:', error);
           setIsContinuousMode(false);
           const errorMessage = error instanceof Error ? error.message : "Impossible de démarrer le mode vocal";
-          setConnectionError(errorMessage);
-          toast({
-            title: "Erreur de connexion",
-            description: errorMessage,
-            variant: "destructive",
-          });
+          
+          // Check if it's a "no agent configured" error
+          if (errorMessage.includes('No ElevenLabs agent configured') || 
+              errorMessage.includes('No agent configured') ||
+              errorMessage.includes('agent non configuré')) {
+            setShowSetup(true);
+            setConnectionError('Agent non configuré');
+          } else {
+            setConnectionError(errorMessage);
+            toast({
+              title: "Erreur de connexion",
+              description: errorMessage,
+              variant: "destructive",
+            });
+          }
         }
       }, 300); // Délai réduit pour démarrer plus vite
       return () => clearTimeout(timer);
@@ -201,12 +212,21 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
         console.error('Error starting continuous mode:', error);
         setIsContinuousMode(false);
         const errorMessage = error instanceof Error ? error.message : "Impossible de démarrer le mode vocal.";
-        setConnectionError(errorMessage);
-        toast({
-          title: "Erreur de connexion",
-          description: errorMessage,
-          variant: "destructive",
-        });
+        
+        // Check if it's a "no agent configured" error
+        if (errorMessage.includes('No ElevenLabs agent configured') || 
+            errorMessage.includes('No agent configured') ||
+            errorMessage.includes('agent non configuré')) {
+          setShowSetup(true);
+          setConnectionError('Agent non configuré');
+        } else {
+          setConnectionError(errorMessage);
+          toast({
+            title: "Erreur de connexion",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        }
       }
     } else {
       setConnectionError('');
@@ -485,6 +505,7 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
   }
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 relative">
         <DialogTitle className="sr-only">{getRoleTitle()}</DialogTitle>
@@ -710,6 +731,17 @@ const IAstedInterface: React.FC<IAstedInterfaceProps> = ({
         )}
       </DialogContent>
     </Dialog>
+    
+    <IAstedSetupModal 
+      open={showSetup}
+      onOpenChange={setShowSetup}
+      onSuccess={() => {
+        setShowSetup(false);
+        setConnectionError('');
+        window.location.reload();
+      }}
+    />
+    </>
   );
 };
 
