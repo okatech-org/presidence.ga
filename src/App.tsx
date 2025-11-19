@@ -3,20 +3,21 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import React, { Suspense } from "react";
+import React, { Suspense, lazy } from "react";
 import { ThemeProvider } from "next-themes";
-import IndexFallback from "./pages/IndexFallback";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Demo from "./pages/Demo";
-import AdminDashboard from "./pages/AdminDashboard";
-import PresidentSpace from "./pages/PresidentSpace";
-import IAstedConfig from "./pages/IAstedConfig";
-import IAstedPage from "./pages/IAstedPage";
-import NotFound from "./pages/NotFound";
 import { LoadingScreen } from "@/components/ErrorBoundary";
 
-import IAstedConfigWizard from "./pages/IAstedConfigWizard";
+// Lazy load all routes for better performance
+const IndexFallback = lazy(() => import("./pages/IndexFallback"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Demo = lazy(() => import("./pages/Demo"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const PresidentSpace = lazy(() => import("./pages/PresidentSpace"));
+const IAstedConfig = lazy(() => import("./pages/IAstedConfig"));
+const IAstedPage = lazy(() => import("./pages/IAstedPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const IAstedConfigWizard = lazy(() => import("./pages/IAstedConfigWizard"));
 
 const queryClient = new QueryClient();
 
