@@ -115,7 +115,9 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>('elevenlabs');
+  const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>(() => {
+    return (localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai') || 'elevenlabs';
+  });
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -369,6 +371,8 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
       };
       switchMode();
     }
+    // Sauvegarder le mode dans localStorage pour synchroniser avec le bouton
+    localStorage.setItem('iasted-voice-mode', voiceMode);
   }, [voiceMode]);
 
   if (!isOpen) return null;

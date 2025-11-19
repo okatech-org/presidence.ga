@@ -46,6 +46,7 @@ import {
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import { useElevenLabsConversation, ConversationState } from '@/hooks/useElevenLabsConversation';
+import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import { cn } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
@@ -128,25 +129,46 @@ export default function PresidentSpace() {
   });
   const [activeSection, setActiveSection] = useState("dashboard");
   const [iastedOpen, setIastedOpen] = useState(false);
+  const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>(() => {
+    return (localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai') || 'elevenlabs';
+  });
   const navigate = useNavigate();
 
   // Hook pour la conversation vocale temps réel avec ElevenLabs (voix iAsted Pro)
   const [conversationState, setConversationState] = useState<ConversationState>('disconnected');
   
-  const {
-    startConversation,
-    endConversation,
-    isConnected,
-    isSpeaking,
-  } = useElevenLabsConversation({
+  const elevenLabs = useElevenLabsConversation({
     onStateChange: (state) => {
-      console.log('🔄 [PresidentSpace] État conversation:', state);
+      console.log('🔄 [PresidentSpace] État conversation ElevenLabs:', state);
       setConversationState(state);
     },
     onMessage: (message) => {
-      console.log('📨 [PresidentSpace] Message reçu:', message);
+      console.log('📨 [PresidentSpace] Message ElevenLabs:', message);
     },
   });
+
+  // Hook pour la conversation OpenAI WebRTC (voix alloy)
+  const openaiRTC = useRealtimeVoiceWebRTC();
+
+  // Écouter les changements du mode vocal depuis localStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const newMode = localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai';
+      if (newMode && newMode !== voiceMode) {
+        console.log('🔄 [PresidentSpace] Mode vocal changé:', newMode);
+        setVoiceMode(newMode);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Vérifier périodiquement (pour les changements dans le même onglet)
+    const interval = setInterval(handleStorageChange, 500);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [voiceMode]);
 
   useEffect(() => {
     setMounted(true);
@@ -724,16 +746,27 @@ export default function PresidentSpace() {
       {/* Bouton IAsted flottant */}
       <IAstedButtonFull
         onSingleClick={async () => {
-          console.log('🖱️ [IAstedButton] Clic simple - conversation vocale temps réel iAsted Pro');
+          const currentMode = voiceMode;
+          console.log(`🖱️ [IAstedButton] Clic simple - mode: ${currentMode}`);
           
-          if (isConnected) {
-            // Si déjà connecté, on déconnecte
-            console.log('🔄 [IAstedButton] Déconnexion conversation');
-            await endConversation();
+          if (currentMode === 'elevenlabs') {
+            // Mode ElevenLabs (iAsted Pro)
+            if (elevenLabs.isConnected) {
+              console.log('🔄 [IAstedButton] Déconnexion ElevenLabs');
+              await elevenLabs.endConversation();
+            } else {
+              console.log('🎤 [IAstedButton] Démarrage ElevenLabs iAsted Pro');
+              await elevenLabs.startConversation();
+            }
           } else {
-            // Sinon, démarre la conversation vocale temps réel
-            console.log('🎤 [IAstedButton] Démarrage conversation temps réel iAsted Pro');
-            await startConversation();
+            // Mode OpenAI RT
+            if (openaiRTC.isConnected) {
+              console.log('🔄 [IAstedButton] Déconnexion OpenAI RT');
+              openaiRTC.disconnect();
+            } else {
+              console.log('🎤 [IAstedButton] Démarrage OpenAI RT (voix alloy)');
+              await openaiRTC.connect();
+            }
           }
         }}
         onDoubleClick={() => {
@@ -741,11 +774,25 @@ export default function PresidentSpace() {
           setIastedOpen(true);
         }}
         size="lg"
-        voiceListening={conversationState === 'connected' && !isSpeaking}
-        voiceSpeaking={isSpeaking}
-        voiceProcessing={conversationState === 'connecting'}
+        voiceListening={
+          voiceMode === 'elevenlabs' 
+            ? (conversationState === 'connected' && !elevenLabs.isSpeaking)
+            : (openaiRTC.voiceState === 'listening')
+        }
+        voiceSpeaking={
+          voiceMode === 'elevenlabs'
+            ? elevenLabs.isSpeaking
+            : (openaiRTC.voiceState === 'speaking')
+        }
+        voiceProcessing={
+          voiceMode === 'elevenlabs'
+            ? (conversationState === 'connecting')
+            : (openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking')
+        }
         isInterfaceOpen={iastedOpen}
-        isVoiceModeActive={isConnected}
+        isVoiceModeActive={
+          voiceMode === 'elevenlabs' ? elevenLabs.isConnected : openaiRTC.isConnected
+        }
       />
 
       {/* Interface iAsted avec chat et documents */}
