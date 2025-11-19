@@ -124,6 +124,7 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({
   const [activeTab, setActiveTab] = useState<'chat' | 'settings' | 'analytics'>('chat');
   const [showFocusModal, setShowFocusModal] = useState(false);
   const [focusTopic, setFocusTopic] = useState('');
+  const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>('elevenlabs');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -221,6 +222,33 @@ export const IAstedPresidentModal: React.FC<IAstedPresidentModalProps> = ({
                   Focus Actif
                 </span>
               )}
+              
+              {/* Mode selector */}
+              <div className="neu-inset rounded-lg p-1 flex items-center gap-1">
+                <button
+                  onClick={() => setVoiceMode('elevenlabs')}
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                    voiceMode === 'elevenlabs'
+                      ? 'neu-raised bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  title="ElevenLabs iAsted Pro - Voix de haute qualité"
+                >
+                  🎙️ iAsted Pro
+                </button>
+                <button
+                  onClick={() => setVoiceMode('openai')}
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                    voiceMode === 'openai'
+                      ? 'neu-raised bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  title="OpenAI Temps Réel - Latence ultra-faible"
+                >
+                  ⚡ OpenAI RT
+                </button>
+              </div>
+              
               <AudioLevelIndicator level={audioLevel} state={voiceState} />
               <button
                 onClick={onClose}
