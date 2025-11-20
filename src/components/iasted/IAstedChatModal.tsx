@@ -284,7 +284,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
         const { error } = await supabase
           .from('conversation_messages')
           .update({ content: newContent })
-          .eq('message_id', messageId);
+          .eq('id', messageId);
 
         if (error) console.error('Erreur modification message:', error);
       }

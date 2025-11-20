@@ -79,50 +79,42 @@ const ProtocolDirectorSpace = () => {
         checkAccess();
     }, [navigate, toast]);
 
-    // Data Fetching
+    // Data Fetching - TEMPORAIRE: Tables non créées
     const { data: events = [], isLoading: eventsLoading } = useQuery({
         queryKey: ["official_events"],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from("official_events")
-                .select("*")
-                .order("date", { ascending: true });
-            if (error) throw error;
-            return data as OfficialEvent[];
+            // TODO: Créer la table official_events
+            return [] as OfficialEvent[];
         },
     });
 
     const { data: guests = [], isLoading: guestsLoading } = useQuery({
         queryKey: ["guest_lists"],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from("guest_lists")
-                .select("*")
-                .order("created_at", { ascending: false });
-            if (error) throw error;
-            return data as Guest[];
+            // TODO: Créer la table guest_lists
+            return [] as Guest[];
         },
     });
 
-    // Mutations
+    // Mutations - Désactivées temporairement
     const createEventMutation = useMutation({
         mutationFn: async (newEvent: Omit<OfficialEvent, "id" | "created_at">) => {
-            const { error } = await supabase.from("official_events").insert(newEvent);
-            if (error) throw error;
+            console.log("Table official_events non créée");
+            throw new Error("Table non créée");
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["official_events"] });
             toast({ title: "Succès", description: "Événement créé avec succès" });
         },
         onError: () => {
-            toast({ title: "Erreur", description: "Impossible de créer l'événement", variant: "destructive" });
+            toast({ title: "Erreur", description: "Table non créée dans la base de données", variant: "destructive" });
         },
     });
 
     const addGuestMutation = useMutation({
         mutationFn: async (newGuest: Omit<Guest, "id" | "created_at">) => {
-            const { error } = await supabase.from("guest_lists").insert(newGuest);
-            if (error) throw error;
+            console.log("Table guest_lists non créée");
+            throw new Error("Table non créée");
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["guest_lists"] });

@@ -78,50 +78,42 @@ const SecretariatGeneralSpace = () => {
     checkAccess();
   }, [navigate, toast]);
 
-  // Data Fetching
+  // Data Fetching - TEMPORAIRE: Tables non créées
   const { data: decrees = [], isLoading: decreesLoading } = useQuery({
     queryKey: ["official_decrees"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("official_decrees")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as OfficialDecree[];
+      // TODO: Créer la table official_decrees
+      return [] as OfficialDecree[];
     },
   });
 
   const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
     queryKey: ["legal_reviews"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("legal_reviews")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as LegalReview[];
+      // TODO: Créer la table legal_reviews
+      return [] as LegalReview[];
     },
   });
 
-  // Mutations
+  // Mutations - Désactivées temporairement
   const createDecreeMutation = useMutation({
     mutationFn: async (newDecree: Omit<OfficialDecree, "id" | "created_at">) => {
-      const { error } = await supabase.from("official_decrees").insert(newDecree);
-      if (error) throw error;
+      console.log("Table official_decrees non créée");
+      throw new Error("Table non créée");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["official_decrees"] });
       toast({ title: "Succès", description: "Décret créé avec succès" });
     },
     onError: () => {
-      toast({ title: "Erreur", description: "Impossible de créer le décret", variant: "destructive" });
+      toast({ title: "Erreur", description: "Table non créée dans la base de données", variant: "destructive" });
     },
   });
 
   const createReviewMutation = useMutation({
     mutationFn: async (newReview: Omit<LegalReview, "id" | "created_at">) => {
-      const { error } = await supabase.from("legal_reviews").insert(newReview);
-      if (error) throw error;
+      console.log("Table legal_reviews non créée");
+      throw new Error("Table non créée");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["legal_reviews"] });

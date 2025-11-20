@@ -77,50 +77,42 @@ const ServiceReceptionSpace = () => {
     checkAccess();
   }, [navigate, toast]);
 
-  // Data Fetching
+  // Data Fetching - TEMPORAIRE: Tables non créées
   const { data: visitors = [], isLoading: visitorsLoading } = useQuery({
     queryKey: ["visitor_logs"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("visitor_logs")
-        .select("*")
-        .order("check_in_time", { ascending: false });
-      if (error) throw error;
-      return data as VisitorLog[];
+      // TODO: Créer la table visitor_logs
+      return [] as VisitorLog[];
     },
   });
 
   const { data: accreditations = [], isLoading: accreditationsLoading } = useQuery({
     queryKey: ["accreditation_requests"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("accreditation_requests")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as AccreditationRequest[];
+      // TODO: Créer la table accreditation_requests
+      return [] as AccreditationRequest[];
     },
   });
 
-  // Mutations
+  // Mutations - Désactivées temporairement
   const checkInVisitorMutation = useMutation({
     mutationFn: async (newVisitor: Omit<VisitorLog, "id" | "created_at" | "check_out_time">) => {
-      const { error } = await supabase.from("visitor_logs").insert(newVisitor);
-      if (error) throw error;
+      console.log("Table visitor_logs non créée");
+      throw new Error("Table non créée");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["visitor_logs"] });
       toast({ title: "Succès", description: "Visiteur enregistré avec succès" });
     },
     onError: () => {
-      toast({ title: "Erreur", description: "Impossible d'enregistrer le visiteur", variant: "destructive" });
+      toast({ title: "Erreur", description: "Table non créée dans la base de données", variant: "destructive" });
     },
   });
 
   const createAccreditationMutation = useMutation({
     mutationFn: async (newRequest: Omit<AccreditationRequest, "id" | "created_at">) => {
-      const { error } = await supabase.from("accreditation_requests").insert(newRequest);
-      if (error) throw error;
+      console.log("Table accreditation_requests non créée");
+      throw new Error("Table non créée");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accreditation_requests"] });
