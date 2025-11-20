@@ -163,29 +163,33 @@ Répondez de manière claire et professionnelle.`;
       toast({ title: "Conversation terminée" });
     },
     onMessage: (message) => {
-      console.log('[useContinuousConversation] 📨 Message reçu:', message);
+      console.log('📨 [ElevenLabs Continuous] Message reçu:', JSON.stringify(message));
       
       // L'API @elevenlabs/react envoie des messages avec source: 'user' ou 'ai'
       if (message.source === 'user' && message.message) {
+        console.log('👤 [ElevenLabs Continuous] Message utilisateur:', message.message);
         setMessages(prev => [...prev, { role: 'user', content: message.message }]);
       } else if (message.source === 'ai' && message.message) {
-        console.log('[useContinuousConversation] 🔊 Réponse de l\'IA:', message.message);
+        console.log('🤖 [ElevenLabs Continuous] Réponse IA:', message.message);
         setMessages(prev => [...prev, { role: 'assistant', content: message.message }]);
       }
     },
     onError: (message) => {
-      console.error('[useContinuousConversation] ❌ Erreur de conversation:', message);
+      console.error('❌ [ElevenLabs Continuous] Erreur:', message);
       toast({
         title: "Erreur de conversation",
         description: typeof message === 'string' ? message : "Une erreur est survenue",
         variant: "destructive",
       });
     },
+    onModeChange: (mode) => {
+      console.log('🎙️ [ElevenLabs Continuous] Mode changé:', mode);
+    },
   });
 
   const startContinuousMode = useCallback(async () => {
     if (!agentId) {
-      console.error('[useContinuousConversation] Agent ID manquant');
+      console.error('❌ [ElevenLabs Continuous] Agent ID manquant');
       toast({
         title: "Agent non configuré",
         description: "Veuillez configurer un agent ElevenLabs dans les paramètres iAsted.",
@@ -195,60 +199,65 @@ Répondez de manière claire et professionnelle.`;
     }
 
     try {
-      console.log('[useContinuousConversation] Démarrage de la conversation avec agent:', agentId);
+      console.log('🚀 [ElevenLabs Continuous] Démarrage avec agent:', agentId);
       
-      // Demander l'accès au microphone
-      console.log('[useContinuousConversation] Demande d\'accès au microphone...');
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log('[useContinuousConversation] Accès microphone obtenu');
+      // 1. Demander accès micro avec options optimales
+      console.log('🎤 [ElevenLabs Continuous] Demande accès micro...');
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000
+        } 
+      });
+      console.log('✅ [ElevenLabs Continuous] Accès micro obtenu');
 
-      // Obtenir l'URL signée depuis notre edge function
-      console.log('[useContinuousConversation] Récupération de l\'URL signée...');
+      // 2. Activer AudioContext AVANT connexion (critique!)
+      console.log('🔊 [ElevenLabs Continuous] Activation AudioContext...');
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log('🔊 [ElevenLabs Continuous] État AudioContext:', audioContext.state);
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+        console.log('✅ [ElevenLabs Continuous] AudioContext activé');
+      }
+      
+      // Son test pour forcer activation (nécessaire certains navigateurs)
+      try {
+        const testOsc = audioContext.createOscillator();
+        const testGain = audioContext.createGain();
+        testOsc.connect(testGain);
+        testGain.connect(audioContext.destination);
+        testGain.gain.value = 0.001;
+        testOsc.start();
+        testOsc.stop(audioContext.currentTime + 0.001);
+        console.log('✅ [ElevenLabs Continuous] Son test joué');
+      } catch (audioError) {
+        console.error('⚠️ [ElevenLabs Continuous] Erreur son test:', audioError);
+      }
+
+      // 3. Obtenir signed URL
+      console.log('🔑 [ElevenLabs Continuous] Récupération signed URL...');
       const { data, error } = await supabase.functions.invoke('elevenlabs-signed-url', {
         body: { agentId }
       });
 
       if (error) {
-        console.error('[useContinuousConversation] Erreur récupération URL signée:', error);
-        throw new Error(`Erreur lors de la récupération de l'URL: ${error.message || 'Erreur inconnue'}`);
+        console.error('❌ [ElevenLabs Continuous] Erreur signed URL:', error);
+        throw new Error(`Erreur signed URL: ${error.message || 'Erreur inconnue'}`);
       }
 
       if (!data?.signedUrl) {
-        console.error('[useContinuousConversation] URL signée non reçue');
+        console.error('❌ [ElevenLabs Continuous] Signed URL manquant');
         throw new Error('Impossible d\'obtenir l\'URL de conversation');
       }
 
-      console.log('[useContinuousConversation] URL signée obtenue, démarrage de la session...');
+      console.log('✅ [ElevenLabs Continuous] Signed URL obtenu');
 
-      // Activer le contexte audio AVANT de démarrer la session (critique pour Chrome/Firefox)
-      console.log('[useContinuousConversation] Activation du contexte audio avant démarrage...');
-      try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        console.log('[useContinuousConversation] État contexte audio initial:', audioContext.state);
-        if (audioContext.state === 'suspended') {
-          console.log('[useContinuousConversation] Réactivation du contexte audio suspendu...');
-          await audioContext.resume();
-          console.log('[useContinuousConversation] ✅ Contexte audio activé avant démarrage');
-        }
-        
-        // Créer un son test très court pour forcer l'activation (nécessaire pour certains navigateurs)
-        const testOscillator = audioContext.createOscillator();
-        const testGain = audioContext.createGain();
-        testOscillator.connect(testGain);
-        testGain.connect(audioContext.destination);
-        testGain.gain.value = 0.001; // Très silencieux
-        testOscillator.frequency.value = 440;
-        testOscillator.start();
-        testOscillator.stop(audioContext.currentTime + 0.001);
-        console.log('[useContinuousConversation] Son test joué pour activation audio');
-      } catch (audioError) {
-        console.error('[useContinuousConversation] Erreur activation contexte audio:', audioError);
-      }
-
-      // Démarrer la conversation avec le volume par défaut
-      console.log('[useContinuousConversation] Démarrage de la session avec URL signée...');
-      console.log('[useContinuousConversation] FirstMessage configuré:', overrides.agent?.firstMessage);
-      console.log('[useContinuousConversation] Prompt configuré:', overrides.agent?.prompt?.prompt?.substring(0, 100) + '...');
+      // 4. Démarrer la session
+      console.log('🚀 [ElevenLabs Continuous] Démarrage session...');
+      console.log('   - FirstMessage:', overrides.agent?.firstMessage);
+      console.log('   - Prompt (100 chars):', overrides.agent?.prompt?.prompt?.substring(0, 100) + '...');
       
       const id = await conversation.startSession({ 
         signedUrl: data.signedUrl 
@@ -305,8 +314,9 @@ Répondez de manière claire et professionnelle.`;
       setConversationId(id);
       setMessages([]);
 
-      // Libérer le stream audio après démarrage (le SDK gère sa propre connexion)
+      // Libérer le stream micro (le SDK gère sa propre connexion)
       stream.getTracks().forEach(track => track.stop());
+      console.log('✅ [ElevenLabs Continuous] Stream micro libéré');
 
     } catch (error) {
       console.error('[useContinuousConversation] Erreur démarrage conversation:', error);
