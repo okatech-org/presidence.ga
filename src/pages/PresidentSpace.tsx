@@ -151,11 +151,14 @@ export default function PresidentSpace() {
     },
   });
 
-  // Démarrer automatiquement la conversation ElevenLabs quand l'agent est prêt
+  // Hook pour la conversation OpenAI WebRTC (voix alloy) - DOIT ÊTRE AVANT les useEffect
+  const openaiRTC = useRealtimeVoiceWebRTC();
+
+  // Démarrer automatiquement la conversation ElevenLabs quand l'agent est prêt ET mode = elevenlabs
   useEffect(() => {
     const autoStartElevenLabs = async () => {
       if (elevenLabs.hasAgent && conversationState === 'disconnected' && voiceMode === 'elevenlabs') {
-        console.log('🚀 [PresidentSpace] Auto-démarrage ElevenLabs...');
+        console.log('🚀 [PresidentSpace] Auto-démarrage ElevenLabs (mode:', voiceMode, ')');
         try {
           await elevenLabs.startConversation();
           console.log('✅ [PresidentSpace] ElevenLabs démarré avec succès');
@@ -168,8 +171,22 @@ export default function PresidentSpace() {
     autoStartElevenLabs();
   }, [elevenLabs.hasAgent, conversationState, voiceMode]);
 
-  // Hook pour la conversation OpenAI WebRTC (voix alloy)
-  const openaiRTC = useRealtimeVoiceWebRTC();
+  // Démarrer automatiquement OpenAI WebRTC quand mode = openai
+  useEffect(() => {
+    const autoStartOpenAI = async () => {
+      if (voiceMode === 'openai' && !openaiRTC.isConnected) {
+        console.log('🚀 [PresidentSpace] Auto-démarrage OpenAI WebRTC (mode:', voiceMode, ')');
+        try {
+          await openaiRTC.connect();
+          console.log('✅ [PresidentSpace] OpenAI WebRTC démarré avec succès');
+        } catch (error) {
+          console.error('❌ [PresidentSpace] Erreur auto-démarrage OpenAI:', error);
+        }
+      }
+    };
+
+    autoStartOpenAI();
+  }, [voiceMode, openaiRTC.isConnected]);
 
   // Écouter les changements du mode vocal depuis localStorage
   useEffect(() => {
