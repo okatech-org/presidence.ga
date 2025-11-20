@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useConversation } from '@11labs/react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { forceResumeAllAudioContexts } from '@/utils/audioContextManager';
 
 export type ConversationState = 'disconnected' | 'connecting' | 'connected' | 'speaking';
 
@@ -74,9 +75,14 @@ export const useElevenLabsConversation = ({
       setConversationState('connected');
       onStateChange?.('connected');
       
-      // Forcer activation audio immédiate
+      // Forcer activation audio immédiate via le gestionnaire global
       setTimeout(() => {
-        console.log('🔊 [ElevenLabs] Forçage activation audio...');
+        console.log('🔊 [ElevenLabs] Forçage activation audio via gestionnaire global...');
+        
+        // Forcer tous les AudioContext
+        forceResumeAllAudioContexts();
+        
+        // Activer aussi les éléments audio HTML
         const audioElements = document.querySelectorAll('audio');
         console.log('🔊 [ElevenLabs] Nombre d\'éléments audio trouvés:', audioElements.length);
         
@@ -88,15 +94,6 @@ export const useElevenLabsConversation = ({
           });
           console.log(`✅ [ElevenLabs] Audio ${index} activé - volume:`, audio.volume, 'muted:', audio.muted);
         });
-        
-        // Vérifier AudioContext
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        console.log('🔊 [ElevenLabs] État AudioContext après connexion:', audioContext.state);
-        if (audioContext.state === 'suspended') {
-          audioContext.resume().then(() => {
-            console.log('✅ [ElevenLabs] AudioContext réactivé après connexion');
-          });
-        }
       }, 100);
     },
     onDisconnect: () => {
