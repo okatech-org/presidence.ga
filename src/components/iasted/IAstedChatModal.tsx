@@ -527,25 +527,21 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
               type: 'application/pdf',
             };
 
-            // Ajouter le document au dernier message assistant
-            setMessages(prev => {
-              const lastAssistantIdx = prev.length - 1;
-              if (lastAssistantIdx >= 0 && prev[lastAssistantIdx].role === 'assistant') {
-                const updated = [...prev];
-                updated[lastAssistantIdx] = {
-                  ...updated[lastAssistantIdx],
-                  metadata: {
-                    ...updated[lastAssistantIdx].metadata,
-                    documents: [
-                      ...(updated[lastAssistantIdx].metadata?.documents || []),
-                      docPreview
-                    ]
-                  }
-                };
-                return updated;
-              }
-              return prev;
-            });
+            // Créer un message assistant dédié avec le document attaché
+            const now = new Date().toISOString();
+            const content = `Document généré, Excellence.\n\n📄 ${args.type.toUpperCase()} pour ${args.recipient}\nObjet : ${args.subject}`;
+            const docMessage: Message = {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content,
+              timestamp: now,
+              metadata: {
+                responseStyle: 'strategique',
+                documents: [docPreview],
+              },
+            };
+
+            setMessages(prev => [...prev, docMessage]);
 
             // Toast de succès
             toast({
@@ -670,24 +666,26 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
       if (error) throw error;
 
       // Traiter les tool_calls si présents
-      if (data.tool_calls && data.tool_calls.length > 0) {
+      const hasToolCalls = data.tool_calls && data.tool_calls.length > 0;
+      if (hasToolCalls) {
         console.log('🔧 [handleSendMessage] Tool calls détectés:', data.tool_calls);
         for (const toolCall of data.tool_calls) {
           await executeToolCall(toolCall);
         }
       }
 
-      // Générer un message de confirmation si un document a été créé
-      let responseContent = data.answer || data.response || '';
-      
-      // Si pas de contenu mais qu'un document a été généré, créer un message de confirmation
-      if (!responseContent && data.tool_calls?.some((tc: any) => tc.function.name === 'generate_document')) {
-        const docTool = data.tool_calls.find((tc: any) => tc.function.name === 'generate_document');
-        const args = JSON.parse(docTool.function.arguments);
-        responseContent = `Document généré, Excellence.\n\n📄 ${args.type.toUpperCase()} pour ${args.recipient}\nObjet : ${args.subject}\n\nLe document est prêt et a été téléchargé automatiquement.`;
+      const hasGenerateDocTool = data.tool_calls?.some((tc: any) => tc.function.name === 'generate_document');
+
+      // Cas 1: uniquement un tool generate_document, sans réponse texte →
+      // le message avec le PDF est déjà ajouté par executeToolCall, on ne duplique pas.
+      if (!data.answer && !data.response && !data.error && hasGenerateDocTool) {
+        console.log('📨 [handleSendMessage] Réponse uniquement via generate_document, aucun message texte ajouté.');
+        return;
       }
 
-      // Message par défaut seulement si vraiment aucun contenu
+      // Cas 2: réponse texte normale ou erreur → on construit le message assistant
+      let responseContent = data.answer || data.response || data.error || '';
+
       if (!responseContent) {
         responseContent = 'Je suis désolé, je ne peux pas répondre pour le moment.';
       }
