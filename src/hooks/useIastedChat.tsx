@@ -53,18 +53,20 @@ export const useIastedChat = ({ userRole = 'default', sessionId }: UseIastedChat
 
   // Sauvegarder dans localStorage à chaque changement de messages
   useEffect(() => {
-    if (messages.length > 0) {
-      try {
+    try {
+      if (messages.length > 0) {
         localStorage.setItem(storageKey, JSON.stringify({
           messages: messages.map(msg => ({
             ...msg,
-            timestamp: msg.timestamp.toISOString()
+            timestamp: msg.timestamp.toISOString(),
           })),
-          lastUpdated: new Date().toISOString()
+          lastUpdated: new Date().toISOString(),
         }));
-      } catch (error) {
-        console.error('[useIastedChat] Erreur sauvegarde localStorage:', error);
+      } else {
+        localStorage.removeItem(storageKey);
       }
+    } catch (error) {
+      console.error('[useIastedChat] Erreur sauvegarde/suppression localStorage:', error);
     }
   }, [messages, storageKey]);
 
@@ -433,10 +435,18 @@ export const useIastedChat = ({ userRole = 'default', sessionId }: UseIastedChat
     setMessages([]);
     setGeneratedDocuments([]);
     
-    // Supprimer du localStorage
+    // Supprimer tous les historiques iAsted du localStorage pour éviter le retour d'anciennes conversations
     try {
-      localStorage.removeItem(storageKey);
-      console.log('[useIastedChat] Chat effacé du localStorage');
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('iasted-chat-')) {
+          keysToRemove.push(key);
+        }
+      }
+
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+      console.log('[useIastedChat] Tous les historiques iAsted ont été effacés du localStorage');
     } catch (error) {
       console.error('[useIastedChat] Erreur suppression localStorage:', error);
     }
