@@ -119,6 +119,8 @@ const themes: Record<"light" | "dark", ThemeConfig> = {
 };
 
 export default function PresidentSpace() {
+  console.log('🎯 [PresidentSpace] Composant monté - début initialisation');
+  
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
@@ -131,15 +133,21 @@ export default function PresidentSpace() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [iastedOpen, setIastedOpen] = useState(false);
   const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>(() => {
-    return (localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai') || 'elevenlabs';
+    const mode = (localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai') || 'elevenlabs';
+    console.log('🎤 [PresidentSpace] Mode vocal initial:', mode);
+    return mode;
   });
   const navigate = useNavigate();
 
   // Activer la synchronisation temps réel pour le dashboard présidentiel
   useRealtimePresidentDashboard();
+  
+  console.log('🔧 [PresidentSpace] État initial - voiceMode:', voiceMode);
 
   // Hook pour la conversation vocale temps réel avec ElevenLabs (voix iAsted Pro)
   const [conversationState, setConversationState] = useState<ConversationState>('disconnected');
+  
+  console.log('🎙️ [PresidentSpace] Initialisation hooks vocaux...');
   
   const elevenLabs = useElevenLabsConversation({
     onStateChange: (state) => {
@@ -151,8 +159,12 @@ export default function PresidentSpace() {
     },
   });
 
+  console.log('✅ [PresidentSpace] Hook ElevenLabs initialisé - hasAgent:', elevenLabs.hasAgent, 'agentId:', elevenLabs.agentId);
+
   // Hook pour la conversation OpenAI WebRTC (voix alloy) - DOIT ÊTRE AVANT les useEffect
   const openaiRTC = useRealtimeVoiceWebRTC();
+  
+  console.log('✅ [PresidentSpace] Hook OpenAI WebRTC initialisé - isConnected:', openaiRTC.isConnected);
 
   // Démarrer automatiquement la conversation ElevenLabs quand l'agent est prêt ET mode = elevenlabs
   useEffect(() => {
