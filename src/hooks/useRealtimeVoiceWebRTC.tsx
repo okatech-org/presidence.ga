@@ -221,12 +221,27 @@ export const useRealtimeVoiceWebRTC = () => {
       if (!audioElRef.current) {
         audioElRef.current = document.createElement("audio");
         audioElRef.current.autoplay = true;
+        audioElRef.current.muted = false;
+        audioElRef.current.volume = 1.0;
+        audioElRef.current.style.display = 'none';
+        
+        // CRITIQUE: Ajouter l'élément au DOM pour permettre l'autoplay
+        document.body.appendChild(audioElRef.current);
+        console.log('🔊 [WebRTC] Élément audio créé et ajouté au DOM');
       }
 
       pcRef.current.ontrack = (e) => {
-        console.log('🎵 [WebRTC] Track audio reçu');
-        if (audioElRef.current) {
+        console.log('🎵 [WebRTC] Track audio reçu, streams:', e.streams.length);
+        if (audioElRef.current && e.streams[0]) {
           audioElRef.current.srcObject = e.streams[0];
+          console.log('🔊 [WebRTC] Stream audio assigné à l\'élément');
+          
+          // Forcer la lecture si nécessaire
+          audioElRef.current.play().then(() => {
+            console.log('✅ [WebRTC] Lecture audio démarrée');
+          }).catch(err => {
+            console.error('❌ [WebRTC] Erreur lecture audio:', err);
+          });
         }
       };
 
@@ -313,6 +328,17 @@ export const useRealtimeVoiceWebRTC = () => {
     if (dcRef.current) {
       dcRef.current.close();
       dcRef.current = null;
+    }
+    
+    // Nettoyer l'élément audio
+    if (audioElRef.current) {
+      audioElRef.current.pause();
+      audioElRef.current.srcObject = null;
+      if (audioElRef.current.parentNode) {
+        document.body.removeChild(audioElRef.current);
+      }
+      audioElRef.current = null;
+      console.log('🔊 [WebRTC] Élément audio nettoyé');
     }
     
     if (pcRef.current) {
