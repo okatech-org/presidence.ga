@@ -131,25 +131,33 @@ class AudioQueue {
   private async playNext() {
     if (this.queue.length === 0) {
       this.isPlaying = false;
+      console.log('🎧 [AudioQueue] Queue vide, arrêt lecture');
       return;
     }
 
     this.isPlaying = true;
     const audioData = this.queue.shift()!;
+    console.log('🎵 [AudioQueue] Lecture chunk, queue restante:', this.queue.length);
 
     try {
+      console.log('🔊 [AudioQueue] Conversion PCM->WAV, taille:', audioData.length);
       const wavData = createWavFromPCM(audioData);
+      console.log('🔊 [AudioQueue] WAV créé, taille:', wavData.length, 'AudioContext état:', this.audioContext.state);
+      
       const audioBuffer = await this.audioContext.decodeAudioData(wavData.buffer as ArrayBuffer);
+      console.log('✅ [AudioQueue] Audio décodé, durée:', audioBuffer.duration, 's');
 
       const source = this.audioContext.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(this.audioContext.destination);
 
       source.onended = () => {
+        console.log('✅ [AudioQueue] Chunk terminé');
         void this.playNext();
       };
 
       source.start(0);
+      console.log('🔊 [AudioQueue] Lecture démarrée');
     } catch (error) {
       console.error('❌ [WebRTC] Erreur lecture audio queue:', error);
       void this.playNext();
@@ -194,11 +202,11 @@ export const useRealtimeVoiceWebRTC = () => {
   const handleDataChannelMessage = useCallback((event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data);
-      console.log('📨 [WebRTC] Message reçu:', data.type);
+      console.log('📨 [WebRTC] Message reçu:', data.type, JSON.stringify(data));
 
       switch (data.type) {
         case 'session.created':
-          console.log('✅ [WebRTC] Session créée');
+          console.log('✅ [WebRTC] Session créée - Configuration:', JSON.stringify(data.session));
           setVoiceState('listening');
           break;
 
@@ -244,14 +252,16 @@ export const useRealtimeVoiceWebRTC = () => {
           break;
 
         case 'response.audio.delta':
+          console.log('🎵 [WebRTC] Chunk audio reçu, taille delta:', data.delta?.length || 0);
           if (voiceState !== 'speaking') {
+            console.log('🗣️ [WebRTC] Passage en mode speaking');
             setVoiceState('speaking');
           }
           if (data.delta) {
             try {
               if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
                 audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-                console.log('🔊 [WebRTC] AudioContext créé pour lecture PCM');
+                console.log('🔊 [WebRTC] AudioContext créé, état:', audioContextRef.current.state);
               }
 
               if (!audioQueueRef.current && audioContextRef.current) {
@@ -265,10 +275,13 @@ export const useRealtimeVoiceWebRTC = () => {
                 bytes[i] = binaryString.charCodeAt(i);
               }
 
+              console.log('🔊 [WebRTC] Ajout de', bytes.length, 'bytes à la queue');
               void audioQueueRef.current?.addToQueue(bytes);
             } catch (error) {
               console.error('❌ [WebRTC] Erreur décodage audio PCM:', error);
             }
+          } else {
+            console.warn('⚠️ [WebRTC] response.audio.delta reçu SANS delta!');
           }
           break;
 
@@ -337,17 +350,26 @@ export const useRealtimeVoiceWebRTC = () => {
       }
 
       pcRef.current.ontrack = (e) => {
-        console.log('🎵 [WebRTC] Track audio reçu, streams:', e.streams.length);
+        console.log('🎵 [WebRTC] Track audio reçu!');
+        console.log('   - Nombre de streams:', e.streams.length);
+        console.log('   - Nombre de tracks:', e.streams[0]?.getTracks().length);
+        console.log('   - Track kind:', e.track.kind);
+        console.log('   - Track enabled:', e.track.enabled);
+        console.log('   - Track muted:', e.track.muted);
+        console.log('   - Track readyState:', e.track.readyState);
+        
         if (audioElRef.current && e.streams[0]) {
           audioElRef.current.srcObject = e.streams[0];
-          console.log('🔊 [WebRTC] Stream audio assigné à l\'élément');
+          console.log('🔊 [WebRTC] Stream assigné, volume:', audioElRef.current.volume, 'muted:', audioElRef.current.muted);
           
-          // Forcer la lecture si nécessaire
+          // Forcer la lecture avec interaction utilisateur requise
           audioElRef.current.play().then(() => {
-            console.log('✅ [WebRTC] Lecture audio démarrée');
+            console.log('✅ [WebRTC] LECTURE AUDIO DÉMARRÉE AVEC SUCCÈS!');
           }).catch(err => {
-            console.error('❌ [WebRTC] Erreur lecture audio:', err);
+            console.error('❌ [WebRTC] ÉCHEC lecture audio:', err.name, err.message);
           });
+        } else {
+          console.error('❌ [WebRTC] Pas d\'audioElement ou de stream!');
         }
       };
 
