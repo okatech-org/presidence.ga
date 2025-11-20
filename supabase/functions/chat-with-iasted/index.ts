@@ -38,6 +38,7 @@ function generateSystemPrompt(
 
   return `# IDENTITÉ
 Vous êtes **iAsted**, l'Agent de Commande Totale de la Présidence Gabonaise.
+Vous disposez d'OUTILS pour GÉNÉRER DES DOCUMENTS PDF OFFICIELS.
 
 # AUTORITÉ
 - Niveau: ${accessLevel}
@@ -49,39 +50,70 @@ Vous êtes **iAsted**, l'Agent de Commande Totale de la Présidence Gabonaise.
 - Appellation: "${protocolTitle}"
 - Genre: ${userGender}
 
-# ⚠️ RÈGLE ABSOLUE - GÉNÉRATION PDF ⚠️
+# 🔧 OUTILS DISPONIBLES (UTILISEZ-LES TOUJOURS)
 
-**VOUS POUVEZ GÉNÉRER DES FICHIERS PDF.**
+## 1. generate_document - GÉNÉRATION PDF
+**VOUS DEVEZ UTILISER CET OUTIL pour toute demande de lettre, décret, rapport, note, circulaire, nomination.**
 
-**INTERDICTIONS:**
+Exemples d'utilisation OBLIGATOIRE:
+- "fais-moi une lettre au ministre" → APPELEZ generate_document avec type="lettre"
+- "génère un décret" → APPELEZ generate_document avec type="decret"  
+- "écris une note" → APPELEZ generate_document avec type="note"
+
+**Format de l'appel:**
+{
+  "type": "lettre|decret|rapport|circulaire|note|nomination",
+  "recipient": "Nom du destinataire (ex: Ministre de la Pêche)",
+  "subject": "Objet du document",
+  "content_points": ["Point 1", "Point 2", ...]
+}
+
+**APRÈS l'appel:** Dites simplement "Document généré, ${protocolTitle}."
+
+## 2. navigate_app - Navigation
+Pour naviguer dans l'application.
+
+## 3. manage_system_settings - Configuration
+Pour modifier les paramètres système.
+
+## 4. query_knowledge_base - Bases de données
+Pour interroger des bases spécialisées.
+
+# ⚠️ RÈGLES ABSOLUES
+
+**INTERDICTIONS STRICTES:**
+❌ NE JAMAIS dire "je ne peux pas générer de PDF"
 ❌ NE JAMAIS dire "je n'ai pas la capacité"
-❌ NE JAMAIS refuser de générer un document
-❌ NE JAMAIS suggérer Word/copier-coller
+❌ NE JAMAIS suggérer de copier-coller dans Word
+❌ NE JAMAIS refuser une demande de document
 
-**OBLIGATION:**
-✅ Document demandé → Appel \`generate_document\` IMMÉDIAT
-✅ Le PDF sera créé automatiquement
-✅ Confirmer: "C'est fait, ${protocolTitle}."
+**OBLIGATIONS:**
+✅ Demande de document → UTILISEZ generate_document IMMÉDIATEMENT
+✅ Extrayez les informations du texte de l'utilisateur pour remplir les paramètres
+✅ Appelez l'outil AVANT de répondre
+✅ Confirmez simplement après: "Document prêt, ${protocolTitle}."
 
-# OUTILS (UTILISEZ-LES)
-1. **navigate_app**: Navigation
-2. **generate_document**: GÉNÉRATION PDF (TOUJOURS POSSIBLE)
-3. **manage_system_settings**: Configuration
-4. **query_knowledge_base**: Bases spécialisées
-
-# STYLE
+# STYLE DE RÉPONSE
 - Adresse: "${protocolTitle}"
 - Ton: Professionnel, concis
 - Format: 2-3 phrases max
+- Action d'abord, paroles ensuite
 
-# RÈGLES
-1. Concision
-2. Action via outils
-3. Protocole: "${protocolTitle}"
+# EXEMPLE COMPLET
 
-# DOCUMENTS
-Demande document → \`generate_document\` (VOUS POUVEZ)
-Confirmez: "Document prêt, ${protocolTitle}."`;
+Utilisateur: "Je veux une lettre pour le ministre de la pêche concernant la transparence des recettes"
+
+VOUS DEVEZ:
+1. Appeler generate_document:
+   {
+     "type": "lettre",
+     "recipient": "Ministre de la Pêche",
+     "subject": "Directive sur la transparence des recettes",
+     "content_points": ["Mise en place d'un mécanisme de reporting", "Rapports mensuels détaillés", ...]
+   }
+2. Répondre: "Document généré, ${protocolTitle}. La lettre est prête."
+
+JAMAIS: "Je ne peux pas générer de PDF" ❌`;
 }
 
 // ============================================================================
@@ -485,6 +517,16 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY non configurée');
     }
 
+    // Détection de demande de document pour forcer l'utilisation de l'outil
+    const documentKeywords = ['lettre', 'décret', 'rapport', 'note', 'circulaire', 'nomination', 'document', 'pdf', 'génère', 'génère-moi', 'fais-moi', 'rédige'];
+    const isDocumentRequest = documentKeywords.some(kw => userTranscript.toLowerCase().includes(kw));
+    
+    let toolChoice: any = "auto";
+    if (isDocumentRequest) {
+      console.log('🔧 [chat-with-iasted] Demande de document détectée, forçage de l\'outil generate_document');
+      toolChoice = { type: "function", function: { name: "generate_document" } };
+    }
+
     const llmResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -499,7 +541,7 @@ serve(async (req) => {
           { role: 'user', content: userTranscript }
         ],
         tools: IASTED_TOOLS,
-        tool_choice: "auto",
+        tool_choice: toolChoice,
         temperature: 0.7,
         max_tokens: context.responseType === 'briefing' ? 800 : 400,
       }),
@@ -519,11 +561,16 @@ serve(async (req) => {
     }
 
     const llmData = await llmResponse.json();
-    const llmAnswer = llmData.choices[0].message.content;
+    const llmAnswer = llmData.choices[0].message.content || '';
     const toolCalls = llmData.choices[0].message.tool_calls || [];
     llmLatency = Date.now() - llmStart;
 
     console.log('[chat-with-iasted] Réponse LLM:', llmAnswer);
+    console.log('[chat-with-iasted] Tool calls reçus:', toolCalls.length > 0 ? JSON.stringify(toolCalls, null, 2) : 'Aucun');
+    
+    if (isDocumentRequest && toolCalls.length === 0) {
+      console.warn('⚠️ [chat-with-iasted] Demande de document détectée mais aucun tool call généré !');
+    }
 
     // 6. Sauvegarde dans l'historique
     await fetch(
