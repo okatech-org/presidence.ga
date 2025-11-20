@@ -259,12 +259,25 @@ export const useRealtimeVoiceWebRTC = () => {
           }
           if (data.delta) {
             try {
+              // Vérifier que l'AudioContext existe et n'est pas fermé
               if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+                console.error('❌ [WebRTC] AudioContext manquant ou fermé!');
                 audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-                console.log('🔊 [WebRTC] AudioContext créé, état:', audioContextRef.current.state);
+                audioQueueRef.current = new AudioQueue(audioContextRef.current);
+                console.log('🔧 [WebRTC] AudioContext recréé');
               }
 
-              if (!audioQueueRef.current && audioContextRef.current) {
+              // CRITICAL: Forcer la reprise si suspendu
+              if (audioContextRef.current.state === 'suspended') {
+                console.log('⚠️ [WebRTC] AudioContext suspendu lors de l\'audio, reprise...');
+                audioContextRef.current.resume().then(() => {
+                  console.log('✅ [WebRTC] AudioContext repris, état:', audioContextRef.current?.state);
+                }).catch(err => {
+                  console.error('❌ [WebRTC] Impossible de reprendre AudioContext:', err);
+                });
+              }
+
+              if (!audioQueueRef.current) {
                 audioQueueRef.current = new AudioQueue(audioContextRef.current);
                 console.log('🎧 [WebRTC] AudioQueue initialisée');
               }
@@ -275,7 +288,7 @@ export const useRealtimeVoiceWebRTC = () => {
                 bytes[i] = binaryString.charCodeAt(i);
               }
 
-              console.log('🔊 [WebRTC] Ajout de', bytes.length, 'bytes à la queue');
+              console.log('🔊 [WebRTC] Ajout de', bytes.length, 'bytes à la queue (AudioContext:', audioContextRef.current.state, ')');
               void audioQueueRef.current?.addToQueue(bytes);
             } catch (error) {
               console.error('❌ [WebRTC] Erreur décodage audio PCM:', error);
@@ -336,7 +349,22 @@ export const useRealtimeVoiceWebRTC = () => {
       // 2. Créer la connexion peer
       pcRef.current = new RTCPeerConnection();
 
-      // 3. Configurer l'audio distant
+      // 3. Créer et activer l'AudioContext IMMÉDIATEMENT
+      console.log('🔊 [WebRTC] Création et activation AudioContext...');
+      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+        audioQueueRef.current = new AudioQueue(audioContextRef.current);
+        console.log('🔊 [WebRTC] AudioContext créé, état initial:', audioContextRef.current.state);
+      }
+
+      // CRITICAL: Forcer la reprise immédiate
+      if (audioContextRef.current.state === 'suspended') {
+        console.log('⚡ [WebRTC] AudioContext suspendu, activation forcée...');
+        await audioContextRef.current.resume();
+        console.log('✅ [WebRTC] AudioContext activé, état:', audioContextRef.current.state);
+      }
+
+      // Configurer l'audio distant
       if (!audioElRef.current) {
         audioElRef.current = document.createElement("audio");
         audioElRef.current.autoplay = true;
