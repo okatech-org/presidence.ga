@@ -74,13 +74,30 @@ export const useElevenLabsConversation = ({
       setConversationState('connected');
       onStateChange?.('connected');
       
-      // Assurer que l'audio est activé
-      const audioElements = document.querySelectorAll('audio');
-      audioElements.forEach(audio => {
-        audio.volume = 1.0;
-        audio.muted = false;
-        console.log('🔊 [ElevenLabs] Audio activé pour élément:', audio);
-      });
+      // Forcer activation audio immédiate
+      setTimeout(() => {
+        console.log('🔊 [ElevenLabs] Forçage activation audio...');
+        const audioElements = document.querySelectorAll('audio');
+        console.log('🔊 [ElevenLabs] Nombre d\'éléments audio trouvés:', audioElements.length);
+        
+        audioElements.forEach((audio, index) => {
+          audio.volume = 1.0;
+          audio.muted = false;
+          audio.play().catch(err => {
+            console.warn(`⚠️ [ElevenLabs] Erreur play audio ${index}:`, err);
+          });
+          console.log(`✅ [ElevenLabs] Audio ${index} activé - volume:`, audio.volume, 'muted:', audio.muted);
+        });
+        
+        // Vérifier AudioContext
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        console.log('🔊 [ElevenLabs] État AudioContext après connexion:', audioContext.state);
+        if (audioContext.state === 'suspended') {
+          audioContext.resume().then(() => {
+            console.log('✅ [ElevenLabs] AudioContext réactivé après connexion');
+          });
+        }
+      }, 100);
     },
     onDisconnect: () => {
       console.log('🔌 [ElevenLabs] Déconnecté de l\'agent');
@@ -142,31 +159,54 @@ export const useElevenLabsConversation = ({
   const startConversation = useCallback(async (targetAgentId?: string) => {
     try {
       console.log('🚀 [ElevenLabs] Démarrage conversation...');
+      console.log('🔍 [ElevenLabs] Agent ID fourni:', targetAgentId);
+      console.log('🔍 [ElevenLabs] Agent ID actuel:', agentId);
+      
       setConversationState('connecting');
       onStateChange?.('connecting');
 
       const finalAgentId = targetAgentId || agentId;
       if (!finalAgentId) {
+        console.error('❌ [ElevenLabs] Aucun agent ID disponible');
         throw new Error('Aucun agent ID disponible');
       }
+      
+      console.log('✅ [ElevenLabs] Agent ID final:', finalAgentId);
 
       // 1. Demander accès micro avec interaction utilisateur
       console.log('🎤 [ElevenLabs] Demande accès micro...');
-      await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          sampleRate: 24000
         } 
       });
       console.log('✅ [ElevenLabs] Accès micro autorisé');
+      console.log('🎤 [ElevenLabs] Pistes audio:', stream.getAudioTracks().length);
 
       // 2. Activer AudioContext AVANT la connexion
       console.log('🔊 [ElevenLabs] Activation AudioContext...');
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log('🔊 [ElevenLabs] État AudioContext initial:', audioContext.state);
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
         console.log('✅ [ElevenLabs] AudioContext activé');
+      }
+      
+      // Jouer un son silencieux pour débloquer
+      try {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        gainNode.gain.value = 0.001;
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.001);
+        console.log('✅ [ElevenLabs] Son silencieux joué');
+      } catch (err) {
+        console.warn('⚠️ [ElevenLabs] Erreur son silencieux:', err);
       }
 
       // 3. Obtenir le signed URL
