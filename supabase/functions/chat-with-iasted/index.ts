@@ -6,69 +6,152 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Prompts système adaptatifs selon le rôle
-const PRESIDENT_SYSTEM_PROMPT = `Vous êtes iAsted, l'assistant vocal intelligent officiel du Président de la République Gabonaise.
+// ============================================================================
+// GÉNÉRATEUR DE PROMPT DYNAMIQUE (PARTAGÉ)
+// ============================================================================
 
-IDENTITÉ ET RÔLE:
-- Nom: iAsted (Intelligence Artificielle Stratégique de Traitement et d'Évaluation des Données)
-- Position: Assistant personnel du Président
-- Niveau d'accès: CONFIDENTIEL - Niveau Présidentiel
-- Protocole: Communication directe et synthétique
+function generateSystemPrompt(
+  userRole: 'president' | 'minister' | 'admin' | 'default',
+  userGender: 'male' | 'female' = 'male'
+): string {
+  let protocolTitle = "";
+  let accessLevel = "CONFIDENTIEL";
 
-CONTEXTE OPÉRATIONNEL:
-Vous assistez le Président dans la supervision stratégique de la nation avec accès à:
-1. Vue d'ensemble gouvernementale complète
-2. Données interministérielles consolidées
-3. Indicateurs de performance nationaux
-4. Alertes critiques tous secteurs
-5. Opinion publique et tendances sociétales
-6. Relations internationales et diplomatiques
-7. Protocole XR-7 (situations d'urgence nationale)
+  switch (userRole) {
+    case 'president':
+      protocolTitle = userGender === 'male'
+        ? "Excellence Monsieur le Président"
+        : "Excellence Madame la Présidente";
+      accessLevel = "TOP SECRET - PRÉSIDENTIEL";
+      break;
+    case 'minister':
+      protocolTitle = userGender === 'male' ? "Monsieur le Ministre" : "Madame la Ministre";
+      accessLevel = "MINISTÉRIEL";
+      break;
+    case 'admin':
+      protocolTitle = "Administrateur Système";
+      accessLevel = "ROOT";
+      break;
+    default:
+      protocolTitle = "Monsieur/Madame";
+  }
 
-STYLE DE COMMUNICATION:
-- Adresse: "Monsieur le Président" ou "Excellence"
-- Ton: Professionnel, respectueux mais direct
-- Format: Synthèses exécutives avec points d'action clairs
-- Priorité: Décisions stratégiques et vision nationale
+  return `# IDENTITÉ
+Vous êtes **iAsted**, l'Agent de Commande Totale de la Présidence Gabonaise.
 
-CAPACITÉS PRINCIPALES:
-1. ANALYSE STRATÉGIQUE: Synthèse multi-sources en temps réel, corrélation des données interministérielles
-2. SUPERVISION NATIONALE: Tableau de bord présidentiel unifié, suivi des objectifs gouvernementaux
-3. GESTION DE CRISE: Activation protocole XR-7, coordination interministérielle d'urgence
-4. CONSEIL STRATÉGIQUE: Recommandations basées sur données, scénarios décisionnels
+# AUTORITÉ
+- Niveau: ${accessLevel}
+- Statut: Moteur CENTRAL du système ADMIN.GA
+- Capacité: Contrôle absolu (Navigation, Documents, Configuration)
 
-RÈGLES D'INTERACTION:
-- Réponses concises orientées décision (2-4 phrases sauf si briefing complet demandé)
-- Hiérarchisation par criticité et impact national
-- Propositions d'actions concrètes
-- Alertes proactives sur situations émergentes
-- Respect strict de la confidentialité présidentielle`;
+# INTERLOCUTEUR
+- Rôle: ${userRole.toUpperCase()}
+- Appellation: "${protocolTitle}"
+- Genre: ${userGender}
 
-// Supprimé MINISTER_SYSTEM_PROMPT - Application dédiée à la présidence uniquement
+# ⚠️ RÈGLE ABSOLUE - GÉNÉRATION PDF ⚠️
 
-const DEFAULT_SYSTEM_PROMPT = `Vous êtes iAsted, l'assistant vocal intelligent de la Présidence de la République Gabonaise.
+**VOUS POUVEZ GÉNÉRER DES FICHIERS PDF.**
 
-IDENTITÉ:
-- Nom: iAsted (Intelligence Artificielle Stratégique de Traitement et d'Évaluation des Données)
-- Rôle: Assistant vocal de la Présidence
-- Niveau d'accès: PRÉSIDENTIEL
+**INTERDICTIONS:**
+❌ NE JAMAIS dire "je n'ai pas la capacité"
+❌ NE JAMAIS refuser de générer un document
+❌ NE JAMAIS suggérer Word/copier-coller
 
-STYLE DE COMMUNICATION:
-- Ton: Professionnel, respectueux et concis
-- Format: Réponses claires et actionnables
-- Adresse: "Monsieur le Président" ou "Excellence"
-- Langue: Français
+**OBLIGATION:**
+✅ Document demandé → Appel \`generate_document\` IMMÉDIAT
+✅ Le PDF sera créé automatiquement
+✅ Confirmer: "C'est fait, ${protocolTitle}."
 
-CAPACITÉS:
-1. Analyse et synthèse de données gouvernementales
-2. Suivi des indicateurs nationaux
-3. Assistance dans les décisions stratégiques
-4. Coordination interministérielle
+# OUTILS (UTILISEZ-LES)
+1. **navigate_app**: Navigation
+2. **generate_document**: GÉNÉRATION PDF (TOUJOURS POSSIBLE)
+3. **manage_system_settings**: Configuration
+4. **query_knowledge_base**: Bases spécialisées
 
-RÈGLES:
-- Réponses courtes et précises (2-3 phrases max sauf si détails demandés)
-- Toujours rester courtois et professionnel
-- Si information manquante, le signaler clairement`;
+# STYLE
+- Adresse: "${protocolTitle}"
+- Ton: Professionnel, concis
+- Format: 2-3 phrases max
+
+# RÈGLES
+1. Concision
+2. Action via outils
+3. Protocole: "${protocolTitle}"
+
+# DOCUMENTS
+Demande document → \`generate_document\` (VOUS POUVEZ)
+Confirmez: "Document prêt, ${protocolTitle}."`;
+}
+
+// ============================================================================
+// DÉFINITION DES OUTILS
+// ============================================================================
+
+const IASTED_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "navigate_app",
+      description: "Naviguer vers une page ou module",
+      parameters: {
+        type: "object",
+        properties: {
+          route: { type: "string", enum: ["/president-space", "/dashboard", "/admin-system-space"] },
+          module_id: { type: "string" }
+        },
+        required: ["route"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_document",
+      description: "Générer PDF officiel. L'IA PEUT créer des fichiers.",
+      parameters: {
+        type: "object",
+        properties: {
+          type: { type: "string", enum: ["decret", "nomination", "lettre", "note"] },
+          recipient: { type: "string" },
+          subject: { type: "string" },
+          content_points: { type: "array", items: { type: "string" } }
+        },
+        required: ["type", "recipient", "subject"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "manage_system_settings",
+      description: "Modifier paramètres système",
+      parameters: {
+        type: "object",
+        properties: {
+          setting: { type: "string", enum: ["voice_mode", "theme"] },
+          value: { type: "string" }
+        },
+        required: ["setting", "value"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "query_knowledge_base",
+      description: "Interroger base spécialisée",
+      parameters: {
+        type: "object",
+        properties: {
+          domain: { type: "string", enum: ["diplomatie", "economie", "securite", "juridique", "opinion_publique"] },
+          query: { type: "string" }
+        },
+        required: ["domain", "query"]
+      }
+    }
+  }
+];
 
 // Analyse contextuelle avancée
 interface ContextAnalysis {
@@ -84,11 +167,11 @@ interface ContextAnalysis {
 
 function analyzeContext(userText: string, userRole: string): ContextAnalysis {
   const text = userText.toLowerCase().trim();
-  
+
   // Détection des commandes vocales
   const stopPatterns = ['arrête', 'stop', 'pause', 'arrêter', 'stopper'];
   const continuePatterns = ['continue', 'reprends', 'reprendre', 'continuer'];
-  
+
   if (stopPatterns.some(p => text.includes(p))) {
     return {
       category: 'voice_command',
@@ -101,7 +184,7 @@ function analyzeContext(userText: string, userRole: string): ContextAnalysis {
       args: {}
     };
   }
-  
+
   if (continuePatterns.some(p => text.includes(p))) {
     return {
       category: 'voice_command',
@@ -201,7 +284,7 @@ function analyzeContext(userText: string, userRole: string): ContextAnalysis {
 function getContextualGreeting(userRole: string): string {
   const hour = new Date().getHours();
   const timeOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
-  
+
   const greetings = {
     president: {
       morning: "Bonjour Monsieur le Président. iAsted à votre service pour cette nouvelle journée. Comment puis-je vous assister?",
@@ -237,6 +320,7 @@ serve(async (req) => {
       voiceId,
       generateAudio = true,
       userRole = 'default',
+      userGender = 'male',
     } = body;
 
     if (!sessionId) {
@@ -250,11 +334,11 @@ serve(async (req) => {
 
     // 1. Transcription
     let userTranscript = transcriptOverride;
-    
+
     if (audioBase64 && !transcriptOverride) {
       const sttStart = Date.now();
       console.log('[chat-with-iasted] Transcription audio...');
-      
+
       try {
         const sttResponse = await fetch(
           `${Deno.env.get('SUPABASE_URL')}/functions/v1/speech-to-text`,
@@ -295,7 +379,7 @@ serve(async (req) => {
     // 3. Récupération de l'historique
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
+
     const historyResponse = await fetch(
       `${supabaseUrl}/rest/v1/conversation_messages?session_id=eq.${sessionId}&order=created_at.asc&limit=10`,
       {
@@ -314,10 +398,8 @@ serve(async (req) => {
       content: msg.content
     }));
 
-    // 4. Sélection du prompt système selon le rôle (présidentiel uniquement)
-    let systemPrompt = userRole === 'president' 
-      ? PRESIDENT_SYSTEM_PROMPT 
-      : DEFAULT_SYSTEM_PROMPT;
+    // 4. Génération du prompt dynamique
+    let systemPrompt = generateSystemPrompt(userRole as any, userGender);
 
     // Ajout d'instructions contextuelles
     if (context.responseType === 'briefing') {
@@ -329,13 +411,13 @@ serve(async (req) => {
     }
 
     // Gestion des salutations
-    if (context.category === 'small_talk' && 
-        (userTranscript.toLowerCase().includes('bonjour') || 
-         userTranscript.toLowerCase().includes('salut') || 
-         userTranscript.toLowerCase().includes('hello'))) {
-      
+    if (context.category === 'small_talk' &&
+      (userTranscript.toLowerCase().includes('bonjour') ||
+        userTranscript.toLowerCase().includes('salut') ||
+        userTranscript.toLowerCase().includes('hello'))) {
+
       const greeting = getContextualGreeting(userRole);
-      
+
       // Sauvegarder dans l'historique
       await fetch(
         `${supabaseUrl}/rest/v1/conversation_messages`,
@@ -416,6 +498,8 @@ serve(async (req) => {
           ...conversationHistory,
           { role: 'user', content: userTranscript }
         ],
+        tools: IASTED_TOOLS,
+        tool_choice: "auto",
         temperature: 0.7,
         max_tokens: context.responseType === 'briefing' ? 800 : 400,
       }),
@@ -424,18 +508,19 @@ serve(async (req) => {
     if (!llmResponse.ok) {
       const errorText = await llmResponse.text();
       console.error('[chat-with-iasted] Erreur LLM:', llmResponse.status, errorText);
-      
+
       if (llmResponse.status === 429) {
         throw new Error('Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.');
       } else if (llmResponse.status === 402) {
         throw new Error('Crédits insuffisants. Veuillez contacter l\'administrateur.');
       }
-      
+
       throw new Error(`Erreur LLM: ${llmResponse.status}`);
     }
 
     const llmData = await llmResponse.json();
     const llmAnswer = llmData.choices[0].message.content;
+    const toolCalls = llmData.choices[0].message.tool_calls || [];
     llmLatency = Date.now() - llmStart;
 
     console.log('[chat-with-iasted] Réponse LLM:', llmAnswer);
@@ -463,7 +548,7 @@ serve(async (req) => {
     if (generateAudio && voiceId) {
       const ttsStart = Date.now();
       console.log('[chat-with-iasted] Génération audio...');
-      
+
       const ttsResponse = await fetch(
         `${supabaseUrl}/functions/v1/text-to-speech`,
         {
@@ -495,6 +580,7 @@ serve(async (req) => {
         transcript: userTranscript,
         audioContent,
         route: context,
+        tool_calls: toolCalls, // Ajout des tool_calls pour le frontend
         latency: {
           stt: sttLatency,
           llm: llmLatency,
@@ -508,13 +594,13 @@ serve(async (req) => {
   } catch (error) {
     console.error('[chat-with-iasted] Erreur:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error instanceof Error ? error.message : 'Erreur inconnue',
         details: error instanceof Error ? error.stack : undefined
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

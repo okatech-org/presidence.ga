@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowLeft, LogIn, Shield, Users, Lock, FileText, Calendar, Mail, UserCheck, Lightbulb } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, LogIn, Shield, Users, Lock, FileText, Calendar, Mail, UserCheck, Lightbulb, Moon, Sun } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleFeedbackModal } from "@/components/RoleFeedbackModal";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { usePrefetch } from "@/hooks/usePrefetch";
+import { useTheme } from "next-themes";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,8 @@ interface DemoAccount {
 const Demo = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const { prefetchPresidentSpace, prefetchDashboard } = usePrefetch();
   const [loadingAccount, setLoadingAccount] = useState<string | null>(null);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
@@ -42,6 +45,14 @@ const Demo = () => {
   const [showAdminDialog, setShowAdminDialog] = useState(false);
   const [adminCode, setAdminCode] = useState("");
   const [initializingAccounts, setInitializingAccounts] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   const demoAccounts: DemoAccount[] = [
     {
@@ -120,7 +131,7 @@ const Demo = () => {
 
   const handleLogin = async (email: string, password: string) => {
     setLoadingAccount(email);
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -137,18 +148,16 @@ const Demo = () => {
       }
 
       if (data.session && data.user) {
-        // Récupérer TOUS les rôles de l'utilisateur
         const { data: roles } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', data.user.id);
 
-        // Déterminer la page de destination selon le rôle
-        let destination = "/dashboard"; // Par défaut pour les utilisateurs standards
-        
+        let destination = "/dashboard";
+
         if (roles && roles.length > 0) {
-          const userRole = roles[0].role; // Prendre le premier rôle
-          
+          const userRole = roles[0].role;
+
           switch (userRole) {
             case 'president':
               destination = "/president-space";
@@ -208,6 +217,7 @@ const Demo = () => {
       setLoadingAccount(null);
     }
   };
+
   const copyCredentials = (email: string, password: string) => {
     const credentials = `Email: ${email}\nMot de passe: ${password}`;
     navigator.clipboard.writeText(credentials);
@@ -224,11 +234,10 @@ const Demo = () => {
 
   const handleInitializeDemoAccounts = async () => {
     setInitializingAccounts(true);
-    
+
     try {
-      // Check if user is logged in
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         toast({
           title: "Authentification requise",
@@ -239,7 +248,6 @@ const Demo = () => {
         return;
       }
 
-      // Check if user has admin role
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
@@ -265,7 +273,7 @@ const Demo = () => {
       }
 
       const results = data?.results;
-      
+
       toast({
         title: "Comptes démo initialisés",
         description: `Créés: ${results?.created?.length || 0}, Existants: ${results?.existing?.length || 0}, Erreurs: ${results?.errors?.length || 0}`,
@@ -288,13 +296,12 @@ const Demo = () => {
   const handleAdminClick = () => {
     const newClicks = adminClicks + 1;
     setAdminClicks(newClicks);
-    
+
     if (newClicks === 2) {
       setShowAdminDialog(true);
       setAdminClicks(0);
     }
-    
-    // Reset clicks after 2 seconds if not reaching 2 clicks
+
     setTimeout(() => {
       setAdminClicks(0);
     }, 2000);
@@ -302,7 +309,7 @@ const Demo = () => {
 
   const handleAdminCodeChange = (value: string) => {
     setAdminCode(value);
-    
+
     if (value.length === 6) {
       if (value === "011282") {
         toast({
@@ -324,58 +331,72 @@ const Demo = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/5">
+    <div className="min-h-screen bg-background p-4 md:p-6 transition-colors duration-300">
       {/* Header */}
-      <header className="gradient-primary text-primary-foreground shadow-lg sticky top-0 z-50">
+      <header className="neu-card backdrop-blur-xl sticky top-0 z-50 mb-8">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/")}
-              className="text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-white">
-                <img 
-                  src={emblemGabon} 
-                  alt="Emblème de la République Gabonaise" 
-                  className="h-8 w-8 object-contain"
-                />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Comptes Démo</h1>
-                <p className="text-sm text-primary-foreground/80">
-                  Testez l'application avec différents niveaux d'accès
-                </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/")}
+                className="neu-raised hover:shadow-neo-md transition-all"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Retour
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="neu-raised w-12 h-12 rounded-full flex items-center justify-center p-2">
+                  <img
+                    src={emblemGabon}
+                    alt="Emblème de la République Gabonaise"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+                    Comptes Démo
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Testez l'application avec différents niveaux d'accès
+                  </p>
+                </div>
               </div>
             </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="neu-raised rounded-full w-10 h-10"
+            >
+              {mounted && theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-12">
+      <main className="container mx-auto px-6 pb-12">
         {/* Introduction */}
         <div className="max-w-4xl mx-auto mb-12 text-center">
           <h2 className="text-4xl font-bold mb-4">Comptes de Démonstration</h2>
           <p className="text-lg text-muted-foreground mb-6">
-            Explorez l'application avec différents rôles et niveaux d'accès. Chaque compte offre 
+            Explorez l'application avec différents rôles et niveaux d'accès. Chaque compte offre
             une vue et des fonctionnalités spécifiques selon les responsabilités du poste.
           </p>
           <div className="flex flex-col gap-3 items-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-warning/10 text-warning-foreground rounded-lg border border-warning/20">
-              <Lock className="h-4 w-4" />
-              <p className="text-sm">
-                Ces comptes sont uniquement pour la démonstration. Les données sont fictives.
-              </p>
+            <div className="neu-inset px-6 py-3 rounded-xl">
+              <div className="inline-flex items-center gap-2 text-warning">
+                <Lock className="h-4 w-4" />
+                <p className="text-sm font-medium">
+                  Ces comptes sont uniquement pour la démonstration. Les données sont fictives.
+                </p>
+              </div>
             </div>
             <Button
               onClick={handleInitializeDemoAccounts}
               disabled={initializingAccounts}
-              variant="outline"
-              className="gap-2"
+              className="neu-raised hover:shadow-neo-md transition-all gap-2"
             >
               <Shield className="h-4 w-4" />
               {initializingAccounts ? "Initialisation..." : "Initialiser les comptes démo"}
@@ -386,18 +407,20 @@ const Demo = () => {
         {/* Demo Accounts Grid */}
         <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto">
           {demoAccounts.map((account, index) => (
-            <Card 
-              key={index} 
-              className="p-6 hover:shadow-elegant transition-smooth animate-fade-in"
+            <div
+              key={index}
+              className="neu-card p-6 hover:shadow-neo-lg transition-smooth animate-fade-in"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="flex items-start gap-4 mb-4">
-                <div className={`p-3 rounded-lg bg-gradient-to-br ${account.color} text-white`}>
+                <div className={`neu-raised p-3 rounded-xl bg-gradient-to-br ${account.color} text-white`}>
                   {account.icon}
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold mb-1">{account.role}</h3>
-                  <p className="text-sm text-muted-foreground font-medium">{account.level}</p>
+                  <Badge variant="secondary" className="neu-raised text-xs">
+                    {account.level}
+                  </Badge>
                 </div>
               </div>
 
@@ -408,17 +431,16 @@ const Demo = () => {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 neu-inset hover:shadow-neo-sm transition-all"
                   onClick={() => handleOpenFeedback(account.role, account.email)}
                 >
                   <Lightbulb className="h-4 w-4 mr-2" />
                   Contribuer
                 </Button>
                 <Button
-                  className="flex-1 gradient-primary text-primary-foreground"
+                  className="flex-1 neu-raised bg-primary text-primary-foreground hover:shadow-neo-md transition-all"
                   onClick={() => handleLogin(account.email, account.password)}
                   onMouseEnter={() => {
-                    // Précharger les données selon le rôle
                     if (account.role === "Président de la République") {
                       prefetchPresidentSpace();
                     } else {
@@ -431,44 +453,44 @@ const Demo = () => {
                   {loadingAccount === account.email ? "Connexion..." : "Se connecter"}
                 </Button>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
 
         {/* Help Section */}
-        <div className="max-w-4xl mx-auto mt-12 p-6 bg-card rounded-lg border shadow-sm">
+        <div className="max-w-4xl mx-auto mt-12 neu-card p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold">Comment tester ?</h3>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleAdminClick}
-              className="text-muted-foreground hover:text-foreground"
+              className="neu-raised rounded-full w-10 h-10 text-muted-foreground hover:text-foreground"
             >
               <Lock className="h-5 w-5" />
             </Button>
           </div>
           <ol className="space-y-3 text-muted-foreground">
             <li className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full neu-raised bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
                 1
               </span>
               <span>Choisissez un compte de démonstration ci-dessus</span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full neu-raised bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
                 2
               </span>
               <span>Copiez les identifiants (email et mot de passe)</span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full neu-raised bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
                 3
               </span>
               <span>Cliquez sur "Se connecter" pour accéder à la page d'authentification</span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full neu-raised bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
                 4
               </span>
               <span>Collez les identifiants et découvrez l'interface selon le rôle choisi</span>
@@ -489,7 +511,7 @@ const Demo = () => {
 
       {/* Admin Access Dialog */}
       <Dialog open={showAdminDialog} onOpenChange={setShowAdminDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md neu-card">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />

@@ -19,6 +19,8 @@ const PrivateCabinetDirectorSpace = lazy(() => import("./pages/PrivateCabinetDir
 const SecretariatGeneralSpace = lazy(() => import("./pages/SecretariatGeneralSpace"));
 const ServiceCourriersSpace = lazy(() => import("./pages/ServiceCourriersSpace"));
 const ServiceReceptionSpace = lazy(() => import("./pages/ServiceReceptionSpace"));
+const ProtocolDirectorSpace = lazy(() => import("./pages/ProtocolDirectorSpace"));
+const DgssSpace = lazy(() => import("./pages/DgssSpace"));
 const IAstedConfig = lazy(() => import("./pages/IAstedConfig"));
 const IAstedPage = lazy(() => import("./pages/IAstedPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -68,6 +70,8 @@ const App = () => (
               <Route path="/secretariat-general-space" element={<SecretariatGeneralSpace />} />
               <Route path="/service-courriers-space" element={<ServiceCourriersSpace />} />
               <Route path="/service-reception-space" element={<ServiceReceptionSpace />} />
+              <Route path="/protocol-director-space" element={<ProtocolDirectorSpace />} />
+              <Route path="/dgss-space" element={<DgssSpace />} />
               <Route path="/iasted-config" element={<IAstedConfig />} />
               <Route path="/iasted-setup" element={<IAstedConfigWizard />} />
               <Route path="/iasted" element={<IAstedPage />} />

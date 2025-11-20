@@ -497,6 +497,423 @@ export type Database = {
         }
         Relationships: []
       }
+
+      official_events: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          location: string
+          status: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          location: string
+          status: string
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          location?: string
+          status?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      guest_lists: {
+        Row: {
+          category: string
+          created_at: string
+          event_id: string
+          id: string
+          name: string
+          organization: string | null
+          status: string
+          title: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          event_id: string
+          id?: string
+          name: string
+          organization?: string | null
+          status: string
+          title?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          name?: string
+          organization?: string | null
+          status?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_lists_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "official_events"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      protocol_procedures: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      ministerial_projects: {
+        Row: {
+          created_at: string
+          deadline: string
+          id: string
+          ministry: string
+          priority: string
+          progress: number
+          project_name: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          deadline: string
+          id?: string
+          ministry: string
+          priority: string
+          progress?: number
+          project_name: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          deadline?: string
+          id?: string
+          ministry?: string
+          priority?: string
+          progress?: number
+          project_name?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      presidential_instructions: {
+        Row: {
+          assigned_to: string
+          created_at: string
+          due_date: string
+          id: string
+          instruction: string
+          priority: string
+          status: string
+        }
+        Insert: {
+          assigned_to: string
+          created_at?: string
+          due_date: string
+          id?: string
+          instruction: string
+          priority: string
+          status: string
+        }
+        Update: {
+          assigned_to?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          instruction?: string
+          priority?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      official_decrees: {
+        Row: {
+          created_at: string
+          id: string
+          publication_date: string | null
+          reference_number: string
+          signature_date: string | null
+          status: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          publication_date?: string | null
+          reference_number: string
+          signature_date?: string | null
+          status: string
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          publication_date?: string | null
+          reference_number?: string
+          signature_date?: string | null
+          status?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      legal_reviews: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          document_title: string
+          due_date: string | null
+          id: string
+          priority: string
+          requestor: string
+          status: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          document_title: string
+          due_date?: string | null
+          id?: string
+          priority: string
+          requestor: string
+          status: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          document_title?: string
+          due_date?: string | null
+          id?: string
+          priority?: string
+          requestor?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      administrative_archives: {
+        Row: {
+          access_level: string
+          archiving_date: string
+          category: string
+          created_at: string
+          id: string
+          reference_code: string
+          title: string
+        }
+        Insert: {
+          access_level: string
+          archiving_date?: string
+          category: string
+          created_at?: string
+          id?: string
+          reference_code: string
+          title: string
+        }
+        Update: {
+          access_level?: string
+          archiving_date?: string
+          category?: string
+          created_at?: string
+          id?: string
+          reference_code?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      intelligence_reports: {
+        Row: {
+          classification: string
+          content: string
+          created_at: string
+          id: string
+          source: string
+          status: string
+          title: string
+        }
+        Insert: {
+          classification: string
+          content: string
+          created_at?: string
+          id?: string
+          source: string
+          status: string
+          title: string
+        }
+        Update: {
+          classification?: string
+          content?: string
+          created_at?: string
+          id?: string
+          source?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      surveillance_targets: {
+        Row: {
+          created_at: string
+          id: string
+          last_update: string
+          name: string
+          priority: string
+          status: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_update?: string
+          name: string
+          priority: string
+          status: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_update?: string
+          name?: string
+          priority?: string
+          status?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      threat_indicators: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          level: string
+          location: string | null
+          timestamp: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          level: string
+          location?: string | null
+          timestamp?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          level?: string
+          location?: string | null
+          timestamp?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      visitor_logs: {
+        Row: {
+          badge_number: string | null
+          check_in_time: string
+          check_out_time: string | null
+          created_at: string
+          host_name: string
+          id: string
+          organization: string | null
+          purpose: string
+          status: string
+          visitor_name: string
+        }
+        Insert: {
+          badge_number?: string | null
+          check_in_time?: string
+          check_out_time?: string | null
+          created_at?: string
+          host_name: string
+          id?: string
+          organization?: string | null
+          purpose: string
+          status: string
+          visitor_name: string
+        }
+        Update: {
+          badge_number?: string | null
+          check_in_time?: string
+          check_out_time?: string | null
+          created_at?: string
+          host_name?: string
+          id?: string
+          organization?: string | null
+          purpose?: string
+          status?: string
+          visitor_name?: string
+        }
+        Relationships: []
+      }
+      accreditation_requests: {
+        Row: {
+          applicant_name: string
+          created_at: string
+          id: string
+          organization: string
+          status: string
+          type: string
+          valid_until: string | null
+        }
+        Insert: {
+          applicant_name: string
+          created_at?: string
+          id?: string
+          organization: string
+          status: string
+          type: string
+          valid_until?: string | null
+        }
+        Update: {
+          applicant_name?: string
+          created_at?: string
+          id?: string
+          organization?: string
+          status?: string
+          type?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -513,17 +930,17 @@ export type Database = {
     }
     Enums: {
       app_role:
-        | "admin"
-        | "president"
-        | "dgss"
-        | "dgr"
-        | "minister"
-        | "user"
-        | "cabinet_private"
-        | "sec_gen"
-        | "courrier"
-        | "reception"
-        | "protocol"
+      | "admin"
+      | "president"
+      | "dgss"
+      | "dgr"
+      | "minister"
+      | "user"
+      | "cabinet_private"
+      | "sec_gen"
+      | "courrier"
+      | "reception"
+      | "protocol"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -537,116 +954,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {
