@@ -59,6 +59,7 @@ const MessageBubble: React.FC<{
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
   const [showActions, setShowActions] = useState(false);
+  const { toast } = useToast();
 
   const handleSaveEdit = () => {
     if (onEdit && editedContent.trim() !== message.content) {
@@ -70,6 +71,19 @@ const MessageBubble: React.FC<{
   const handleCancelEdit = () => {
     setEditedContent(message.content);
     setIsEditing(false);
+  };
+
+  const handleDownloadDocument = (doc: any) => {
+    const link = document.createElement('a');
+    link.href = doc.url;
+    link.download = doc.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({
+      title: "📥 Téléchargement",
+      description: `${doc.name} téléchargé`,
+    });
   };
 
   return (
@@ -121,20 +135,35 @@ const MessageBubble: React.FC<{
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
               )}
 
-              {/* Documents attachés */}
+              {/* Documents attachés avec prévisualisation PDF */}
               {message.metadata?.documents && message.metadata.documents.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-border/20 space-y-2">
+                <div className="mt-3 pt-3 border-t border-border/20 space-y-3">
                   {message.metadata.documents.map((doc) => (
-                    <a
-                      key={doc.id}
-                      href={doc.url}
-                      download={doc.name}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-background/50 hover:bg-background/80 transition-colors group"
-                    >
-                      <FileText className="w-4 h-4 text-primary" />
-                      <span className="text-xs flex-1 truncate">{doc.name}</span>
-                      <Download className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </a>
+                    <div key={doc.id} className="space-y-2">
+                      {/* Nom et bouton téléchargement */}
+                      <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-background/50">
+                        <div className="flex items-center gap-2 flex-1">
+                          <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                          <span className="text-xs font-medium truncate">{doc.name}</span>
+                        </div>
+                        <button
+                          onClick={() => handleDownloadDocument(doc)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span className="text-xs font-medium">Télécharger</span>
+                        </button>
+                      </div>
+                      
+                      {/* Prévisualisation PDF */}
+                      <div className="relative rounded-lg overflow-hidden border border-border/30 bg-background/30">
+                        <iframe
+                          src={doc.url}
+                          className="w-full h-[400px]"
+                          title={doc.name}
+                        />
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
