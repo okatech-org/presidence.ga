@@ -59,6 +59,7 @@ const MessageBubble: React.FC<{
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
   const [showActions, setShowActions] = useState(false);
+  const [fullscreenDoc, setFullscreenDoc] = useState<any>(null);
   const { toast } = useToast();
 
   const handleSaveEdit = () => {
@@ -140,19 +141,30 @@ const MessageBubble: React.FC<{
                 <div className="mt-3 pt-3 border-t border-border/20 space-y-3">
                   {message.metadata.documents.map((doc) => (
                     <div key={doc.id} className="space-y-2">
-                      {/* Nom et bouton téléchargement */}
+                      {/* Nom et boutons d'action */}
                       <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-background/50">
                         <div className="flex items-center gap-2 flex-1">
                           <FileText className="w-4 h-4 text-primary flex-shrink-0" />
                           <span className="text-xs font-medium truncate">{doc.name}</span>
                         </div>
-                        <button
-                          onClick={() => handleDownloadDocument(doc)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span className="text-xs font-medium">Télécharger</span>
-                        </button>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => setFullscreenDoc(doc)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-background/70 hover:bg-background text-foreground transition-colors"
+                            title="Plein écran"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-5v4m0-4h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDownloadDocument(doc)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span className="text-xs font-medium">Télécharger</span>
+                          </button>
+                        </div>
                       </div>
                       
                       {/* Prévisualisation PDF */}
@@ -167,6 +179,54 @@ const MessageBubble: React.FC<{
                   ))}
                 </div>
               )}
+
+              {/* Modale plein écran pour PDF */}
+              <AnimatePresence>
+                {fullscreenDoc && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-sm flex flex-col"
+                    onClick={() => setFullscreenDoc(null)}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-4 border-b border-border bg-background/50">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">{fullscreenDoc.name}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadDocument(fullscreenDoc);
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span className="text-sm font-medium">Télécharger</span>
+                        </button>
+                        <button
+                          onClick={() => setFullscreenDoc(null)}
+                          className="flex items-center justify-center w-10 h-10 rounded-lg bg-background hover:bg-muted transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* PDF Viewer */}
+                    <div className="flex-1 p-4" onClick={(e) => e.stopPropagation()}>
+                      <iframe
+                        src={fullscreenDoc.url}
+                        className="w-full h-full rounded-lg border border-border"
+                        title={fullscreenDoc.name}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
                 <span className="text-xs opacity-70">
