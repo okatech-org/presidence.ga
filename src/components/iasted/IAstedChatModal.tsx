@@ -60,6 +60,8 @@ const MessageBubble: React.FC<{
   const [editedContent, setEditedContent] = useState(message.content);
   const [showActions, setShowActions] = useState(false);
   const [fullscreenDoc, setFullscreenDoc] = useState<any>(null);
+  const [pdfZoom, setPdfZoom] = useState(100);
+  const [pdfPage, setPdfPage] = useState(1);
   const { toast } = useToast();
 
   const handleSaveEdit = () => {
@@ -187,7 +189,80 @@ const MessageBubble: React.FC<{
                         <FileText className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">{fullscreenDoc.name}</span>
                       </div>
-                      <div className="flex gap-2">
+                      
+                      {/* Contrôles */}
+                      <div className="flex items-center gap-4">
+                        {/* Zoom */}
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background/70 border border-border">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfZoom(prev => Math.max(50, prev - 25));
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Zoom arrière"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                            </svg>
+                          </button>
+                          <span className="text-xs font-medium min-w-[3rem] text-center">{pdfZoom}%</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfZoom(prev => Math.min(200, prev + 25));
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Zoom avant"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfZoom(100);
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors ml-1"
+                            title="Réinitialiser"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Pagination */}
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background/70 border border-border">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfPage(prev => Math.max(1, prev - 1));
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Page précédente"
+                            disabled={pdfPage === 1}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          <span className="text-xs font-medium min-w-[4rem] text-center">Page {pdfPage}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfPage(prev => prev + 1);
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Page suivante"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </div>
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -199,7 +274,11 @@ const MessageBubble: React.FC<{
                           <span className="text-sm font-medium">Télécharger</span>
                         </button>
                         <button
-                          onClick={() => setFullscreenDoc(null)}
+                          onClick={() => {
+                            setFullscreenDoc(null);
+                            setPdfZoom(100);
+                            setPdfPage(1);
+                          }}
                           className="flex items-center justify-center w-10 h-10 rounded-lg bg-background hover:bg-muted transition-colors"
                         >
                           <X className="w-5 h-5" />
@@ -210,9 +289,10 @@ const MessageBubble: React.FC<{
                     {/* PDF Viewer avec object au lieu d'iframe */}
                     <div className="flex-1 p-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
                       <object
-                        data={fullscreenDoc.url}
+                        data={`${fullscreenDoc.url}#page=${pdfPage}&zoom=${pdfZoom}`}
                         type="application/pdf"
                         className="w-full h-full rounded-lg border border-border bg-background"
+                        style={{ transform: `scale(${pdfZoom / 100})`, transformOrigin: 'top center' }}
                       >
                         <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
                           <FileText className="w-16 h-16 text-muted-foreground" />
