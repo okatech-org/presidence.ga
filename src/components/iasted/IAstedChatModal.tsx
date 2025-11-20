@@ -222,7 +222,7 @@ const MessageBubble: React.FC<{
                         </button>
                       </div>
                     </div>
-                    
+
                     {/* PDF Viewer avec react-pdf pour compatibilité mobile */}
                     <div className="flex-1 flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
                       <Document
@@ -273,7 +273,7 @@ const MessageBubble: React.FC<{
                           />
                         </div>
                       </Document>
-                      
+
                       {/* Contrôles de pagination */}
                       {numPages > 1 && (
                         <div className="flex items-center justify-center gap-4 p-4 border-t border-border bg-background/50">

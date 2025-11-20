@@ -12,62 +12,62 @@ All colors MUST be HSL.
     /* Arrière-plans neomorphiques - Nuances de gris clairs avec plus de contraste */
     --background: 0 0% 85%;
     --foreground: 0 0% 8%;
-    
+
     --card: 0 0% 95%;
     --card-foreground: 0 0% 8%;
-    
+
     --popover: 0 0% 95%;
     --popover-foreground: 0 0% 8%;
-    
+
     /* Gris moyen-foncé pour couleur principale - plus de contraste */
     --primary: 0 0% 35%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* Gris foncé pour secondaire - plus de contraste */
     --secondary: 0 0% 25%;
     --secondary-foreground: 0 0% 100%;
-    
+
     /* Gris moyen pour accent - plus de contraste */
     --accent: 0 0% 45%;
     --accent-foreground: 0 0% 8%;
-    
+
     --muted: 0 0% 75%;
     --muted-foreground: 0 0% 35%;
-    
+
     /* Rouge pour alertes critiques */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    
+
     /* Orange pour alertes moyennes */
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 8%;
-    
+
     /* Vert pour statut OK */
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-    
+
     --border: 0 0% 70%;
     --input: 0 0% 78%;
     --ring: 0 0% 35%;
-    
+
     --radius: 1rem;
-    
+
     /* === OMBRES NEOMORPHIQUES - Plus de contraste === */
     --neo-shadow-sm: 4px 4px 8px rgba(150, 150, 150, 0.5), -4px -4px 8px rgba(255, 255, 255, 1);
     --neo-shadow-md: 8px 8px 16px rgba(140, 140, 140, 0.6), -8px -8px 16px rgba(255, 255, 255, 1);
     --neo-shadow-lg: 12px 12px 24px rgba(130, 130, 130, 0.7), -12px -12px 24px rgba(255, 255, 255, 1);
     --neo-shadow-inset: inset 4px 4px 8px rgba(150, 150, 150, 0.5), inset -4px -4px 8px rgba(255, 255, 255, 1);
     --neo-shadow-inset-lg: inset 8px 8px 16px rgba(140, 140, 140, 0.6), inset -8px -8px 16px rgba(255, 255, 255, 1);
-    
+
     /* Gradients en nuances de gris avec plus de contraste */
     --gradient-primary: linear-gradient(135deg, hsl(0 0% 35%), hsl(0 0% 50%));
     --gradient-secondary: linear-gradient(135deg, hsl(0 0% 25%), hsl(0 0% 40%));
     --gradient-gold: linear-gradient(135deg, hsl(0 0% 45%), hsl(0 0% 60%));
-    
+
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     --sidebar-background: 0 0% 80%;
     --sidebar-foreground: 0 0% 8%;
     --sidebar-primary: 0 0% 35%;
@@ -102,10 +102,10 @@ All colors MUST be HSL.
 
     --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
-    
+
     --warning: 35 90% 60%;
     --warning-foreground: 0 0% 8%;
-    
+
     --success: 150 55% 50%;
     --success-foreground: 0 0% 100%;
 
@@ -139,8 +139,13 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-semibold tracking-tight;
   }
 }
@@ -149,15 +154,15 @@ All colors MUST be HSL.
   .gradient-primary {
     background: var(--gradient-primary);
   }
-  
+
   .gradient-secondary {
     background: var(--gradient-secondary);
   }
-  
+
   .gradient-gold {
     background: var(--gradient-gold);
   }
-  
+
   /* Screen reader only - accessible but visually hidden */
   .sr-only {
     position: absolute;
@@ -170,7 +175,7 @@ All colors MUST be HSL.
     white-space: nowrap;
     border-width: 0;
   }
-  
+
   /* === CLASSES NEOMORPHIQUES === */
   .neo-card {
     background: hsl(var(--card));
@@ -178,47 +183,47 @@ All colors MUST be HSL.
     border-radius: var(--radius);
     transition: var(--transition-smooth);
   }
-  
+
   .neo-card:hover {
     box-shadow: var(--neo-shadow-lg);
   }
-  
+
   .neo-button {
     background: hsl(var(--card));
     box-shadow: var(--neo-shadow-sm);
     transition: var(--transition-fast);
   }
-  
+
   .neo-button:hover {
     box-shadow: var(--neo-shadow-md);
   }
-  
+
   .neo-button:active {
     box-shadow: var(--neo-shadow-inset);
   }
-  
+
   .neo-input {
     background: hsl(var(--background));
     box-shadow: var(--neo-shadow-inset);
     border: none;
   }
-  
+
   .neo-elevated {
     box-shadow: var(--neo-shadow-lg);
   }
-  
+
   .transition-smooth {
     transition: var(--transition-smooth);
   }
-  
+
   .transition-fast {
     transition: var(--transition-fast);
   }
-  
+
   /* === CLASSES NEOMORPHIQUES ALTERNATIVES (neu-*) === */
   .neu-card {
     background: hsl(var(--card));
-    box-shadow: 
+    box-shadow:
       4px 4px 8px rgba(150, 150, 150, 0.5),
       -4px -4px 8px rgba(255, 255, 255, 1),
       inset 1px 1px 2px rgba(255, 255, 255, 0.8),
@@ -227,35 +232,35 @@ All colors MUST be HSL.
     transition: var(--transition-smooth);
     border: 1px solid rgba(255, 255, 255, 0.5);
   }
-  
+
   .dark .neu-card {
-    box-shadow: 
+    box-shadow:
       4px 4px 8px rgba(0, 0, 0, 0.4),
       -4px -4px 8px rgba(255, 255, 255, 0.05),
       inset 1px 1px 2px rgba(0, 0, 0, 0.3),
       inset -1px -1px 2px rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
-  
+
   .neu-card:hover {
-    box-shadow: 
+    box-shadow:
       6px 6px 12px rgba(140, 140, 140, 0.6),
       -6px -6px 12px rgba(255, 255, 255, 1),
       inset 1px 1px 2px rgba(255, 255, 255, 0.9),
       inset -1px -1px 2px rgba(140, 140, 140, 0.35);
   }
-  
+
   .dark .neu-card:hover {
-    box-shadow: 
+    box-shadow:
       6px 6px 12px rgba(0, 0, 0, 0.5),
       -6px -6px 12px rgba(255, 255, 255, 0.06),
       inset 1px 1px 2px rgba(0, 0, 0, 0.4),
       inset -1px -1px 2px rgba(255, 255, 255, 0.04);
   }
-  
+
   .neu-raised {
     background: hsl(var(--card));
-    box-shadow: 
+    box-shadow:
       3px 3px 6px rgba(150, 150, 150, 0.4),
       -3px -3px 6px rgba(255, 255, 255, 0.9),
       inset 1px 1px 1px rgba(255, 255, 255, 0.7),
@@ -264,43 +269,43 @@ All colors MUST be HSL.
     transition: var(--transition-fast);
     border: 1px solid rgba(255, 255, 255, 0.4);
   }
-  
+
   .dark .neu-raised {
-    box-shadow: 
+    box-shadow:
       3px 3px 6px rgba(0, 0, 0, 0.3),
       -3px -3px 6px rgba(255, 255, 255, 0.04),
       inset 1px 1px 1px rgba(0, 0, 0, 0.25),
       inset -1px -1px 1px rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
-  
+
   .neu-raised:hover {
-    box-shadow: 
+    box-shadow:
       4px 4px 8px rgba(140, 140, 140, 0.5),
       -4px -4px 8px rgba(255, 255, 255, 1),
       inset 1px 1px 1px rgba(255, 255, 255, 0.8),
       inset -1px -1px 1px rgba(140, 140, 140, 0.3);
   }
-  
+
   .dark .neu-raised:hover {
-    box-shadow: 
+    box-shadow:
       4px 4px 8px rgba(0, 0, 0, 0.4),
       -4px -4px 8px rgba(255, 255, 255, 0.05),
       inset 1px 1px 1px rgba(0, 0, 0, 0.3),
       inset -1px -1px 1px rgba(255, 255, 255, 0.03);
   }
-  
+
   .neu-inset {
     background: hsl(var(--card));
     box-shadow: var(--neo-shadow-inset);
     border-radius: var(--radius);
     transition: var(--transition-fast);
   }
-  
+
   .neu-inset:hover {
     box-shadow: var(--neo-shadow-inset-lg);
   }
-  
+
   .neu-button {
     background: hsl(var(--card));
     box-shadow: var(--neo-shadow-sm);
@@ -312,24 +317,24 @@ All colors MUST be HSL.
     align-items: center;
     justify-content: center;
   }
-  
+
   .neu-button:hover {
     box-shadow: var(--neo-shadow-md);
   }
-  
+
   .neu-button:active {
     box-shadow: var(--neo-shadow-inset);
   }
-  
+
   /* Animation delays for loading indicators */
   .animation-delay-0 {
     animation-delay: 0ms;
   }
-  
+
   .animation-delay-150 {
     animation-delay: 150ms;
   }
-  
+
   .animation-delay-300 {
     animation-delay: 300ms;
   }
