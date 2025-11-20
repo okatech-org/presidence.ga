@@ -1212,32 +1212,10 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
     // Gestion des clics simples vs doubles avec délai de 300ms
     clickCount.current += 1;
     
-    const unlockAudio = async () => {
-      try {
-        console.log('[IAstedButton] 🔊 Activation AudioContext via clic utilisateur...');
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        if (audioContext.state === 'suspended') {
-          await audioContext.resume();
-          console.log('[IAstedButton] ✅ AudioContext activé');
-        }
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        gainNode.gain.value = 0.001;
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.001);
-        console.log('[IAstedButton] ✅ Son silencieux joué pour débloquer audio');
-      } catch (error) {
-        console.error('[IAstedButton] ❌ Erreur activation audio:', error);
-      }
-    };
-    
     if (clickCount.current === 1) {
       // Premier clic - attendre pour voir s'il y a un double clic
       clickTimer.current = setTimeout(() => {
         // Simple clic confirmé
-        void unlockAudio();
         onSingleClick();
         clickCount.current = 0;
       }, 300); // Délai de 300ms pour détecter le double clic
@@ -1246,7 +1224,6 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
       if (clickTimer.current) {
         clearTimeout(clickTimer.current);
       }
-      void unlockAudio();
       onDoubleClick();
       clickCount.current = 0;
     }

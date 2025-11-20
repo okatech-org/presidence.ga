@@ -6,7 +6,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { registerAudioContext } from '@/utils/audioContextManager';
 
 type VoiceState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
 
@@ -77,95 +76,6 @@ class AudioRecorder {
   }
 }
 
-const createWavFromPCM = (pcmData: Uint8Array): Uint8Array => {
-  const numChannels = 1;
-  const sampleRate = 24000;
-  const bitsPerSample = 16;
-  const blockAlign = (numChannels * bitsPerSample) / 8;
-  const byteRate = sampleRate * blockAlign;
-  const dataSize = pcmData.length;
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-
-  const writeString = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
-    }
-  };
-
-  writeString(0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(8, 'WAVE');
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, byteRate, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitsPerSample, true);
-  writeString(36, 'data');
-  view.setUint32(40, dataSize, true);
-
-  const pcmView = new Uint8Array(buffer, 44);
-  pcmView.set(pcmData);
-
-  return new Uint8Array(buffer);
-};
-
-class AudioQueue {
-  private queue: Uint8Array[] = [];
-  private isPlaying = false;
-  private audioContext: AudioContext;
-
-  constructor(audioContext: AudioContext) {
-    this.audioContext = audioContext;
-  }
-
-  async addToQueue(audioData: Uint8Array) {
-    this.queue.push(audioData);
-    if (!this.isPlaying) {
-      await this.playNext();
-    }
-  }
-
-  private async playNext() {
-    if (this.queue.length === 0) {
-      this.isPlaying = false;
-      console.log('🎧 [AudioQueue] Queue vide, arrêt lecture');
-      return;
-    }
-
-    this.isPlaying = true;
-    const audioData = this.queue.shift()!;
-    console.log('🎵 [AudioQueue] Lecture chunk, queue restante:', this.queue.length);
-
-    try {
-      console.log('🔊 [AudioQueue] Conversion PCM->WAV, taille:', audioData.length);
-      const wavData = createWavFromPCM(audioData);
-      console.log('🔊 [AudioQueue] WAV créé, taille:', wavData.length, 'AudioContext état:', this.audioContext.state);
-      
-      const audioBuffer = await this.audioContext.decodeAudioData(wavData.buffer as ArrayBuffer);
-      console.log('✅ [AudioQueue] Audio décodé, durée:', audioBuffer.duration, 's');
-
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(this.audioContext.destination);
-
-      source.onended = () => {
-        console.log('✅ [AudioQueue] Chunk terminé');
-        void this.playNext();
-      };
-
-      source.start(0);
-      console.log('🔊 [AudioQueue] Lecture démarrée');
-    } catch (error) {
-      console.error('❌ [WebRTC] Erreur lecture audio queue:', error);
-      void this.playNext();
-    }
-  }
-}
-
 export const useRealtimeVoiceWebRTC = () => {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -174,8 +84,6 @@ export const useRealtimeVoiceWebRTC = () => {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioQueueRef = useRef<AudioQueue | null>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
   const currentTranscriptRef = useRef('');
   
@@ -203,11 +111,11 @@ export const useRealtimeVoiceWebRTC = () => {
   const handleDataChannelMessage = useCallback((event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data);
-      console.log('📨 [WebRTC] Message reçu:', data.type, JSON.stringify(data));
+      console.log('📨 [WebRTC] Message reçu:', data.type);
 
       switch (data.type) {
         case 'session.created':
-          console.log('✅ [WebRTC] Session créée - Configuration:', JSON.stringify(data.session));
+          console.log('✅ [WebRTC] Session créée');
           setVoiceState('listening');
           break;
 
@@ -253,53 +161,8 @@ export const useRealtimeVoiceWebRTC = () => {
           break;
 
         case 'response.audio.delta':
-          console.log('🎵 [WebRTC] Chunk audio reçu, taille delta:', data.delta?.length || 0);
           if (voiceState !== 'speaking') {
-            console.log('🗣️ [WebRTC] Passage en mode speaking');
             setVoiceState('speaking');
-          }
-          if (data.delta) {
-            try {
-              // Vérifier que l'AudioContext existe et n'est pas fermé
-              if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
-                console.error('❌ [WebRTC] AudioContext manquant ou fermé!');
-                audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-                
-                // Enregistrer dans le gestionnaire global
-                registerAudioContext(audioContextRef.current);
-                
-                audioQueueRef.current = new AudioQueue(audioContextRef.current);
-                console.log('🔧 [WebRTC] AudioContext recréé');
-              }
-
-              // CRITICAL: Forcer la reprise si suspendu
-              if (audioContextRef.current.state === 'suspended') {
-                console.log('⚠️ [WebRTC] AudioContext suspendu lors de l\'audio, reprise...');
-                audioContextRef.current.resume().then(() => {
-                  console.log('✅ [WebRTC] AudioContext repris, état:', audioContextRef.current?.state);
-                }).catch(err => {
-                  console.error('❌ [WebRTC] Impossible de reprendre AudioContext:', err);
-                });
-              }
-
-              if (!audioQueueRef.current) {
-                audioQueueRef.current = new AudioQueue(audioContextRef.current);
-                console.log('🎧 [WebRTC] AudioQueue initialisée');
-              }
-
-              const binaryString = atob(data.delta);
-              const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
-
-              console.log('🔊 [WebRTC] Ajout de', bytes.length, 'bytes à la queue (AudioContext:', audioContextRef.current.state, ')');
-              void audioQueueRef.current?.addToQueue(bytes);
-            } catch (error) {
-              console.error('❌ [WebRTC] Erreur décodage audio PCM:', error);
-            }
-          } else {
-            console.warn('⚠️ [WebRTC] response.audio.delta reçu SANS delta!');
           }
           break;
 
@@ -354,72 +217,16 @@ export const useRealtimeVoiceWebRTC = () => {
       // 2. Créer la connexion peer
       pcRef.current = new RTCPeerConnection();
 
-      // 3. Créer et activer l'AudioContext IMMÉDIATEMENT avec enregistrement global
-      console.log('🔊 [WebRTC] Création et activation AudioContext...');
-      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
-        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-        
-        // CRITICAL: Enregistrer dans le gestionnaire global
-        registerAudioContext(audioContextRef.current);
-        
-        audioQueueRef.current = new AudioQueue(audioContextRef.current);
-        console.log('🔊 [WebRTC] AudioContext créé, état initial:', audioContextRef.current.state);
-      }
-
-      // CRITICAL: Forcer la reprise immédiate
-      if (audioContextRef.current.state === 'suspended') {
-        console.log('⚡ [WebRTC] AudioContext suspendu, activation forcée...');
-        await audioContextRef.current.resume();
-        console.log('✅ [WebRTC] AudioContext activé, état:', audioContextRef.current.state);
-      }
-
-      // Configurer l'audio distant
+      // 3. Configurer l'audio distant
       if (!audioElRef.current) {
         audioElRef.current = document.createElement("audio");
         audioElRef.current.autoplay = true;
-        audioElRef.current.muted = false;
-        audioElRef.current.volume = 1.0;
-        audioElRef.current.style.display = 'none';
-        
-        // CRITIQUE: Ajouter l'élément au DOM pour permettre l'autoplay
-        document.body.appendChild(audioElRef.current);
-        console.log('🔊 [WebRTC] Élément audio créé et ajouté au DOM');
       }
 
       pcRef.current.ontrack = (e) => {
-        console.log('🎵 [WebRTC] Track audio reçu!');
-        console.log('   - Nombre de streams:', e.streams.length);
-        console.log('   - Nombre de tracks:', e.streams[0]?.getTracks().length);
-        console.log('   - Track kind:', e.track.kind);
-        console.log('   - Track enabled:', e.track.enabled);
-        console.log('   - Track muted:', e.track.muted);
-        console.log('   - Track readyState:', e.track.readyState);
-        
-        if (audioElRef.current && e.streams[0]) {
+        console.log('🎵 [WebRTC] Track audio reçu');
+        if (audioElRef.current) {
           audioElRef.current.srcObject = e.streams[0];
-          audioElRef.current.volume = 1.0;
-          audioElRef.current.muted = false;
-          console.log('🔊 [WebRTC] Stream assigné, volume:', audioElRef.current.volume, 'muted:', audioElRef.current.muted);
-          
-          // Forcer la lecture immédiate
-          const playPromise = audioElRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log('✅ [WebRTC] LECTURE AUDIO DÉMARRÉE AVEC SUCCÈS!');
-              })
-              .catch(err => {
-                console.error('❌ [WebRTC] ÉCHEC lecture audio:', err.name, err.message);
-                // Réessayer après interaction utilisateur
-                document.addEventListener('click', () => {
-                  audioElRef.current?.play()
-                    .then(() => console.log('✅ [WebRTC] Lecture démarrée après interaction'))
-                    .catch(e => console.error('❌ [WebRTC] Échec après interaction:', e));
-                }, { once: true });
-              });
-          }
-        } else {
-          console.error('❌ [WebRTC] Pas d\'audioElement ou de stream!');
         }
       };
 
@@ -508,17 +315,6 @@ export const useRealtimeVoiceWebRTC = () => {
       dcRef.current = null;
     }
     
-    // Nettoyer l'élément audio
-    if (audioElRef.current) {
-      audioElRef.current.pause();
-      audioElRef.current.srcObject = null;
-      if (audioElRef.current.parentNode) {
-        document.body.removeChild(audioElRef.current);
-      }
-      audioElRef.current = null;
-      console.log('🔊 [WebRTC] Élément audio nettoyé');
-    }
-    
     if (pcRef.current) {
       pcRef.current.close();
       pcRef.current = null;
@@ -527,13 +323,6 @@ export const useRealtimeVoiceWebRTC = () => {
     if (audioElRef.current) {
       audioElRef.current.srcObject = null;
     }
-
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-      console.log('🔊 [WebRTC] AudioContext fermé');
-    }
-    audioQueueRef.current = null;
     
     setIsConnected(false);
     setVoiceState('idle');
