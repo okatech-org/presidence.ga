@@ -4,12 +4,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { generateOfficialPDFWithURL } from '@/utils/generateOfficialPDF';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
-
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 import {
   Send,
   Loader2,
@@ -66,17 +60,7 @@ const MessageBubble: React.FC<{
   const [editedContent, setEditedContent] = useState(message.content);
   const [showActions, setShowActions] = useState(false);
   const [fullscreenDoc, setFullscreenDoc] = useState<any>(null);
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
   const { toast } = useToast();
-
-  // Réinitialiser la page quand on ouvre un nouveau document
-  useEffect(() => {
-    if (fullscreenDoc) {
-      setPageNumber(1);
-      setNumPages(0);
-    }
-  }, [fullscreenDoc]);
 
   const handleSaveEdit = () => {
     if (onEdit && editedContent.trim() !== message.content) {
@@ -222,80 +206,33 @@ const MessageBubble: React.FC<{
                         </button>
                       </div>
                     </div>
-
-                    {/* PDF Viewer avec react-pdf pour compatibilité mobile */}
-                    <div className="flex-1 flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                      <Document
-                        file={fullscreenDoc.url}
-                        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                        onLoadError={(error) => {
-                          console.error('Erreur chargement PDF:', error);
-                          toast({
-                            title: "Erreur de chargement",
-                            description: "Impossible de charger le PDF. Veuillez télécharger le fichier.",
-                            variant: "destructive"
-                          });
-                        }}
-                        className="flex-1 flex items-center justify-center"
-                        loading={
-                          <div className="flex items-center justify-center h-full">
-                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                          </div>
-                        }
-                        error={
-                          <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
-                            <FileText className="w-16 h-16 text-muted-foreground" />
-                            <div>
-                              <p className="text-lg font-medium mb-2">Prévisualisation non disponible</p>
-                              <p className="text-sm text-muted-foreground mb-4">
-                                Impossible d'afficher ce PDF. Veuillez le télécharger.
-                              </p>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownloadDocument(fullscreenDoc);
-                                }}
-                                className="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                              >
-                                Télécharger le PDF
-                              </button>
-                            </div>
-                          </div>
-                        }
+                    
+                    {/* PDF Viewer avec object au lieu d'iframe */}
+                    <div className="flex-1 p-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                      <object
+                        data={fullscreenDoc.url}
+                        type="application/pdf"
+                        className="w-full h-full rounded-lg border border-border bg-background"
                       >
-                        <div className="overflow-auto max-h-full flex justify-center p-4">
-                          <Page
-                            pageNumber={pageNumber}
-                            renderTextLayer={true}
-                            renderAnnotationLayer={true}
-                            className="shadow-lg"
-                            width={Math.min(window.innerWidth * 0.8, 800)}
-                          />
+                        <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
+                          <FileText className="w-16 h-16 text-muted-foreground" />
+                          <div>
+                            <p className="text-lg font-medium mb-2">Prévisualisation non disponible</p>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Votre navigateur ne peut pas afficher ce PDF directement.
+                            </p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadDocument(fullscreenDoc);
+                              }}
+                              className="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                            >
+                              Télécharger le PDF
+                            </button>
+                          </div>
                         </div>
-                      </Document>
-
-                      {/* Contrôles de pagination */}
-                      {numPages > 1 && (
-                        <div className="flex items-center justify-center gap-4 p-4 border-t border-border bg-background/50">
-                          <button
-                            onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}
-                            disabled={pageNumber <= 1}
-                            className="px-4 py-2 rounded-lg bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            Précédent
-                          </button>
-                          <span className="text-sm font-medium">
-                            Page {pageNumber} / {numPages}
-                          </span>
-                          <button
-                            onClick={() => setPageNumber(Math.min(numPages, pageNumber + 1))}
-                            disabled={pageNumber >= numPages}
-                            className="px-4 py-2 rounded-lg bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            Suivant
-                          </button>
-                        </div>
-                      )}
+                      </object>
                     </div>
                   </motion.div>
                 )}

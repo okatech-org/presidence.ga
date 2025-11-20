@@ -48,7 +48,7 @@ export const usePrefetch = () => {
           .select("*")
           .order("date", { ascending: false })
           .limit(1)
-          .maybeSingle();
+          .single();
 
         if (error) throw error;
         return data;

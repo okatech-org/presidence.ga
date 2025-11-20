@@ -1,8 +1,3 @@
-/**
- * @deprecated Ce hook est déprécié. Utilisez useElevenLabsAgent à la place.
- * useElevenLabsAgent offre une meilleure gestion de l'agent avec création automatique
- * et utilise le package @elevenlabs/react (au lieu de @11labs/react).
- */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useConversation } from '@11labs/react';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,14 +22,6 @@ export const useElevenLabsConversation = ({
   const [agentId, setAgentId] = useState<string | undefined>(providedAgentId);
   const conversationIdRef = useRef<string | null>(null);
 
-  // AVERTISSEMENT DE DÉPRÉCIATION
-  useEffect(() => {
-    console.warn(
-      '⚠️ [DEPRECATED] useElevenLabsConversation est déprécié. ' +
-      'Utilisez useElevenLabsAgent à la place pour une meilleure compatibilité.'
-    );
-  }, []);
-
   // Créer automatiquement l'agent si nécessaire
   useEffect(() => {
     const ensureAgent = async () => {
@@ -43,7 +30,7 @@ export const useElevenLabsConversation = ({
 
       try {
         console.log('🔍 [ElevenLabs] Vérification agent...');
-
+        
         // Vérifier si un agent existe
         const { data: existingConfig, error: configError } = await supabase
           .from('iasted_config')
@@ -111,7 +98,7 @@ export const useElevenLabsConversation = ({
   const getSignedUrl = useCallback(async (targetAgentId?: string) => {
     try {
       console.log('🔑 [ElevenLabs] Demande de signed URL...');
-
+      
       const { data, error } = await supabase.functions.invoke('elevenlabs-signed-url', {
         body: { agentId: targetAgentId || agentId }
       });
@@ -149,13 +136,13 @@ export const useElevenLabsConversation = ({
       }
 
       // Démarrer la session avec agentId
-      const convId = await conversation.startSession({
-        signedUrl: url
+      const convId = await conversation.startSession({ 
+        signedUrl: url 
       });
       conversationIdRef.current = convId;
-
+      
       console.log('✅ [ElevenLabs] Conversation démarrée, ID:', convId);
-
+      
       toast({
         title: "Conversation démarrée",
         description: "iAsted Pro est maintenant actif",
@@ -180,7 +167,7 @@ export const useElevenLabsConversation = ({
       setConversationState('disconnected');
       onStateChange?.('disconnected');
       conversationIdRef.current = null;
-
+      
       toast({
         title: "Conversation terminée",
         description: "iAsted Pro est maintenant inactif",

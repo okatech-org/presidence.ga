@@ -4,78 +4,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface UseElevenLabsAgentProps {
-  agentId?: string | null;
-  userRole?: 'president' | 'minister' | 'default';
+  agentId: string | null;
+  userRole: 'president' | 'minister' | 'default';
   onSpeakingChange?: (isSpeaking: boolean) => void;
-  onStateChange?: (state: 'disconnected' | 'connecting' | 'connected' | 'speaking') => void;
   autoStart?: boolean;
 }
 
-export const useElevenLabsAgent = ({
-  agentId: providedAgentId,
-  userRole = 'president',
+export const useElevenLabsAgent = ({ 
+  agentId, 
+  userRole, 
   onSpeakingChange,
-  onStateChange,
-  autoStart = false
-}: UseElevenLabsAgentProps = {}) => {
+  autoStart = false 
+}: UseElevenLabsAgentProps) => {
   const { toast } = useToast();
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const [conversationStarted, setConversationStarted] = useState(false);
-  const [agentId, setAgentId] = useState<string | undefined>(providedAgentId || undefined);
-
-  // Créer automatiquement l'agent si nécessaire
-  useEffect(() => {
-    const ensureAgent = async () => {
-      if (providedAgentId) return;
-      if (agentId) return; // Déjà chargé
-
-      try {
-        console.log('🔍 [ElevenLabsAgent] Vérification agent...');
-
-        // Vérifier si un agent existe
-        const { data: existingConfig, error: configError } = await supabase
-          .from('iasted_config')
-          .select('agent_id')
-          .maybeSingle();
-
-        if (configError) {
-          console.log('ℹ️ [ElevenLabsAgent] Pas de config, création automatique...');
-        }
-
-        if (existingConfig?.agent_id) {
-          console.log('✅ [ElevenLabsAgent] Agent existant trouvé:', existingConfig.agent_id);
-          setAgentId(existingConfig.agent_id);
-          return;
-        }
-
-        // Créer l'agent automatiquement
-        console.log('🚀 [ElevenLabsAgent] Création automatique de l\'agent iAsted Pro...');
-        const { data: createData, error: createError } = await supabase.functions.invoke('create-elevenlabs-agent');
-
-        if (createError) {
-          console.error('❌ [ElevenLabsAgent] Erreur création agent:', createError);
-          return;
-        }
-
-        if (createData?.agentId) {
-          console.log('✅ [ElevenLabsAgent] Agent créé automatiquement:', createData.agentId);
-          setAgentId(createData.agentId);
-        }
-      } catch (error) {
-        console.error('❌ [ElevenLabsAgent] Erreur setup agent:', error);
-      }
-    };
-
-    ensureAgent();
-  }, [providedAgentId, agentId]);
 
   // Configuration de l'agent ElevenLabs
   const conversation = useConversation({
     onConnect: () => {
       console.log('✅ Connecté à l\'agent iAsted');
       setConversationStarted(true);
-      onStateChange?.('connected');
       toast({
         title: "Connexion établie",
         description: "Agent iAsted prêt à converser",
@@ -84,7 +34,6 @@ export const useElevenLabsAgent = ({
     onDisconnect: () => {
       console.log('🔌 Déconnexion de l\'agent iAsted');
       setConversationStarted(false);
-      onStateChange?.('disconnected');
     },
     onMessage: (message) => {
       console.log('📨 Message reçu:', message);
@@ -109,7 +58,7 @@ export const useElevenLabsAgent = ({
     setIsLoadingUrl(true);
     try {
       console.log('🔑 Récupération du signed URL pour agent:', agentId);
-
+      
       const { data, error } = await supabase.functions.invoke('elevenlabs-signed-url', {
         body: { agentId }
       });
@@ -152,8 +101,7 @@ export const useElevenLabsAgent = ({
 
     try {
       console.log('🚀 Démarrage de la conversation...');
-      onStateChange?.('connecting');
-
+      
       // Obtenir l'URL signée
       const url = signedUrl || await getSignedUrl();
       if (!url) {
@@ -165,12 +113,12 @@ export const useElevenLabsAgent = ({
 
       // Démarrer la session avec l'URL signée
       console.log('🎤 Démarrage de la session ElevenLabs...');
-      const conversationId = await conversation.startSession({
-        signedUrl: url
+      const conversationId = await conversation.startSession({ 
+        signedUrl: url 
       });
-
+      
       console.log('✅ Session démarrée:', conversationId);
-
+      
     } catch (error) {
       console.error('❌ Erreur lors du démarrage:', error);
       if (error instanceof Error && error.message.includes('Permission denied')) {
@@ -221,13 +169,7 @@ export const useElevenLabsAgent = ({
     if (onSpeakingChange) {
       onSpeakingChange(conversation.isSpeaking);
     }
-    // Notifier le changement d'état speaking
-    if (conversation.isSpeaking) {
-      onStateChange?.('speaking');
-    } else if (conversation.status === 'connected') {
-      onStateChange?.('connected');
-    }
-  }, [conversation.isSpeaking, conversation.status, onSpeakingChange, onStateChange]);
+  }, [conversation.isSpeaking, onSpeakingChange]);
 
   return {
     // États
@@ -235,10 +177,7 @@ export const useElevenLabsAgent = ({
     isSpeaking: conversation.isSpeaking,
     isLoading: isLoadingUrl,
     conversationStarted,
-    status: conversation.status,
-    agentId,
-    hasAgent: !!agentId,
-
+    
     // Actions
     startConversation,
     stopConversation,
