@@ -78,7 +78,16 @@ export const useIastedChat = ({ userRole = 'default', sessionId }: UseIastedChat
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let assistantContent = '';
-      let toolCalls: any[] = [];
+      
+      // Accumulation des tool calls par index
+      const toolCallsMap = new Map<number, {
+        id?: string;
+        type?: string;
+        function?: {
+          name?: string;
+          arguments?: string;
+        };
+      }>();
 
       const assistantMessageId = `assistant-${Date.now()}`;
       
@@ -106,6 +115,7 @@ export const useIastedChat = ({ userRole = 'default', sessionId }: UseIastedChat
               try {
                 const parsed = JSON.parse(data);
                 const delta = parsed.choices?.[0]?.delta;
+                const finishReason = parsed.choices?.[0]?.finish_reason;
 
                 // Gérer le contenu texte
                 if (delta?.content) {
@@ -119,22 +129,58 @@ export const useIastedChat = ({ userRole = 'default', sessionId }: UseIastedChat
                   );
                 }
 
-                // Gérer les tool calls
+                // Gérer les tool calls (accumulation progressive)
                 if (delta?.tool_calls) {
-                  toolCalls.push(...delta.tool_calls);
+                  for (const toolCallDelta of delta.tool_calls) {
+                    const index = toolCallDelta.index;
+                    const existing = toolCallsMap.get(index) || {};
+                    
+                    // Fusionner les données du tool call
+                    if (toolCallDelta.id) {
+                      existing.id = toolCallDelta.id;
+                    }
+                    if (toolCallDelta.type) {
+                      existing.type = toolCallDelta.type;
+                    }
+                    if (toolCallDelta.function) {
+                      if (!existing.function) {
+                        existing.function = {};
+                      }
+                      if (toolCallDelta.function.name) {
+                        existing.function.name = toolCallDelta.function.name;
+                      }
+                      if (toolCallDelta.function.arguments) {
+                        existing.function.arguments = (existing.function.arguments || '') + toolCallDelta.function.arguments;
+                      }
+                    }
+                    
+                    toolCallsMap.set(index, existing);
+                  }
                 }
 
                 // Gérer la fin du message avec tool calls
-                if (parsed.choices?.[0]?.finish_reason === 'tool_calls') {
-                  // Traiter les tool calls
-                  for (const toolCall of toolCalls) {
-                    if (toolCall.function?.name === 'generate_document') {
-                      await handleDocumentGeneration(toolCall.function.arguments);
+                if (finishReason === 'tool_calls') {
+                  console.log('[useIastedChat] Tool calls détectés:', Array.from(toolCallsMap.values()));
+                  
+                  // Traiter tous les tool calls accumulés
+                  for (const toolCall of toolCallsMap.values()) {
+                    if (toolCall.function?.name === 'generate_document' && toolCall.function.arguments) {
+                      try {
+                        await handleDocumentGeneration(toolCall.function.arguments);
+                      } catch (error) {
+                        console.error('[useIastedChat] Erreur lors du traitement du tool call:', error);
+                        toast({
+                          title: "Erreur",
+                          description: "Impossible de générer le document",
+                          variant: "destructive",
+                        });
+                      }
                     }
                   }
                 }
               } catch (e) {
-                // Ligne non-JSON, ignorer
+                // Ligne non-JSON, ignorer silencieusement
+                console.debug('[useIastedChat] Ligne non-JSON ignorée:', line);
               }
             }
           }
