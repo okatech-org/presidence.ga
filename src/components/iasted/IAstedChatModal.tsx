@@ -166,15 +166,6 @@ const MessageBubble: React.FC<{
                           </button>
                         </div>
                       </div>
-                      
-                      {/* Prévisualisation PDF */}
-                      <div className="relative rounded-lg overflow-hidden border border-border/30 bg-background/30">
-                        <iframe
-                          src={doc.url}
-                          className="w-full h-[400px]"
-                          title={doc.name}
-                        />
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -216,13 +207,32 @@ const MessageBubble: React.FC<{
                       </div>
                     </div>
                     
-                    {/* PDF Viewer */}
-                    <div className="flex-1 p-4" onClick={(e) => e.stopPropagation()}>
-                      <iframe
-                        src={fullscreenDoc.url}
-                        className="w-full h-full rounded-lg border border-border"
-                        title={fullscreenDoc.name}
-                      />
+                    {/* PDF Viewer avec object au lieu d'iframe */}
+                    <div className="flex-1 p-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                      <object
+                        data={fullscreenDoc.url}
+                        type="application/pdf"
+                        className="w-full h-full rounded-lg border border-border bg-background"
+                      >
+                        <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
+                          <FileText className="w-16 h-16 text-muted-foreground" />
+                          <div>
+                            <p className="text-lg font-medium mb-2">Prévisualisation non disponible</p>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Votre navigateur ne peut pas afficher ce PDF directement.
+                            </p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadDocument(fullscreenDoc);
+                              }}
+                              className="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                            >
+                              Télécharger le PDF
+                            </button>
+                          </div>
+                        </div>
+                      </object>
                     </div>
                   </motion.div>
                 )}
