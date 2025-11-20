@@ -6,6 +6,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { registerAudioContext } from '@/utils/audioContextManager';
 
 type VoiceState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
 
@@ -263,6 +264,10 @@ export const useRealtimeVoiceWebRTC = () => {
               if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
                 console.error('❌ [WebRTC] AudioContext manquant ou fermé!');
                 audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+                
+                // Enregistrer dans le gestionnaire global
+                registerAudioContext(audioContextRef.current);
+                
                 audioQueueRef.current = new AudioQueue(audioContextRef.current);
                 console.log('🔧 [WebRTC] AudioContext recréé');
               }
@@ -349,10 +354,14 @@ export const useRealtimeVoiceWebRTC = () => {
       // 2. Créer la connexion peer
       pcRef.current = new RTCPeerConnection();
 
-      // 3. Créer et activer l'AudioContext IMMÉDIATEMENT
+      // 3. Créer et activer l'AudioContext IMMÉDIATEMENT avec enregistrement global
       console.log('🔊 [WebRTC] Création et activation AudioContext...');
       if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
         audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+        
+        // CRITICAL: Enregistrer dans le gestionnaire global
+        registerAudioContext(audioContextRef.current);
+        
         audioQueueRef.current = new AudioQueue(audioContextRef.current);
         console.log('🔊 [WebRTC] AudioContext créé, état initial:', audioContextRef.current.state);
       }
