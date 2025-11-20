@@ -85,25 +85,34 @@ Répondez de manière claire et professionnelle.`;
   const conversation = useConversation({
     overrides,
     onConnect: () => {
-      console.log('[useContinuousConversation] ✅ Connecté à l\'agent');
+      console.log('✅ [ElevenLabs Continuous] Connecté à l\'agent');
       toast({
         title: "Mode conversation activé",
         description: "iAsted vous écoute et va vous saluer...",
       });
       
-      // Activer l'audio immédiatement après connexion
+      // Activer tous les éléments audio immédiatement
       setTimeout(async () => {
         try {
-          console.log('[useContinuousConversation] Activation audio post-connexion...');
+          console.log('🔊 [ElevenLabs Continuous] Activation audio post-connexion...');
           
           // S'assurer que le contexte audio est activé
           const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-          console.log('[useContinuousConversation] État contexte audio au connect:', audioContext.state);
+          console.log('🔊 [ElevenLabs Continuous] État contexte audio:', audioContext.state);
           if (audioContext.state === 'suspended') {
-            console.log('[useContinuousConversation] Réactivation du contexte audio...');
+            console.log('🔊 [ElevenLabs Continuous] Réactivation du contexte audio...');
             await audioContext.resume();
-            console.log('[useContinuousConversation] ✅ Contexte audio activé');
+            console.log('✅ [ElevenLabs Continuous] Contexte audio activé');
           }
+          
+          // Activer tous les éléments audio de la page
+          const audioElements = document.querySelectorAll('audio');
+          console.log('🔊 [ElevenLabs Continuous] Nombre d\'éléments audio trouvés:', audioElements.length);
+          audioElements.forEach((audio, index) => {
+            audio.volume = 1.0;
+            audio.muted = false;
+            console.log(`✅ [ElevenLabs Continuous] Audio ${index} activé - volume:`, audio.volume, 'muted:', audio.muted);
+          });
           
           // Forcer l'activation avec un son test
           const testOscillator = audioContext.createOscillator();
@@ -149,11 +158,9 @@ Répondez de manière claire et professionnelle.`;
       }, 100);
     },
     onDisconnect: () => {
-      console.log('[useContinuousConversation] ❌ Déconnecté de l\'agent');
+      console.log('🔌 [ElevenLabs Continuous] Déconnecté');
       setConversationId(null);
-      toast({
-        title: "Conversation terminée",
-      });
+      toast({ title: "Conversation terminée" });
     },
     onMessage: (message) => {
       console.log('[useContinuousConversation] 📨 Message reçu:', message);

@@ -73,6 +73,14 @@ export const useElevenLabsConversation = ({
       console.log('✅ [ElevenLabs] Connecté à l\'agent');
       setConversationState('connected');
       onStateChange?.('connected');
+      
+      // Assurer que l'audio est activé
+      const audioElements = document.querySelectorAll('audio');
+      audioElements.forEach(audio => {
+        audio.volume = 1.0;
+        audio.muted = false;
+        console.log('🔊 [ElevenLabs] Audio activé pour élément:', audio);
+      });
     },
     onDisconnect: () => {
       console.log('🔌 [ElevenLabs] Déconnecté de l\'agent');
@@ -91,6 +99,16 @@ export const useElevenLabsConversation = ({
         description: "Une erreur s'est produite avec l'agent vocal",
         variant: "destructive",
       });
+    },
+    onModeChange: (mode) => {
+      console.log('🎙️ [ElevenLabs] Mode changé:', mode);
+      if (mode.mode === 'speaking') {
+        setConversationState('speaking');
+        onStateChange?.('speaking');
+      } else if (mode.mode === 'listening') {
+        setConversationState('connected');
+        onStateChange?.('connected');
+      }
     },
   });
 
