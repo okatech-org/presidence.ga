@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { generateOfficialPDF } from '@/utils/generateOfficialPDF';
@@ -27,9 +27,46 @@ interface UseIastedChatProps {
 
 export const useIastedChat = ({ userRole = 'default', sessionId }: UseIastedChatProps) => {
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([]);
+  
+  // Clé de stockage unique par utilisateur et rôle
+  const storageKey = `iasted-chat-${userRole}-${sessionId || 'default'}`;
+  
+  // Initialiser depuis localStorage
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+      }
+    } catch (error) {
+      console.error('[useIastedChat] Erreur lecture localStorage:', error);
+    }
+    return [];
+  });
+  
   const [generatedDocuments, setGeneratedDocuments] = useState<GeneratedDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Sauvegarder dans localStorage à chaque changement de messages
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({
+          messages: messages.map(msg => ({
+            ...msg,
+            timestamp: msg.timestamp.toISOString()
+          })),
+          lastUpdated: new Date().toISOString()
+        }));
+      } catch (error) {
+        console.error('[useIastedChat] Erreur sauvegarde localStorage:', error);
+      }
+    }
+  }, [messages, storageKey]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || isLoading) return;
@@ -395,7 +432,15 @@ export const useIastedChat = ({ userRole = 'default', sessionId }: UseIastedChat
   const clearChat = useCallback(() => {
     setMessages([]);
     setGeneratedDocuments([]);
-  }, []);
+    
+    // Supprimer du localStorage
+    try {
+      localStorage.removeItem(storageKey);
+      console.log('[useIastedChat] Chat effacé du localStorage');
+    } catch (error) {
+      console.error('[useIastedChat] Erreur suppression localStorage:', error);
+    }
+  }, [storageKey]);
 
   return {
     messages,
