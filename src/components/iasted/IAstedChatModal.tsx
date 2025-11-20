@@ -677,10 +677,25 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
         }
       }
 
+      // Générer un message de confirmation si un document a été créé
+      let responseContent = data.answer || data.response || '';
+      
+      // Si pas de contenu mais qu'un document a été généré, créer un message de confirmation
+      if (!responseContent && data.tool_calls?.some((tc: any) => tc.function.name === 'generate_document')) {
+        const docTool = data.tool_calls.find((tc: any) => tc.function.name === 'generate_document');
+        const args = JSON.parse(docTool.function.arguments);
+        responseContent = `Document généré, Excellence.\n\n📄 ${args.type.toUpperCase()} pour ${args.recipient}\nObjet : ${args.subject}\n\nLe document est prêt et a été téléchargé automatiquement.`;
+      }
+
+      // Message par défaut seulement si vraiment aucun contenu
+      if (!responseContent) {
+        responseContent = 'Je suis désolé, je ne peux pas répondre pour le moment.';
+      }
+
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: data.answer || data.response || data.error || 'Je suis désolé, je ne peux pas répondre pour le moment.',
+        content: responseContent,
         timestamp: new Date().toISOString(),
         metadata: {
           responseStyle: 'strategique',
@@ -692,7 +707,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
         hasResponse: !!data.response,
         hasError: !!data.error,
         hasToolCalls: data.tool_calls?.length || 0,
-        content: assistantMessage.content.substring(0, 100)
+        finalContent: assistantMessage.content.substring(0, 100)
       });
 
       setMessages(prev => [...prev, assistantMessage]);
