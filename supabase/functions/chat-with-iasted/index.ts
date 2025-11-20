@@ -561,8 +561,10 @@ serve(async (req) => {
     }
 
     const llmData = await llmResponse.json();
-    const llmAnswer = llmData.choices[0].message.content || '';
-    const toolCalls = llmData.choices[0].message.tool_calls || [];
+    console.log('[chat-with-iasted] Réponse brute LLM:', JSON.stringify(llmData, null, 2));
+    
+    const llmAnswer = llmData.choices?.[0]?.message?.content || '';
+    const toolCalls = llmData.choices?.[0]?.message?.tool_calls || [];
     llmLatency = Date.now() - llmStart;
 
     console.log('[chat-with-iasted] Réponse LLM:', llmAnswer);
@@ -570,6 +572,12 @@ serve(async (req) => {
     
     if (isDocumentRequest && toolCalls.length === 0) {
       console.warn('⚠️ [chat-with-iasted] Demande de document détectée mais aucun tool call généré !');
+      console.warn('⚠️ [chat-with-iasted] Transcript:', userTranscript);
+    }
+    
+    if (!llmAnswer && toolCalls.length === 0) {
+      console.error('❌ [chat-with-iasted] Pas de réponse ni de tool calls du LLM !');
+      throw new Error('Le modèle n\'a pas généré de réponse');
     }
 
     // 6. Sauvegarde dans l'historique

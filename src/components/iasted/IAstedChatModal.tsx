@@ -525,15 +525,18 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
               duration: 3000,
             });
 
-            // Si l'utilisateur a fait la demande en vocal, ouvrir automatiquement le PDF
-            // (on détecte si le dernier message était une interaction vocale)
-            const lastUserMessage = messages[messages.length - 1];
+            // Télécharger automatiquement le PDF au lieu de l'ouvrir (évite ERR_BLOCKED_BY_CLIENT)
             const isVoiceInteraction = isVoiceActive || voiceMode === 'elevenlabs';
 
             if (isVoiceInteraction) {
-              console.log('🔊 [generatePDF] Ouverture automatique (demande vocale)');
+              console.log('🔊 [generatePDF] Téléchargement automatique (demande vocale)');
               setTimeout(() => {
-                window.open(url, '_blank');
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
               }, 500);
             }
 
@@ -648,12 +651,20 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: data.answer || data.response || 'Je suis désolé, je ne peux pas répondre pour le moment.',
+        content: data.answer || data.response || data.error || 'Je suis désolé, je ne peux pas répondre pour le moment.',
         timestamp: new Date().toISOString(),
         metadata: {
           responseStyle: 'strategique',
         },
       };
+
+      console.log('📨 [handleSendMessage] Réponse reçue:', {
+        hasAnswer: !!data.answer,
+        hasResponse: !!data.response,
+        hasError: !!data.error,
+        hasToolCalls: data.tool_calls?.length || 0,
+        content: assistantMessage.content.substring(0, 100)
+      });
 
       setMessages(prev => [...prev, assistantMessage]);
       await saveMessage(sessionId, assistantMessage);
