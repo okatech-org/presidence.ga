@@ -360,14 +360,27 @@ export const useRealtimeVoiceWebRTC = () => {
         
         if (audioElRef.current && e.streams[0]) {
           audioElRef.current.srcObject = e.streams[0];
+          audioElRef.current.volume = 1.0;
+          audioElRef.current.muted = false;
           console.log('🔊 [WebRTC] Stream assigné, volume:', audioElRef.current.volume, 'muted:', audioElRef.current.muted);
           
-          // Forcer la lecture avec interaction utilisateur requise
-          audioElRef.current.play().then(() => {
-            console.log('✅ [WebRTC] LECTURE AUDIO DÉMARRÉE AVEC SUCCÈS!');
-          }).catch(err => {
-            console.error('❌ [WebRTC] ÉCHEC lecture audio:', err.name, err.message);
-          });
+          // Forcer la lecture immédiate
+          const playPromise = audioElRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log('✅ [WebRTC] LECTURE AUDIO DÉMARRÉE AVEC SUCCÈS!');
+              })
+              .catch(err => {
+                console.error('❌ [WebRTC] ÉCHEC lecture audio:', err.name, err.message);
+                // Réessayer après interaction utilisateur
+                document.addEventListener('click', () => {
+                  audioElRef.current?.play()
+                    .then(() => console.log('✅ [WebRTC] Lecture démarrée après interaction'))
+                    .catch(e => console.error('❌ [WebRTC] Échec après interaction:', e));
+                }, { once: true });
+              });
+          }
         } else {
           console.error('❌ [WebRTC] Pas d\'audioElement ou de stream!');
         }
