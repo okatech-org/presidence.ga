@@ -151,6 +151,23 @@ export default function PresidentSpace() {
     },
   });
 
+  // Démarrer automatiquement la conversation ElevenLabs quand l'agent est prêt
+  useEffect(() => {
+    const autoStartElevenLabs = async () => {
+      if (elevenLabs.hasAgent && conversationState === 'disconnected' && voiceMode === 'elevenlabs') {
+        console.log('🚀 [PresidentSpace] Auto-démarrage ElevenLabs...');
+        try {
+          await elevenLabs.startConversation();
+          console.log('✅ [PresidentSpace] ElevenLabs démarré avec succès');
+        } catch (error) {
+          console.error('❌ [PresidentSpace] Erreur auto-démarrage ElevenLabs:', error);
+        }
+      }
+    };
+
+    autoStartElevenLabs();
+  }, [elevenLabs.hasAgent, conversationState, voiceMode]);
+
   // Hook pour la conversation OpenAI WebRTC (voix alloy)
   const openaiRTC = useRealtimeVoiceWebRTC();
 
