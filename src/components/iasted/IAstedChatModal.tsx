@@ -311,10 +311,28 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
     if (window.confirm('Êtes-vous sûr de vouloir supprimer toute la conversation ?')) {
       setMessages([]);
       if (sessionId) {
-        await supabase
+        // Supprimer tous les messages de la session
+        const { error: deleteError } = await supabase
           .from('conversation_messages')
           .delete()
           .eq('session_id', sessionId);
+
+        if (deleteError) {
+          console.error('Erreur suppression messages:', deleteError);
+        }
+
+        // Marquer la session comme terminée pour ne plus la recharger
+        const { error: updateError } = await supabase
+          .from('conversation_sessions')
+          .update({
+            ended_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', sessionId);
+
+        if (updateError) {
+          console.error('Erreur mise à jour session:', updateError);
+        }
       }
       toast({
         title: "Conversation effacée",
@@ -364,6 +382,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
         .from('conversation_sessions')
         .select('*')
         .eq('user_id', user.id)
+        .is('ended_at', null)
         .gte('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
         .order('updated_at', { ascending: false })
         .limit(1)
