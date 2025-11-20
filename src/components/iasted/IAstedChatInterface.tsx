@@ -2,9 +2,12 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Mic, MicOff, Send, Loader2, Volume2, User, Bot, X } from 'lucide-react';
+import { Mic, MicOff, Send, Loader2, Volume2, User, Bot, X, Trash2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
+import { useIastedChat } from '@/hooks/useIastedChat';
+import { PDFPreview } from './PDFPreview';
+import { DocumentMessage } from './DocumentMessage';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,8 +31,17 @@ const IAstedChatInterface: React.FC<IAstedChatInterfaceProps> = ({
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState('');
-  const [isTextLoading, setIsTextLoading] = useState(false);
   const [agentConfigured, setAgentConfigured] = useState<boolean | null>(null);
+  const [previewPdfIndex, setPreviewPdfIndex] = useState<number | null>(null);
+
+  // Hook pour gérer le chat avec iAsted et la génération de documents
+  const { 
+    messages, 
+    generatedDocuments, 
+    isLoading: isTextLoading, 
+    sendMessage,
+    clearChat 
+  } = useIastedChat({ userRole });
 
   // Vérifier si l'agent est configuré
   useEffect(() => {
@@ -73,7 +85,7 @@ const IAstedChatInterface: React.FC<IAstedChatInterfaceProps> = ({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [conversationMessages, liveTranscript]);
+  }, [messages, generatedDocuments, conversationMessages, liveTranscript]);
 
   // Envoi de message texte via l'API
   const handleSendText = useCallback(async () => {
@@ -81,47 +93,26 @@ const IAstedChatInterface: React.FC<IAstedChatInterfaceProps> = ({
 
     const messageText = input.trim();
     setInput('');
-    setIsTextLoading(true);
-
-    try {
-      // Appeler l'edge function avec le message texte
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error('Non authentifié');
-
-      const { data, error } = await supabase.functions.invoke('chat-with-iasted', {
-        body: {
-          sessionId: sessionId || undefined,
-          userId: userData.user.id,
-          transcriptOverride: messageText,
-          langHint: 'fr',
-          generateAudio: false,
-          userRole: 'president',
-        },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Message envoyé",
-        description: "iAsted a reçu votre message",
-      });
-    } catch (error) {
-      console.error('Erreur envoi message:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'envoyer le message",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTextLoading(false);
-    }
-  }, [input, isTextLoading, sessionId, toast]);
+    await sendMessage(messageText);
+  }, [input, isTextLoading, sendMessage]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendText();
     }
+  };
+
+  const handleDownloadDocument = (docIndex: number) => {
+    const doc = generatedDocuments[docIndex];
+    if (!doc) return;
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(doc.pdfBlob);
+    link.download = doc.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Gérer le toggle vocal depuis l'extérieur
@@ -178,11 +169,24 @@ const IAstedChatInterface: React.FC<IAstedChatInterfaceProps> = ({
                 Intelligence Artificielle Stratégique
               </p>
             </div>
-            {sessionId && (
-              <div className="text-xs text-muted-foreground">
-                Session: {sessionId.substring(0, 8)}...
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {(messages.length > 0 || generatedDocuments.length > 0) && (
+                <Button
+                  onClick={clearChat}
+                  size="sm"
+                  variant="ghost"
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Effacer
+                </Button>
+              )}
+              {sessionId && (
+                <div className="text-xs text-muted-foreground">
+                  Session: {sessionId.substring(0, 8)}...
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -228,9 +232,57 @@ const IAstedChatInterface: React.FC<IAstedChatInterfaceProps> = ({
         {/* Messages */}
         <ScrollArea className="flex-1 px-6 py-4" ref={scrollRef}>
           <div className="space-y-4">
+            {/* Messages du chat textuel */}
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+              >
+                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                  msg.role === 'user' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted text-muted-foreground'
+                }`}>
+                  {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                </div>
+                <div
+                  className={`rounded-2xl px-4 py-3 max-w-[70%] ${
+                    msg.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-foreground'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
+                  <p className="text-xs opacity-70 mt-1">
+                    {msg.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {/* Documents générés */}
+            {generatedDocuments.map((doc, idx) => (
+              <div key={doc.id} className="flex gap-3">
+                <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div className="flex-1 max-w-[70%]">
+                  <DocumentMessage
+                    fileName={doc.fileName}
+                    documentType={doc.type}
+                    recipient={doc.recipient}
+                    subject={doc.subject}
+                    onDownload={() => handleDownloadDocument(idx)}
+                    onPreview={() => setPreviewPdfIndex(idx)}
+                  />
+                </div>
+              </div>
+            ))}
+
+            {/* Messages vocaux (conversation en temps réel) */}
             {conversationMessages.map((msg, idx) => (
               <div
-                key={idx}
+                key={`voice-${idx}`}
                 className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
               >
                 <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
@@ -278,7 +330,7 @@ const IAstedChatInterface: React.FC<IAstedChatInterfaceProps> = ({
                 <div className="rounded-2xl px-4 py-3 bg-muted text-foreground">
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">iAsted réfléchit...</span>
+                    <span className="text-sm">iAsted génère le document...</span>
                   </div>
                 </div>
               </div>
@@ -344,6 +396,19 @@ const IAstedChatInterface: React.FC<IAstedChatInterfaceProps> = ({
           </p>
         </div>
         </>
+        )}
+
+        {/* Prévisualisation PDF */}
+        {previewPdfIndex !== null && generatedDocuments[previewPdfIndex] && (
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-4xl">
+              <PDFPreview
+                pdfBlob={generatedDocuments[previewPdfIndex].pdfBlob}
+                fileName={generatedDocuments[previewPdfIndex].fileName}
+                onClose={() => setPreviewPdfIndex(null)}
+              />
+            </div>
+          </div>
         )}
       </DialogContent>
     </Dialog>
