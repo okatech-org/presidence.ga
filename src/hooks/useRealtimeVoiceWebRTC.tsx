@@ -76,6 +76,87 @@ class AudioRecorder {
   }
 }
 
+const createWavFromPCM = (pcmData: Uint8Array): Uint8Array => {
+  const numChannels = 1;
+  const sampleRate = 24000;
+  const bitsPerSample = 16;
+  const blockAlign = (numChannels * bitsPerSample) / 8;
+  const byteRate = sampleRate * blockAlign;
+  const dataSize = pcmData.length;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  };
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  const pcmView = new Uint8Array(buffer, 44);
+  pcmView.set(pcmData);
+
+  return new Uint8Array(buffer);
+};
+
+class AudioQueue {
+  private queue: Uint8Array[] = [];
+  private isPlaying = false;
+  private audioContext: AudioContext;
+
+  constructor(audioContext: AudioContext) {
+    this.audioContext = audioContext;
+  }
+
+  async addToQueue(audioData: Uint8Array) {
+    this.queue.push(audioData);
+    if (!this.isPlaying) {
+      await this.playNext();
+    }
+  }
+
+  private async playNext() {
+    if (this.queue.length === 0) {
+      this.isPlaying = false;
+      return;
+    }
+
+    this.isPlaying = true;
+    const audioData = this.queue.shift()!;
+
+    try {
+      const wavData = createWavFromPCM(audioData);
+      const audioBuffer = await this.audioContext.decodeAudioData(wavData.buffer as ArrayBuffer);
+
+      const source = this.audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(this.audioContext.destination);
+
+      source.onended = () => {
+        void this.playNext();
+      };
+
+      source.start(0);
+    } catch (error) {
+      console.error('❌ [WebRTC] Erreur lecture audio queue:', error);
+      void this.playNext();
+    }
+  }
+}
+
 export const useRealtimeVoiceWebRTC = () => {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -84,6 +165,8 @@ export const useRealtimeVoiceWebRTC = () => {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioQueueRef = useRef<AudioQueue | null>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
   const currentTranscriptRef = useRef('');
   
@@ -163,6 +246,29 @@ export const useRealtimeVoiceWebRTC = () => {
         case 'response.audio.delta':
           if (voiceState !== 'speaking') {
             setVoiceState('speaking');
+          }
+          if (data.delta) {
+            try {
+              if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+                audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+                console.log('🔊 [WebRTC] AudioContext créé pour lecture PCM');
+              }
+
+              if (!audioQueueRef.current && audioContextRef.current) {
+                audioQueueRef.current = new AudioQueue(audioContextRef.current);
+                console.log('🎧 [WebRTC] AudioQueue initialisée');
+              }
+
+              const binaryString = atob(data.delta);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+
+              void audioQueueRef.current?.addToQueue(bytes);
+            } catch (error) {
+              console.error('❌ [WebRTC] Erreur décodage audio PCM:', error);
+            }
           }
           break;
 
@@ -349,6 +455,13 @@ export const useRealtimeVoiceWebRTC = () => {
     if (audioElRef.current) {
       audioElRef.current.srcObject = null;
     }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+      console.log('🔊 [WebRTC] AudioContext fermé');
+    }
+    audioQueueRef.current = null;
     
     setIsConnected(false);
     setVoiceState('idle');
