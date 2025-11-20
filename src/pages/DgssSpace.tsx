@@ -84,58 +84,46 @@ const DgssSpace = () => {
     const { data: reports = [], isLoading: reportsLoading } = useQuery({
         queryKey: ["intelligence_reports"],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from("intelligence_reports")
-                .select("*")
-                .order("created_at", { ascending: false });
-            if (error) throw error;
-            return data as IntelligenceReport[];
+            // TODO: Créer la table intelligence_reports
+            return [] as IntelligenceReport[];
         },
     });
 
     const { data: targets = [], isLoading: targetsLoading } = useQuery({
         queryKey: ["surveillance_targets"],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from("surveillance_targets")
-                .select("*")
-                .order("last_update", { ascending: false });
-            if (error) throw error;
-            return data as SurveillanceTarget[];
+            // TODO: Créer la table surveillance_targets
+            return [] as SurveillanceTarget[];
         },
     });
 
     const { data: threats = [], isLoading: threatsLoading } = useQuery({
         queryKey: ["threat_indicators"],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from("threat_indicators")
-                .select("*")
-                .order("timestamp", { ascending: false });
-            if (error) throw error;
-            return data as ThreatIndicator[];
+            // TODO: Créer la table threat_indicators
+            return [] as ThreatIndicator[];
         },
     });
 
-    // Mutations
+    // Mutations - Désactivées temporairement
     const createReportMutation = useMutation({
         mutationFn: async (newReport: Omit<IntelligenceReport, "id" | "created_at">) => {
-            const { error } = await supabase.from("intelligence_reports").insert(newReport);
-            if (error) throw error;
+            console.log("Table intelligence_reports non créée");
+            throw new Error("Table non créée");
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["intelligence_reports"] });
             toast({ title: "Succès", description: "Rapport créé avec succès" });
         },
         onError: () => {
-            toast({ title: "Erreur", description: "Impossible de créer le rapport", variant: "destructive" });
+            toast({ title: "Erreur", description: "Table non créée dans la base de données", variant: "destructive" });
         },
     });
 
     const addTargetMutation = useMutation({
         mutationFn: async (newTarget: Omit<SurveillanceTarget, "id" | "created_at" | "last_update">) => {
-            const { error } = await supabase.from("surveillance_targets").insert(newTarget);
-            if (error) throw error;
+            console.log("Table surveillance_targets non créée");
+            throw new Error("Table non créée");
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["surveillance_targets"] });

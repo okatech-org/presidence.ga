@@ -249,7 +249,7 @@ const PrivateCabinetDirectorSpace = () => {
 
   const getStatusBadge = (status: CorrespondenceStatus) => {
     const variants = {
-      recu: { label: "Reçu", variant: "outline" as const },
+      recu: { label: "Reçu", variant: "outline" as const, className: "" },
       en_traitement: { label: "En traitement", variant: "default" as const, className: "bg-blue-500" },
       traite: { label: "Traité", variant: "secondary" as const, className: "bg-green-100 text-green-700" },
       archive: { label: "Archivé", variant: "outline" as const, className: "text-gray-400" }
@@ -921,11 +921,14 @@ const PrivateCabinetDirectorSpace = () => {
       </div>
 
       {/* IAsted Button */}
-      <IAstedButtonFull onClick={() => setIastedOpen(true)} />
+      <IAstedButtonFull 
+        onSingleClick={() => setIastedOpen(true)}
+        onDoubleClick={() => setIastedOpen(true)}
+      />
       <IAstedInterface
         isOpen={iastedOpen}
         onClose={() => setIastedOpen(false)}
-        context="cabinet_private"
+        userRole="default"
       />
     </div>
   );

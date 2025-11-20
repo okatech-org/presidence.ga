@@ -82,50 +82,42 @@ const CabinetDirectorSpace = () => {
     checkAccess();
   }, [navigate, toast]);
 
-  // Data Fetching
+  // Data Fetching - TEMPORAIRE: Tables non créées encore
   const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: ["ministerial_projects"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("ministerial_projects")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as MinisterialProject[];
+      // TODO: Créer la table ministerial_projects
+      return [] as MinisterialProject[];
     },
   });
 
   const { data: instructions = [], isLoading: instructionsLoading } = useQuery({
     queryKey: ["presidential_instructions"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("presidential_instructions")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as PresidentialInstruction[];
+      // TODO: Créer la table presidential_instructions
+      return [] as PresidentialInstruction[];
     },
   });
 
-  // Mutations
+  // Mutations - Désactivées temporairement
   const createProjectMutation = useMutation({
     mutationFn: async (newProject: Omit<MinisterialProject, "id" | "created_at">) => {
-      const { error } = await supabase.from("ministerial_projects").insert(newProject);
-      if (error) throw error;
+      console.log("Table ministerial_projects non créée");
+      throw new Error("Table non créée");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ministerial_projects"] });
       toast({ title: "Succès", description: "Projet créé avec succès" });
     },
     onError: () => {
-      toast({ title: "Erreur", description: "Impossible de créer le projet", variant: "destructive" });
+      toast({ title: "Erreur", description: "Table non créée dans la base de données", variant: "destructive" });
     },
   });
 
   const createInstructionMutation = useMutation({
     mutationFn: async (newInstruction: Omit<PresidentialInstruction, "id" | "created_at">) => {
-      const { error } = await supabase.from("presidential_instructions").insert(newInstruction);
-      if (error) throw error;
+      console.log("Table presidential_instructions non créée");
+      throw new Error("Table non créée");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["presidential_instructions"] });
