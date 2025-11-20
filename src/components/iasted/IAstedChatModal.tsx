@@ -259,7 +259,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
         const { error } = await supabase
           .from('conversation_messages')
           .delete()
-          .eq('message_id', messageId);
+          .eq('id', messageId);
 
         if (error) console.error('Erreur suppression message:', error);
       }
