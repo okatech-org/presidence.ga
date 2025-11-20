@@ -145,15 +145,40 @@ export const useElevenLabsConversation = ({
       setConversationState('connecting');
       onStateChange?.('connecting');
 
-      // Obtenir le signed URL
-      const url = await getSignedUrl(targetAgentId);
+      const finalAgentId = targetAgentId || agentId;
+      if (!finalAgentId) {
+        throw new Error('Aucun agent ID disponible');
+      }
+
+      // 1. Demander accès micro avec interaction utilisateur
+      console.log('🎤 [ElevenLabs] Demande accès micro...');
+      await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+      console.log('✅ [ElevenLabs] Accès micro autorisé');
+
+      // 2. Activer AudioContext AVANT la connexion
+      console.log('🔊 [ElevenLabs] Activation AudioContext...');
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+        console.log('✅ [ElevenLabs] AudioContext activé');
+      }
+
+      // 3. Obtenir le signed URL
+      const url = await getSignedUrl(finalAgentId);
       if (!url) {
         setConversationState('disconnected');
         onStateChange?.('disconnected');
         return;
       }
 
-      // Démarrer la session avec agentId
+      // 4. Démarrer la session
+      console.log('🚀 [ElevenLabs] Démarrage session avec agent:', finalAgentId);
       const convId = await conversation.startSession({ 
         signedUrl: url 
       });
@@ -171,11 +196,11 @@ export const useElevenLabsConversation = ({
       onStateChange?.('disconnected');
       toast({
         title: "Erreur",
-        description: "Impossible de démarrer la conversation",
+        description: error instanceof Error ? error.message : "Impossible de démarrer la conversation",
         variant: "destructive",
       });
     }
-  }, [conversation, getSignedUrl, onStateChange, toast]);
+  }, [agentId, conversation, getSignedUrl, onStateChange, toast]);
 
   // Arrêter la conversation
   const endConversation = useCallback(async () => {
