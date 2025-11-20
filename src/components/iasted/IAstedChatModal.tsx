@@ -89,6 +89,25 @@ const MessageBubble: React.FC<{
     });
   };
 
+  const handlePrintDocument = (doc: any) => {
+    const printWindow = window.open(doc.url, '_blank');
+    if (printWindow) {
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+      toast({
+        title: "🖨️ Impression",
+        description: `Ouverture de ${doc.name} pour impression`,
+      });
+    } else {
+      toast({
+        title: "❌ Erreur",
+        description: "Impossible d'ouvrir la fenêtre d'impression. Veuillez autoriser les pop-ups.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -263,6 +282,19 @@ const MessageBubble: React.FC<{
                           </button>
                         </div>
 
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintDocument(fullscreenDoc);
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors"
+                          title="Imprimer"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          </svg>
+                          <span className="text-sm font-medium">Imprimer</span>
+                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
