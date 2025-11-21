@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useElevenLabsAgent } from '@/hooks/useElevenLabsAgent';
+import { useOpenAIWithElevenLabsVoice } from '@/hooks/useOpenAIWithElevenLabsVoice';
 import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import { useRealtimePresidentDashboard } from '@/hooks/useRealtimeSync';
 import { cn } from "@/lib/utils";
@@ -138,11 +138,12 @@ export default function PresidentSpace() {
   // Activer la synchronisation temps réel pour le dashboard présidentiel
   useRealtimePresidentDashboard();
 
-  // Hook pour la conversation vocale temps réel avec ElevenLabs (voix iAsted Pro)
-  const elevenLabs = useElevenLabsAgent({
-    userRole: 'president',
-    onSpeakingChange: (speaking) => {
-      console.log('🎙️ [PresidentSpace] ElevenLabs speaking:', speaking);
+  // Hook pour le mode iAsted Pro (OpenAI GPT + voix ElevenLabs)
+  const iastedPro = useOpenAIWithElevenLabsVoice({
+    voiceId: 'EV6XgOdBELK29O2b4qyM', // Voix iAsted Pro
+    systemPrompt: "Vous êtes iAsted, l'assistant vocal intelligent du Président de la République du Gabon. Vous êtes professionnel, concis et efficace. Vous aidez le Président dans ses décisions stratégiques. Vos réponses sont claires, directes et adaptées au contexte présidentiel.",
+    onMessage: (message) => {
+      console.log('📨 [PresidentSpace] Message iAsted Pro:', message);
     },
   });
  
@@ -749,14 +750,9 @@ export default function PresidentSpace() {
           console.log(`🖱️ [IAstedButton] Clic simple - mode: ${currentMode}`);
           
           if (currentMode === 'elevenlabs') {
-            // Mode ElevenLabs (iAsted Pro)
-            if (elevenLabs.isConnected) {
-              console.log('🔄 [IAstedButton] Déconnexion ElevenLabs');
-              await elevenLabs.stopConversation();
-            } else {
-              console.log('🎤 [IAstedButton] Démarrage ElevenLabs iAsted Pro');
-              await elevenLabs.startConversation();
-            }
+            // Mode iAsted Pro (OpenAI GPT + voix ElevenLabs)
+            console.log('🎤 [IAstedButton] Toggle iAsted Pro');
+            await iastedPro.toggleConversation();
           } else {
             // Mode OpenAI RT
             if (openaiRTC.isConnected) {
@@ -775,22 +771,22 @@ export default function PresidentSpace() {
         size="lg"
         voiceListening={
           voiceMode === 'elevenlabs' 
-            ? (elevenLabs.isConnected && !elevenLabs.isSpeaking)
+            ? (iastedPro.voiceState === 'listening')
             : (openaiRTC.voiceState === 'listening')
         }
         voiceSpeaking={
           voiceMode === 'elevenlabs'
-            ? elevenLabs.isSpeaking
+            ? (iastedPro.voiceState === 'speaking')
             : (openaiRTC.voiceState === 'speaking')
         }
         voiceProcessing={
           voiceMode === 'elevenlabs'
-            ? (elevenLabs.isLoading || (!elevenLabs.isConnected && elevenLabs.conversationStarted))
+            ? (iastedPro.voiceState === 'connecting' || iastedPro.voiceState === 'thinking')
             : (openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking')
         }
         isInterfaceOpen={iastedOpen}
         isVoiceModeActive={
-          voiceMode === 'elevenlabs' ? elevenLabs.isConnected : openaiRTC.isConnected
+          voiceMode === 'elevenlabs' ? iastedPro.isConnected : openaiRTC.isConnected
         }
       />
 
