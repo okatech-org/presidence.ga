@@ -140,8 +140,6 @@ export default function PresidentSpace() {
 
   // Hook pour la conversation vocale temps réel avec ElevenLabs (voix iAsted Pro)
   const elevenLabs = useElevenLabsAgent({
-    // L'agent réel est configuré côté backend dans iasted_config, cet ID est utilisé pour le tracking côté client
-    agentId: 'iasted-pro-agent',
     userRole: 'president',
     onSpeakingChange: (speaking) => {
       console.log('🎙️ [PresidentSpace] ElevenLabs speaking:', speaking);
