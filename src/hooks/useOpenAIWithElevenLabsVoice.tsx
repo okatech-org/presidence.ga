@@ -233,7 +233,7 @@ export const useOpenAIWithElevenLabsVoice = ({
 
       if (error) throw error;
       
-      const assistantResponse = data.response;
+      const assistantResponse = data.answer;
       console.log('✅ [Hybrid] Réponse OpenAI:', assistantResponse);
       
       conversationHistoryRef.current.push({
