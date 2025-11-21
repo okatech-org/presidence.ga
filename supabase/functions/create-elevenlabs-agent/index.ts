@@ -30,7 +30,7 @@ serve(async (req) => {
       auth: { persistSession: false }
     });
 
-    // Verify the user is authenticated and has admin role
+    // Verify the user is authenticated
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       console.error('❌ [create-elevenlabs-agent] Authentication failed:', userError);
@@ -40,23 +40,7 @@ serve(async (req) => {
       );
     }
 
-    // Check if user has admin role (only admins can create agents)
-    const { data: roles, error: roleError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
-
-    if (roleError || !roles) {
-      console.error('❌ [create-elevenlabs-agent] Authorization failed');
-      return new Response(
-        JSON.stringify({ error: 'Admin privileges required to create ElevenLabs agents' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`🔍 [create-elevenlabs-agent] Admin ${user.email} creating agent`);
+    console.log(`🔍 [create-elevenlabs-agent] User ${user.email} creating agent`);
 
     console.log('🔍 [create-elevenlabs-agent] Début de la requête');
     
