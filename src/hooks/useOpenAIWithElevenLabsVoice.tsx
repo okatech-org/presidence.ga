@@ -98,7 +98,7 @@ class AudioRecorder {
 }
 
 export const useOpenAIWithElevenLabsVoice = ({
-  voiceId = 'EV6XgOdBELK29O2b4qyM', // Voix iAsted Pro par défaut
+  voiceId = '9BWtsMINqrJLrRacOk9x', // Aria - Professional voice for president
   systemPrompt = "Vous êtes iAsted, l'assistant vocal intelligent du Président de la République. Vous êtes professionnel, concis et efficace. Vos réponses sont claires et directes.",
   onMessage,
 }: UseOpenAIWithElevenLabsVoiceOptions = {}) => {
