@@ -73,6 +73,9 @@ export const useElevenLabsConversation = ({
       console.log('✅ [ElevenLabs] Connecté à l\'agent');
       setConversationState('connected');
       onStateChange?.('connected');
+      
+      // L'agent va automatiquement dire son first_message
+      console.log('🎙️ [ElevenLabs] En attente du message de bienvenue...');
     },
     onDisconnect: () => {
       console.log('🔌 [ElevenLabs] Déconnecté de l\'agent');
@@ -81,7 +84,7 @@ export const useElevenLabsConversation = ({
       conversationIdRef.current = null;
     },
     onMessage: (message) => {
-      console.log('📨 [ElevenLabs] Message reçu:', message);
+      console.log('📨 [ElevenLabs] Message reçu:', JSON.stringify(message, null, 2));
       onMessage?.(message);
     },
     onError: (error) => {
