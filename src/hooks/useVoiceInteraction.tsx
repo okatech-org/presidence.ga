@@ -35,8 +35,8 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   const [userId, setUserId] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  // Utiliser le voiceId fourni ou la voix iAsted Pro par défaut
-  const [selectedVoiceId, setSelectedVoiceId] = useState<string>(voiceId || 'EV6XgOdBELK29O2b4qyM');
+  // Utiliser le voiceId fourni ou la voix Aria par défaut
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>(voiceId || '9BWtsMINqrJLrRacOk9x');
   
   // Log pour debug
   useEffect(() => {

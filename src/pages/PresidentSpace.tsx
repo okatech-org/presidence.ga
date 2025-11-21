@@ -140,7 +140,7 @@ export default function PresidentSpace() {
 
   // Hook pour le mode iAsted Pro (OpenAI GPT + voix ElevenLabs)
   const iastedPro = useOpenAIWithElevenLabsVoice({
-    voiceId: 'EV6XgOdBELK29O2b4qyM', // Voix iAsted Pro
+    voiceId: '9BWtsMINqrJLrRacOk9x', // Voix Aria (standard ElevenLabs)
     systemPrompt: "Vous êtes iAsted, l'assistant vocal intelligent du Président de la République du Gabon. Vous êtes professionnel, concis et efficace. Vous aidez le Président dans ses décisions stratégiques. Vos réponses sont claires, directes et adaptées au contexte présidentiel.",
     onMessage: (message) => {
       console.log('📨 [PresidentSpace] Message iAsted Pro:', message);
