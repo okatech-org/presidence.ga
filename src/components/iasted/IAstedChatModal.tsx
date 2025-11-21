@@ -838,18 +838,24 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
   // Sauvegarder le message dans Supabase
   const saveMessage = async (sessionId: string, message: Message) => {
     try {
+      const payload = {
+        id: message.id,
+        session_id: sessionId,
+        role: message.role,
+        content: message.content,
+        metadata: message.metadata || {},
+        created_at: message.timestamp,
+      };
+      console.log('💾 [saveMessage] Payload:', payload);
+
       const { error } = await supabase
         .from('conversation_messages')
-        .insert({
-          id: message.id,
-          session_id: sessionId,
-          role: message.role,
-          content: message.content,
-          metadata: message.metadata || {},
-          created_at: message.timestamp,
-        });
+        .insert(payload);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [saveMessage] Supabase Error:', error);
+        throw error;
+      }
     } catch (error) {
       console.error('❌ [saveMessage] Erreur:', error);
     }
