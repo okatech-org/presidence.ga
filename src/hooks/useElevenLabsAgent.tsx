@@ -4,22 +4,69 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface UseElevenLabsAgentProps {
-  agentId: string | null;
-  userRole: 'president' | 'minister' | 'default';
+  agentId?: string;
+  userRole?: 'president' | 'minister' | 'default';
   onSpeakingChange?: (isSpeaking: boolean) => void;
   autoStart?: boolean;
 }
 
 export const useElevenLabsAgent = ({ 
-  agentId, 
-  userRole, 
+  agentId: providedAgentId, 
+  userRole = 'default', 
   onSpeakingChange,
   autoStart = false 
-}: UseElevenLabsAgentProps) => {
+}: UseElevenLabsAgentProps = {}) => {
   const { toast } = useToast();
+  const [agentId, setAgentId] = useState<string | undefined>(providedAgentId);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const [conversationStarted, setConversationStarted] = useState(false);
+
+  // Récupérer automatiquement l'agent depuis la base de données
+  useEffect(() => {
+    const ensureAgent = async () => {
+      if (providedAgentId) return;
+      if (agentId) return;
+
+      try {
+        console.log('🔍 [ElevenLabs] Récupération de l\'agent depuis la base de données...');
+        
+        const { data: existingConfig, error: configError } = await supabase
+          .from('iasted_config')
+          .select('agent_id')
+          .maybeSingle();
+
+        if (configError) {
+          console.error('❌ [ElevenLabs] Erreur récupération config:', configError);
+          return;
+        }
+
+        if (existingConfig?.agent_id) {
+          console.log('✅ [ElevenLabs] Agent trouvé:', existingConfig.agent_id);
+          setAgentId(existingConfig.agent_id);
+          return;
+        }
+
+        // Créer l'agent automatiquement si nécessaire
+        console.log('🚀 [ElevenLabs] Création automatique de l\'agent...');
+        const { data: createData, error: createError } = await supabase.functions.invoke('create-elevenlabs-agent');
+
+        if (createError) {
+          console.error('❌ [ElevenLabs] Erreur création agent:', createError);
+          return;
+        }
+
+        if (createData?.agentId) {
+          console.log('✅ [ElevenLabs] Agent créé:', createData.agentId);
+          setAgentId(createData.agentId);
+        }
+      } catch (error) {
+        console.error('❌ [ElevenLabs] Erreur setup agent:', error);
+      }
+    };
+
+    ensureAgent();
+  }, [providedAgentId, agentId]);
 
   // Configuration de l'agent ElevenLabs
   const conversation = useConversation({
