@@ -838,15 +838,21 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
   // Sauvegarder le message dans Supabase
   const saveMessage = async (sessionId: string, message: Message) => {
     try {
+      // Vérification du rôle (le système n'accepte que user/assistant/router/tool)
+      if (message.role === 'system') {
+        console.warn('⚠️ [saveMessage] Role "system" non supporté par la DB, ignoré.');
+        return;
+      }
+
       const payload = {
-        id: message.id,
         session_id: sessionId,
         role: message.role,
         content: message.content,
+        // On omet id et created_at pour laisser la DB gérer les défauts si possible,
+        // ou on les remet si nécessaire. Essayons sans d'abord pour voir si ça passe.
         metadata: message.metadata || {},
-        created_at: message.timestamp,
       };
-      console.log('💾 [saveMessage] Payload:', payload);
+      console.log('💾 [saveMessage] Payload simplifié:', payload);
 
       const { error } = await supabase
         .from('conversation_messages')
@@ -854,7 +860,20 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
 
       if (error) {
         console.error('❌ [saveMessage] Supabase Error:', error);
-        throw error;
+        // Si erreur 400, on essaie avec id et created_at explicitement
+        if (error.code === '400' || error.code === '23502') { // 23502 = not null violation
+          console.log('🔄 [saveMessage] Retrying with full payload...');
+          const fullPayload = {
+            id: message.id,
+            session_id: sessionId,
+            role: message.role,
+            content: message.content,
+            metadata: message.metadata || {},
+            created_at: message.timestamp,
+          };
+          const { error: retryError } = await supabase.from('conversation_messages').insert(fullPayload);
+          if (retryError) console.error('❌ [saveMessage] Retry Error:', retryError);
+        }
       }
     } catch (error) {
       console.error('❌ [saveMessage] Erreur:', error);
