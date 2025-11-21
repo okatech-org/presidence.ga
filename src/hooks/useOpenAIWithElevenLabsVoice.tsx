@@ -122,8 +122,8 @@ export const useOpenAIWithElevenLabsVoice = ({
     return rms < 0.01; // Seuil de silence
   }, []);
 
-  // Encoder l'audio pour l'envoyer à Whisper
-  const encodeAudioForWhisper = useCallback((chunks: Float32Array[]): string => {
+  // Créer un vrai fichier WAV avec headers
+  const createWavFile = useCallback((chunks: Float32Array[]): string => {
     const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
     const combined = new Float32Array(totalLength);
     let offset = 0;
@@ -132,21 +132,64 @@ export const useOpenAIWithElevenLabsVoice = ({
       offset += chunk.length;
     }
 
+    // Convertir Float32 en Int16 (PCM16)
     const int16Array = new Int16Array(combined.length);
     for (let i = 0; i < combined.length; i++) {
       const s = Math.max(-1, Math.min(1, combined[i]));
       int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
     }
     
-    const uint8Array = new Uint8Array(int16Array.buffer);
+    // Paramètres WAV
+    const sampleRate = 24000;
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+    const blockAlign = numChannels * (bitsPerSample / 8);
+    const dataSize = int16Array.length * 2;
+    
+    // Créer le buffer WAV avec headers
+    const wavBuffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(wavBuffer);
+    
+    // Helper pour écrire des strings
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+    
+    // Header RIFF
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true); // Taille du fichier - 8
+    writeString(8, 'WAVE');
+    
+    // Subchunk1 (fmt)
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true); // Taille du subchunk1
+    view.setUint16(20, 1, true); // Format audio (1 = PCM)
+    view.setUint16(22, numChannels, true); // Nombre de canaux
+    view.setUint32(24, sampleRate, true); // Fréquence d'échantillonnage
+    view.setUint32(28, byteRate, true); // Byte rate
+    view.setUint16(32, blockAlign, true); // Block align
+    view.setUint16(34, bitsPerSample, true); // Bits par échantillon
+    
+    // Subchunk2 (data)
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true); // Taille des données
+    
+    // Copier les données audio
+    const wavData = new Uint8Array(wavBuffer);
+    wavData.set(new Uint8Array(int16Array.buffer), 44);
+    
+    // Encoder en base64
     let binary = '';
     const chunkSize = 0x8000;
-    
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+    for (let i = 0; i < wavData.length; i += chunkSize) {
+      const chunk = wavData.subarray(i, Math.min(i + chunkSize, wavData.length));
       binary += String.fromCharCode(...Array.from(chunk));
     }
     
+    console.log('✅ [Hybrid] Fichier WAV créé:', wavData.length, 'bytes');
     return btoa(binary);
   }, []);
 
@@ -271,8 +314,8 @@ export const useOpenAIWithElevenLabsVoice = ({
       setVoiceState('thinking');
       recorderRef.current?.pause();
 
-      // Transcrire
-      const audioBase64 = encodeAudioForWhisper(audioChunksRef.current);
+      // Créer un fichier WAV et transcrire
+      const audioBase64 = createWavFile(audioChunksRef.current);
       audioChunksRef.current = [];
       
       const transcription = await transcribeAudio(audioBase64);
@@ -323,7 +366,7 @@ export const useOpenAIWithElevenLabsVoice = ({
       setVoiceState('listening');
       recorderRef.current?.resume();
     }
-  }, [encodeAudioForWhisper, transcribeAudio, getOpenAIResponse, synthesizeSpeech, playAudio, toast, onMessage]);
+  }, [createWavFile, transcribeAudio, getOpenAIResponse, synthesizeSpeech, playAudio, toast, onMessage]);
 
   // Gérer les chunks audio
   const handleAudioData = useCallback((audioData: Float32Array) => {
