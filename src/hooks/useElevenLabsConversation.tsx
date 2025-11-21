@@ -130,6 +130,23 @@ export const useElevenLabsConversation = ({
       setConversationState('connecting');
       onStateChange?.('connecting');
 
+      // Demander l'accès au microphone avant de lancer la session
+      try {
+        console.log("🎤 [ElevenLabs] Demande d'accès au microphone...");
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('🎤 [ElevenLabs] Accès au microphone accordé');
+      } catch (micError) {
+        console.error('❌ [ElevenLabs] Accès au microphone refusé:', micError);
+        setConversationState('disconnected');
+        onStateChange?.('disconnected');
+        toast({
+          title: "Microphone requis",
+          description: "Veuillez autoriser l'accès au microphone pour utiliser iAsted Pro",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Obtenir le signed URL
       const url = await getSignedUrl(targetAgentId);
       if (!url) {
@@ -138,7 +155,7 @@ export const useElevenLabsConversation = ({
         return;
       }
 
-      // Démarrer la session avec agentId
+      // Démarrer la session avec l'URL signée
       const convId = await conversation.startSession({ 
         signedUrl: url 
       });
