@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useElevenLabsConversation, ConversationState } from '@/hooks/useElevenLabsConversation';
+import { useElevenLabsAgent } from '@/hooks/useElevenLabsAgent';
 import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import { useRealtimePresidentDashboard } from '@/hooks/useRealtimeSync';
 import { cn } from "@/lib/utils";
@@ -139,18 +139,15 @@ export default function PresidentSpace() {
   useRealtimePresidentDashboard();
 
   // Hook pour la conversation vocale temps réel avec ElevenLabs (voix iAsted Pro)
-  const [conversationState, setConversationState] = useState<ConversationState>('disconnected');
-  
-  const elevenLabs = useElevenLabsConversation({
-    onStateChange: (state) => {
-      console.log('🔄 [PresidentSpace] État conversation ElevenLabs:', state);
-      setConversationState(state);
-    },
-    onMessage: (message) => {
-      console.log('📨 [PresidentSpace] Message ElevenLabs:', message);
+  const elevenLabs = useElevenLabsAgent({
+    // L'agent réel est configuré côté backend dans iasted_config, cet ID est utilisé pour le tracking côté client
+    agentId: 'iasted-pro-agent',
+    userRole: 'president',
+    onSpeakingChange: (speaking) => {
+      console.log('🎙️ [PresidentSpace] ElevenLabs speaking:', speaking);
     },
   });
-
+ 
   // Hook pour la conversation OpenAI WebRTC (voix alloy)
   const openaiRTC = useRealtimeVoiceWebRTC();
 
@@ -757,7 +754,7 @@ export default function PresidentSpace() {
             // Mode ElevenLabs (iAsted Pro)
             if (elevenLabs.isConnected) {
               console.log('🔄 [IAstedButton] Déconnexion ElevenLabs');
-              await elevenLabs.endConversation();
+              await elevenLabs.stopConversation();
             } else {
               console.log('🎤 [IAstedButton] Démarrage ElevenLabs iAsted Pro');
               await elevenLabs.startConversation();
@@ -780,7 +777,7 @@ export default function PresidentSpace() {
         size="lg"
         voiceListening={
           voiceMode === 'elevenlabs' 
-            ? (conversationState === 'connected' && !elevenLabs.isSpeaking)
+            ? (elevenLabs.isConnected && !elevenLabs.isSpeaking)
             : (openaiRTC.voiceState === 'listening')
         }
         voiceSpeaking={
@@ -790,7 +787,7 @@ export default function PresidentSpace() {
         }
         voiceProcessing={
           voiceMode === 'elevenlabs'
-            ? (conversationState === 'connecting')
+            ? (elevenLabs.isLoading || (!elevenLabs.isConnected && elevenLabs.conversationStarted))
             : (openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking')
         }
         isInterfaceOpen={iastedOpen}
