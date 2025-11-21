@@ -353,10 +353,14 @@ serve(async (req) => {
       generateAudio = true,
       userRole = 'default',
       userGender = 'male',
+      message,
+      conversationHistory: providedHistory,
+      systemPrompt: providedSystemPrompt,
     } = body;
 
-    if (!sessionId) {
-      throw new Error('sessionId est requis');
+    // sessionId est optionnel si conversationHistory et message sont fournis directement
+    if (!sessionId && (!message || !providedHistory)) {
+      throw new Error('sessionId est requis OU message + conversationHistory doivent être fournis');
     }
 
     const startTime = Date.now();
@@ -365,7 +369,7 @@ serve(async (req) => {
     let ttsLatency = 0;
 
     // 1. Transcription
-    let userTranscript = transcriptOverride;
+    let userTranscript = transcriptOverride || message;
 
     if (audioBase64 && !transcriptOverride) {
       const sttStart = Date.now();
@@ -411,27 +415,36 @@ serve(async (req) => {
     // 3. Récupération de l'historique
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    let conversationHistory: Array<{role: string, content: string}> = [];
+    
+    if (providedHistory) {
+      // Mode hybride: historique fourni directement
+      console.log('[chat-with-iasted] Utilisation de l\'historique fourni:', providedHistory.length, 'messages');
+      conversationHistory = providedHistory;
+    } else if (sessionId) {
+      // Mode normal: récupération depuis la DB
+      const historyResponse = await fetch(
+        `${supabaseUrl}/rest/v1/conversation_messages?session_id=eq.${sessionId}&order=created_at.asc&limit=10`,
+        {
+          headers: {
+            'apikey': supabaseKey!,
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+        }
+      );
 
-    const historyResponse = await fetch(
-      `${supabaseUrl}/rest/v1/conversation_messages?session_id=eq.${sessionId}&order=created_at.asc&limit=10`,
-      {
-        headers: {
-          'apikey': supabaseKey!,
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-      }
-    );
+      const history = await historyResponse.json();
+      console.log('[chat-with-iasted] Historique récupéré:', history.length, 'messages');
 
-    const history = await historyResponse.json();
-    console.log('[chat-with-iasted] Historique récupéré:', history.length, 'messages');
-
-    const conversationHistory = history.map((msg: any) => ({
-      role: msg.role,
-      content: msg.content
-    }));
+      conversationHistory = history.map((msg: any) => ({
+        role: msg.role,
+        content: msg.content
+      }));
+    }
 
     // 4. Génération du prompt dynamique
-    let systemPrompt = generateSystemPrompt(userRole as any, userGender);
+    let systemPrompt = providedSystemPrompt || generateSystemPrompt(userRole as any, userGender);
 
     // Ajout d'instructions contextuelles
     if (context.responseType === 'briefing') {
