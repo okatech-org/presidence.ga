@@ -25,7 +25,6 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useElevenLabsAgent } from '@/hooks/useElevenLabsAgent';
 import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 
 interface Message {
@@ -54,7 +53,11 @@ const MessageBubble: React.FC<{
   onDelete?: (id: string) => void;
   onEdit?: (id: string, newContent: string) => void;
   onCopy?: (content: string) => void;
-}> = ({ message, onDelete, onEdit, onCopy }) => {
+  openaiRTC: any;
+  selectedVoice: 'echo' | 'ash';
+}> = ({ message, onDelete, onEdit, onCopy, openaiRTC, selectedVoice }) => {
+
+
   const isUser = message.role === 'user';
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
@@ -208,7 +211,7 @@ const MessageBubble: React.FC<{
                         <FileText className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">{fullscreenDoc.name}</span>
                       </div>
-                      
+
                       {/* Contrôles */}
                       <div className="flex items-center gap-4">
                         {/* Zoom */}
@@ -306,6 +309,44 @@ const MessageBubble: React.FC<{
                           <span className="text-sm font-medium">Télécharger</span>
                         </button>
                         <button
+                          onClick={() => openaiRTC.toggleConversation(selectedVoice)}
+                          className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 ${openaiRTC.voiceState === 'listening'
+                            ? 'bg-red-500 shadow-[0_0_30px_rgba(239,68,68,0.6)] scale-110'
+                            : openaiRTC.voiceState === 'speaking'
+                              ? 'bg-green-500 shadow-[0_0_30px_rgba(34,197,94,0.6)] scale-110'
+                              : openaiRTC.voiceState === 'thinking'
+                                ? 'bg-yellow-500 shadow-[0_0_30px_rgba(234,179,8,0.6)] animate-pulse'
+                                : openaiRTC.voiceState === 'connecting'
+                                  ? 'bg-blue-500 animate-pulse'
+                                  : 'bg-gradient-to-br from-primary to-primary/80 hover:scale-105 shadow-lg hover:shadow-primary/25'
+                            }`}
+                        >
+                          {openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking' ? (
+                            <Loader2 className="w-8 h-8 text-white animate-spin" />
+                          ) : openaiRTC.voiceState === 'listening' ? (
+                            <Mic className="w-8 h-8 text-white animate-pulse" />
+                          ) : openaiRTC.voiceState === 'speaking' ? (
+                            <div className="flex gap-1 items-center justify-center h-8">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <motion.div
+                                  key={i}
+                                  className="w-1 bg-white rounded-full"
+                                  animate={{
+                                    height: [8, 24, 8],
+                                  }}
+                                  transition={{
+                                    duration: 0.5,
+                                    repeat: Infinity,
+                                    delay: i * 0.1,
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          ) : (
+                            <Mic className="w-8 h-8 text-white" />
+                          )}
+                        </button>
+                        <button
                           onClick={() => {
                             setFullscreenDoc(null);
                             setPdfZoom(100);
@@ -317,7 +358,7 @@ const MessageBubble: React.FC<{
                         </button>
                       </div>
                     </div>
-                    
+
                     {/* PDF Viewer avec object au lieu d'iframe */}
                     <div className="flex-1 p-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
                       <object
@@ -423,31 +464,34 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>(() => {
-    return (localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai') || 'elevenlabs';
+  const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash'>(() => {
+    return (localStorage.getItem('iasted-voice-selection') as 'echo' | 'ash') || 'echo';
   });
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { setTheme } = useTheme();
 
-  // ElevenLabs integration
-  const elevenLabs = useElevenLabsAgent({
-    agentId: 'EV6XgOdBELK29O2b4qyM', // iAsted Pro voice
-    userRole: 'president',
-    onSpeakingChange: (speaking) => {
-      console.log('🎙️ ElevenLabs speaking:', speaking);
-    },
-  });
-
   // OpenAI WebRTC integration
   const openaiRTC = useRealtimeVoiceWebRTC();
 
+  // Auto-start voice when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Petit délai pour laisser l'UI se monter
+      const timer = setTimeout(() => {
+        if (!openaiRTC.isConnected) {
+          openaiRTC.connect(selectedVoice);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, selectedVoice]); // Reconnect if voice changes while open? Maybe not automatically, let user decide.
+
   // Sync messages from OpenAI WebRTC
   useEffect(() => {
-    if (voiceMode === 'openai' && openaiRTC.messages.length > 0) {
+    if (openaiRTC.messages.length > 0) {
       const lastMsg = openaiRTC.messages[openaiRTC.messages.length - 1];
       setMessages(prev => {
         const existing = prev.find(m => m.id === lastMsg.id);
@@ -457,7 +501,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
         return prev.map(m => m.id === lastMsg.id ? lastMsg : m);
       });
     }
-  }, [openaiRTC.messages, voiceMode]);
+  }, [openaiRTC.messages]);
 
   // === Fonctions de gestion de messages ===
 
@@ -733,9 +777,8 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
             });
 
             // Télécharger automatiquement le PDF au lieu de l'ouvrir (évite ERR_BLOCKED_BY_CLIENT)
-            const isVoiceInteraction = isVoiceActive || voiceMode === 'elevenlabs';
-
-            if (isVoiceInteraction) {
+            // Si on est en mode vocal (connecté), on télécharge auto
+            if (openaiRTC.isConnected) {
               console.log('🔊 [generatePDF] Téléchargement automatique (demande vocale)');
               setTimeout(() => {
                 const link = document.createElement('a');
@@ -759,13 +802,8 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
 
         case 'manage_system_settings':
           if (args.setting === 'voice_mode') {
-            const newMode = args.value as 'elevenlabs' | 'openai';
-            setVoiceMode(newMode);
-            localStorage.setItem('iasted-voice-mode', newMode);
-            toast({
-              title: "Mode vocal changé",
-              description: `Nouveau mode: ${newMode === 'elevenlabs' ? 'iAsted Pro' : 'OpenAI RT'}`,
-            });
+            // Legacy support or ignore
+            console.log('Setting voice mode via tool is deprecated');
           } else if (args.setting === 'theme') {
             setTheme(args.value);
             toast({
@@ -797,108 +835,90 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
     }
   };
 
-  const saveMessage = async (sessId: string, message: Message) => {
+  // Sauvegarder le message dans Supabase
+  const saveMessage = async (sessionId: string, message: Message) => {
     try {
-      await supabase.from('conversation_messages').insert({
-        id: message.id,
-        session_id: sessId,
-        role: message.role,
-        content: message.content,
-        created_at: message.timestamp,
-      });
+      const { error } = await supabase
+        .from('conversation_messages')
+        .insert({
+          id: message.id,
+          session_id: sessionId,
+          role: message.role,
+          content: message.content,
+          metadata: message.metadata || {},
+          created_at: message.timestamp,
+        });
+
+      if (error) throw error;
     } catch (error) {
-      console.error('Erreur sauvegarde message:', error);
+      console.error('❌ [saveMessage] Erreur:', error);
     }
   };
 
+  // Gestion de l'envoi de message texte
   const handleSendMessage = async () => {
-    if (!inputText.trim() || isProcessing || !sessionId) return;
+    if (!inputText.trim() || isProcessing) return;
 
+    const userContent = inputText.trim();
+    setInputText('');
     setIsProcessing(true);
 
+    // 1. Ajouter message utilisateur
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: userContent,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    if (sessionId) await saveMessage(sessionId, userMessage);
+
+    // 2. Envoyer à l'API (via Edge Function pour streaming ou standard)
+    // Pour l'instant, on utilise une simple simulation ou appel standard si pas en mode vocal
+    // Si on est en mode vocal, on devrait peut-être utiliser le canal de données ?
+    // Mais ici c'est le chat texte.
+
     try {
-      const userMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'user',
-        content: inputText,
-        timestamp: new Date().toISOString(),
-      };
+      // Si connecté en WebRTC, on peut envoyer un message texte via le data channel si supporté,
+      // mais pour l'instant le hook WebRTC gère surtout l'audio.
+      // On va utiliser l'API standard de chat pour le texte.
 
-      setMessages(prev => [...prev, userMessage]);
-      await saveMessage(sessionId, userMessage);
-      setInputText('');
-
-      // Appeler l'API pour obtenir la réponse
-      const conversationHistory = messages.slice(-10).map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      const { data, error } = await supabase.functions.invoke('chat-with-iasted', {
+      const { data, error } = await supabase.functions.invoke('chat-completion', {
         body: {
-          sessionId,
-          transcriptOverride: userMessage.content,
-          conversationHistory: [...conversationHistory, { role: 'user', content: userMessage.content }],
-          userRole: 'president',
-          userGender: 'male', // À récupérer du profil utilisateur
-          settings: { responseStyle: 'strategique' },
-        },
+          messages: messages.concat(userMessage).map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+          systemPrompt: "Vous êtes iAsted, l'assistant du Président. Soyez concis et direct."
+        }
       });
 
       if (error) throw error;
 
-      // Traiter les tool_calls si présents
-      const hasToolCalls = data.tool_calls && data.tool_calls.length > 0;
-      if (hasToolCalls) {
-        console.log('🔧 [handleSendMessage] Tool calls détectés:', data.tool_calls);
-        for (const toolCall of data.tool_calls) {
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: data.choices[0].message.content,
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      if (sessionId) await saveMessage(sessionId, assistantMessage);
+
+      // Vérifier les tool calls
+      if (data.choices[0].message.tool_calls) {
+        for (const toolCall of data.choices[0].message.tool_calls) {
           await executeToolCall(toolCall);
         }
       }
 
-      const hasGenerateDocTool = data.tool_calls?.some((tc: any) => tc.function.name === 'generate_document');
-
-      // Cas 1: uniquement un tool generate_document, sans réponse texte →
-      // le message avec le PDF est déjà ajouté par executeToolCall, on ne duplique pas.
-      if (!data.answer && !data.response && !data.error && hasGenerateDocTool) {
-        console.log('📨 [handleSendMessage] Réponse uniquement via generate_document, aucun message texte ajouté.');
-        return;
-      }
-
-      // Cas 2: réponse texte normale ou erreur → on construit le message assistant
-      let responseContent = data.answer || data.response || data.error || '';
-
-      if (!responseContent) {
-        responseContent = 'Je suis désolé, je ne peux pas répondre pour le moment.';
-      }
-
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: responseContent,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          responseStyle: 'strategique',
-        },
-      };
-
-      console.log('📨 [handleSendMessage] Réponse reçue:', {
-        hasAnswer: !!data.answer,
-        hasResponse: !!data.response,
-        hasError: !!data.error,
-        hasToolCalls: data.tool_calls?.length || 0,
-        finalContent: assistantMessage.content.substring(0, 100)
-      });
-
-      setMessages(prev => [...prev, assistantMessage]);
-      await saveMessage(sessionId, assistantMessage);
-
     } catch (error) {
-      console.error('Erreur envoi message:', error);
+      console.error('Erreur chat:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible d\'envoyer le message',
-        variant: 'destructive',
+        title: "Erreur",
+        description: "Impossible d'envoyer le message",
+        variant: "destructive"
       });
     } finally {
       setIsProcessing(false);
@@ -912,66 +932,14 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
     }
   };
 
-  const toggleVoiceMode = async () => {
-    if (isVoiceActive) {
-      // Stop current voice session
-      if (voiceMode === 'elevenlabs') {
-        await elevenLabs.stopConversation();
-      } else {
-        openaiRTC.disconnect();
-      }
-      setIsVoiceActive(false);
-    } else {
-      // Start voice session
-      try {
-        if (voiceMode === 'elevenlabs') {
-          await elevenLabs.startConversation();
-          setIsVoiceActive(true);
-        } else {
-          await openaiRTC.connect();
-          setIsVoiceActive(true);
-        }
-      } catch (error) {
-        console.error('❌ Erreur démarrage vocal:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de démarrer le mode vocal',
-          variant: 'destructive',
-        });
-      }
-    }
-  };
-
   // Clean up voice connections on unmount
   useEffect(() => {
     return () => {
-      if (isVoiceActive) {
-        if (voiceMode === 'elevenlabs') {
-          elevenLabs.stopConversation();
-        } else {
-          openaiRTC.disconnect();
-        }
+      if (openaiRTC.isConnected) {
+        openaiRTC.disconnect();
       }
     };
-  }, []);
-
-  // Handle voice mode switch - stop current session if active
-  useEffect(() => {
-    if (isVoiceActive) {
-      // Stop current session and restart with new mode
-      const switchMode = async () => {
-        if (voiceMode === 'elevenlabs') {
-          openaiRTC.disconnect();
-        } else {
-          await elevenLabs.stopConversation();
-        }
-        setIsVoiceActive(false);
-      };
-      switchMode();
-    }
-    // Sauvegarder le mode dans localStorage pour synchroniser avec le bouton
-    localStorage.setItem('iasted-voice-mode', voiceMode);
-  }, [voiceMode]);
+  }, [openaiRTC.isConnected]);
 
   if (!isOpen) return null;
 
@@ -1015,27 +983,39 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
                 <span className="hidden sm:inline">Effacer</span>
               </button>
 
-              {/* Mode selector */}
-              <div className="neu-inset rounded-lg p-1 flex items-center gap-1">
+              {/* Voice Selector */}
+              <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 border border-border/50">
                 <button
-                  onClick={() => setVoiceMode('elevenlabs')}
-                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${voiceMode === 'elevenlabs'
-                    ? 'neu-raised bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                  onClick={() => {
+                    setSelectedVoice('echo');
+                    localStorage.setItem('iasted-voice-selection', 'echo');
+                    if (openaiRTC.isConnected) {
+                      openaiRTC.disconnect();
+                      setTimeout(() => openaiRTC.connect('echo'), 200);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${selectedVoice === 'echo'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-background/80'
                     }`}
-                  title="ElevenLabs iAsted Pro - Voix de haute qualité"
                 >
-                  🎙️ iAsted Pro
+                  Standard
                 </button>
                 <button
-                  onClick={() => setVoiceMode('openai')}
-                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${voiceMode === 'openai'
-                    ? 'neu-raised bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                  onClick={() => {
+                    setSelectedVoice('ash');
+                    localStorage.setItem('iasted-voice-selection', 'ash');
+                    if (openaiRTC.isConnected) {
+                      openaiRTC.disconnect();
+                      setTimeout(() => openaiRTC.connect('ash'), 200);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${selectedVoice === 'ash'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-background/80'
                     }`}
-                  title="OpenAI Temps Réel - Latence ultra-faible"
                 >
-                  ⚡ OpenAI RT
+                  Africain
                 </button>
               </div>
 
@@ -1059,6 +1039,8 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
                 onDelete={handleDeleteMessage}
                 onEdit={handleEditMessage}
                 onCopy={handleCopyMessage}
+                openaiRTC={openaiRTC}
+                selectedVoice={selectedVoice}
               />
             ))}
           </AnimatePresence>
@@ -1077,54 +1059,53 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="neu-card rounded-t-none rounded-b-2xl p-4">
-          <div className="flex items-end gap-3">
-            <button
-              onClick={toggleVoiceMode}
-              className={`neu-raised p-4 rounded-xl hover:shadow-neo-lg transition-all ${isVoiceActive ? 'bg-primary text-primary-foreground' : ''
-                }`}
-              title={isVoiceActive ? 'Arrêter le mode vocal' : 'Activer le mode vocal'}
-            >
-              {isVoiceActive ? (
-                <Mic className="w-6 h-6" />
-              ) : (
-                <MicOff className="w-6 h-6" />
-              )}
-            </button>
+        {/* Input Area */}
+        <div className="p-4 border-t border-border bg-background/50 backdrop-blur-md flex items-end gap-2">
+          <button
+            onClick={() => openaiRTC.toggleConversation(selectedVoice)}
+            className={`neu-raised p-4 rounded-xl hover:shadow-neo-lg transition-all ${openaiRTC.isConnected ? 'bg-primary text-primary-foreground' : ''
+              }`}
+            title={openaiRTC.isConnected ? 'Arrêter le mode vocal' : 'Activer le mode vocal'}
+          >
+            {openaiRTC.isConnected ? (
+              <MicOff className="w-6 h-6" />
+            ) : (
+              <Mic className="w-6 h-6 text-primary" />
+            )}
+          </button>
 
-            <div className="flex-1">
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Posez votre question à iAsted..."
-                className="w-full p-3 neu-inset rounded-xl resize-none focus:ring-2 focus:ring-primary"
-                rows={2}
-                disabled={isProcessing || isVoiceActive}
-              />
-            </div>
-
+          <div className="flex-1 relative">
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder={
+                openaiRTC.isConnected ? `🎙️ Mode vocal actif (${selectedVoice === 'echo' ? 'Standard' : 'Africain'})` :
+                  "Posez votre question à iAsted..."
+              }
+              className="w-full neu-inset rounded-xl p-4 pr-12 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[60px] max-h-[120px]"
+              rows={1}
+              disabled={isProcessing || openaiRTC.isConnected}
+            />
             <button
               onClick={handleSendMessage}
-              disabled={!inputText.trim() || isProcessing || isVoiceActive}
-              className="neu-raised p-4 bg-primary text-white rounded-xl hover:bg-primary/90 hover:shadow-neo-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!inputText.trim() || isProcessing || openaiRTC.isConnected}
+              className="absolute right-2 bottom-2 p-2 rounded-lg hover:bg-primary/10 text-primary disabled:opacity-50 transition-colors"
             >
               {isProcessing ? (
-                <Loader2 className="w-6 h-6 animate-spin text-white" />
+                <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <Send className="w-6 h-6 text-white" />
+                <Send className="w-5 h-5" />
               )}
             </button>
           </div>
-
-          <div className="text-center text-sm text-muted-foreground mt-3">
-            {isProcessing ? '🧠 iAsted analyse...' :
-              isVoiceActive ? `🎙️ Mode vocal actif (${voiceMode === 'elevenlabs' ? 'iAsted Pro' : 'OpenAI RT'})` :
-                '💬 Conversation stratégique'}
-          </div>
         </div>
-      </motion.div>
-    </div>
+        <div className="text-center text-sm text-muted-foreground mt-3">
+          {isProcessing ? '🧠 iAsted analyse...' :
+            openaiRTC.isConnected ? `🎙️ Mode vocal actif (${selectedVoice === 'echo' ? 'Standard' : 'Africain'})` :
+              '💬 Conversation stratégique'}
+        </div>
+      </motion.div >
+    </div >
   );
 };

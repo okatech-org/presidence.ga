@@ -133,6 +133,19 @@ export default function PresidentSpace() {
   const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>(() => {
     return (localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai') || 'elevenlabs';
   });
+  const [selectedVoice, setSelectedVoice] = useState<'male' | 'female'>('female');
+
+  const VOICE_CONFIG = {
+    female: {
+      id: 'AWbzS1CRVezWHfMSsL69',
+      name: 'Femme (Standard)'
+    },
+    male: {
+      id: 'N2lVS1w4EjpYW751a936', // Placeholder for African Male Voice
+      name: 'Homme (Afrique Centrale)'
+    }
+  };
+
   const navigate = useNavigate();
 
   // Activer la synchronisation temps réel pour le dashboard présidentiel
@@ -140,13 +153,14 @@ export default function PresidentSpace() {
 
   // Hook pour le mode iAsted Pro (OpenAI GPT + voix ElevenLabs)
   const iastedPro = useOpenAIWithElevenLabsVoice({
-    voiceId: '9BWtsMINqrJLrRacOk9x', // Voix Aria (standard ElevenLabs)
-    systemPrompt: "Vous êtes iAsted, l'assistant vocal intelligent du Président de la République du Gabon. Vous êtes professionnel, concis et efficace. Vous aidez le Président dans ses décisions stratégiques. Vos réponses sont claires, directes et adaptées au contexte présidentiel.",
+    voiceId: VOICE_CONFIG[selectedVoice].id,
+    systemPrompt: "Vous êtes iAsted, l'assistant vocal intelligent du Président de la République du Gabon. Vous êtes professionnel, concis et efficace. Adoptez un ton chaleureux, avec une fluidité conversationnelle et un accent d'Afrique centrale si possible. Vos réponses sont claires, directes et adaptées au contexte présidentiel.",
+    initialGreeting: "Bonjour Monsieur le Président, je suis à votre écoute.",
     onMessage: (message) => {
       console.log('📨 [PresidentSpace] Message iAsted Pro:', message);
     },
   });
- 
+
   // Hook pour la conversation OpenAI WebRTC (voix alloy)
   const openaiRTC = useRealtimeVoiceWebRTC();
 
@@ -228,21 +242,21 @@ export default function PresidentSpace() {
           {/* Logo et titre */}
           <div className="flex items-center gap-3 mb-8">
             <div className="neu-raised w-12 h-12 rounded-full flex items-center justify-center p-2">
-              <img 
-                src={emblemGabon} 
-                alt="Emblème de la République Gabonaise" 
+              <img
+                src={emblemGabon}
+                alt="Emblème de la République Gabonaise"
                 className="w-full h-full object-contain"
               />
             </div>
             <div>
               <div className="font-bold text-sm">ADMIN.GA</div>
               <div className="text-xs text-muted-foreground">Espace Président</div>
+            </div>
           </div>
-        </div>
 
           {/* Navigation */}
           <div className="mb-4">
-          <button
+            <button
               onClick={() => toggleSection('navigation')}
               className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
             >
@@ -252,11 +266,11 @@ export default function PresidentSpace() {
               ) : (
                 <ChevronRight className="w-3 h-3" />
               )}
-          </button>
+            </button>
             {expandedSections.navigation && (
               <nav className="space-y-1 ml-2">
                 {navigationItems.map((item, index) => (
-            <button
+                  <button
                     key={index}
                     onClick={() => {
                       if (item.id === "iasted") {
@@ -265,15 +279,14 @@ export default function PresidentSpace() {
                         setActiveSection(item.id);
                       }
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                      activeSection === item.id || (item.id === "iasted" && iastedOpen)
-                        ? "neu-inset text-primary font-semibold"
-                        : "neu-raised hover:shadow-neo-md"
-                    }`}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === item.id || (item.id === "iasted" && iastedOpen)
+                      ? "neu-inset text-primary font-semibold"
+                      : "neu-raised hover:shadow-neo-md"
+                      }`}
                   >
                     <item.icon className="w-4 h-4" />
                     {item.label}
-            </button>
+                  </button>
                 ))}
               </nav>
             )}
@@ -296,55 +309,51 @@ export default function PresidentSpace() {
               <nav className="space-y-1 ml-2">
                 <button
                   onClick={() => setActiveSection("conseil-ministres")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "conseil-ministres"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "conseil-ministres"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <UserCog className="w-4 h-4" />
                   Conseil des Ministres
                 </button>
                 <button
                   onClick={() => setActiveSection("ministeres")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "ministeres"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "ministeres"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <Building2 className="w-4 h-4" />
                   Ministères & Directions
                 </button>
                 <button
                   onClick={() => setActiveSection("decrets")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "decrets"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "decrets"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <FileCheck className="w-4 h-4" />
                   Décrets & Ordonnances
                 </button>
                 <button
                   onClick={() => setActiveSection("nominations")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "nominations"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "nominations"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <Users className="w-4 h-4" />
                   Nominations
                 </button>
               </nav>
             )}
-            </div>
+          </div>
 
           {/* Économie & Finances */}
           <div className="mb-4">
-                <button
+            <button
               onClick={() => toggleSection('economie')}
               className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
             >
@@ -354,45 +363,42 @@ export default function PresidentSpace() {
               ) : (
                 <ChevronRight className="w-3 h-3" />
               )}
-                </button>
+            </button>
             {expandedSections.economie && (
               <nav className="space-y-1 ml-2">
                 <button
                   onClick={() => setActiveSection("budget")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "budget"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "budget"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <DollarSign className="w-4 h-4" />
                   Budget National
                 </button>
-                      <button
+                <button
                   onClick={() => setActiveSection("indicateurs")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "indicateurs"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "indicateurs"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <TrendingUpIcon className="w-4 h-4" />
                   Indicateurs Économiques
                 </button>
                 <button
                   onClick={() => setActiveSection("investissements")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "investissements"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "investissements"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <Landmark className="w-4 h-4" />
                   Investissements
-                      </button>
+                </button>
               </nav>
-                    )}
-                  </div>
+            )}
+          </div>
 
           {/* Affaires Sociales */}
           <div className="mb-4 flex-1">
@@ -409,42 +415,39 @@ export default function PresidentSpace() {
             </button>
             {expandedSections.affaires && (
               <nav className="space-y-1 ml-2">
-                      <button
+                <button
                   onClick={() => setActiveSection("education")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "education"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "education"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <GraduationCap className="w-4 h-4" />
                   Éducation
-              </button>
+                </button>
                 <button
                   onClick={() => setActiveSection("sante")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "sante"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "sante"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <Stethoscope className="w-4 h-4" />
                   Santé Publique
-                      </button>
+                </button>
                 <button
                   onClick={() => setActiveSection("emploi")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "emploi"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "emploi"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <Briefcase className="w-4 h-4" />
                   Emploi & Formation
                 </button>
               </nav>
-                )}
-              </div>
+            )}
+          </div>
 
           {/* Infrastructures & Projets */}
           <div className="mb-4">
@@ -461,35 +464,32 @@ export default function PresidentSpace() {
             </button>
             {expandedSections.infrastructures && (
               <nav className="space-y-1 ml-2">
-              <button
+                <button
                   onClick={() => setActiveSection("chantiers")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "chantiers"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "chantiers"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <Hammer className="w-4 h-4" />
                   Suivi des Chantiers
-              </button>
+                </button>
                 <button
                   onClick={() => setActiveSection("projets-presidentiels")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "projets-presidentiels"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "projets-presidentiels"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <Crown className="w-4 h-4" />
                   Projets Présidentiels
                 </button>
                 <button
                   onClick={() => setActiveSection("projets-etat")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                    activeSection === "projets-etat"
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "projets-etat"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    }`}
                 >
                   <Target className="w-4 h-4" />
                   Projets d'État
@@ -520,14 +520,33 @@ export default function PresidentSpace() {
               <Settings className="w-4 h-4" />
               Paramètres
             </button>
-              <button
-                onClick={handleLogout}
+
+            {/* Sélecteur de voix */}
+            <div className="px-3 py-2 mb-1">
+              <div className="text-xs text-muted-foreground mb-2 font-medium">VOIX ASSISTANT</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedVoice('male')}
+                  className={`flex-1 py-1.5 text-xs rounded-md transition-all ${selectedVoice === 'male' ? 'bg-primary text-white shadow-md' : 'neu-raised hover:bg-primary/10'}`}
+                >
+                  Homme
+                </button>
+                <button
+                  onClick={() => setSelectedVoice('female')}
+                  className={`flex-1 py-1.5 text-xs rounded-md transition-all ${selectedVoice === 'female' ? 'bg-primary text-white shadow-md' : 'neu-raised hover:bg-primary/10'}`}
+                >
+                  Femme
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-destructive neu-raised hover:shadow-neo-md transition-all"
             >
               <LogOut className="w-4 h-4" />
               Déconnexion
-              </button>
-            </div>
+            </button>
+          </div>
         </aside>
 
         {/* Contenu principal */}
@@ -536,13 +555,13 @@ export default function PresidentSpace() {
             {/* En-tête */}
             <div className="flex items-start gap-4 mb-10">
               <div className="neu-raised w-20 h-20 rounded-full flex items-center justify-center p-3 shrink-0">
-                <img 
-                  src={emblemGabon} 
-                  alt="Emblème de la République Gabonaise" 
+                <img
+                  src={emblemGabon}
+                  alt="Emblème de la République Gabonaise"
                   className="w-full h-full object-contain"
                 />
               </div>
-            <div>
+              <div>
                 <h1 className="text-4xl font-bold mb-2">
                   Espace Président
                 </h1>
@@ -550,7 +569,7 @@ export default function PresidentSpace() {
                   Présidence de la République - République Gabonaise
                 </p>
               </div>
-              </div>
+            </div>
 
             {/* Statistiques principales - Style avec séparateurs */}
             <div className="neu-card p-6 mb-8">
@@ -558,13 +577,13 @@ export default function PresidentSpace() {
                 <div className="px-6 first:pl-0">
                   <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
                     <Users className="w-6 h-6 text-primary" />
-                </div>
+                  </div>
                   <div className="text-4xl font-bold mb-2">
                     {stats.totalAgents}
                   </div>
                   <div className="text-sm font-medium">Total Agents</div>
                   <div className="text-xs text-muted-foreground">Fonction publique gabonaise</div>
-              </div>
+                </div>
 
                 <div className="px-6">
                   <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
@@ -598,67 +617,67 @@ export default function PresidentSpace() {
                   <div className="text-sm font-medium">Actes en attente</div>
                   <div className="text-xs text-muted-foreground">Nécessitent votre validation</div>
                 </div>
-                </div>
               </div>
+            </div>
 
             {/* Contenu conditionnel selon la section active */}
             {activeSection === "dashboard" && (
               <>
                 {/* Sections de données */}
                 <div className="grid gap-6 md:grid-cols-2">
-              <div className="neu-card p-6 min-h-[300px]">
-                <h3 className="text-xl font-semibold mb-2">
-                  Répartition par Type d'Agent
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Catégories de personnels
-                </p>
-                <div className="h-64 mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={agentTypesData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {agentTypesData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+                  <div className="neu-card p-6 min-h-[300px]">
+                    <h3 className="text-xl font-semibold mb-2">
+                      Répartition par Type d'Agent
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Catégories de personnels
+                    </p>
+                    <div className="h-64 mt-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={agentTypesData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {agentTypesData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
 
-              <div className="neu-card p-6 min-h-[300px]">
-                <h3 className="text-xl font-semibold mb-2">
-                  Équilibre Homme/Femme
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Répartition par genre
-                </p>
-                <div className="h-64 mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={genderData}>
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]}>
-                        {genderData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-            </div>
-              </div>
-            </div>
+                  <div className="neu-card p-6 min-h-[300px]">
+                    <h3 className="text-xl font-semibold mb-2">
+                      Équilibre Homme/Femme
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Répartition par genre
+                    </p>
+                    <div className="h-64 mt-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={genderData}>
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]}>
+                            {genderData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
 
@@ -683,7 +702,7 @@ export default function PresidentSpace() {
             {activeSection === "nominations" && (
               <div className="space-y-6">
                 <Nominations theme={currentTheme} />
-        </div>
+              </div>
             )}
 
             {activeSection === "budget" && (
@@ -748,7 +767,7 @@ export default function PresidentSpace() {
         onSingleClick={async () => {
           const currentMode = voiceMode;
           console.log(`🖱️ [IAstedButton] Clic simple - mode: ${currentMode}`);
-          
+
           if (currentMode === 'elevenlabs') {
             // Mode iAsted Pro (OpenAI GPT + voix ElevenLabs)
             console.log('🎤 [IAstedButton] Toggle iAsted Pro');
@@ -770,7 +789,7 @@ export default function PresidentSpace() {
         }}
         size="lg"
         voiceListening={
-          voiceMode === 'elevenlabs' 
+          voiceMode === 'elevenlabs'
             ? (iastedPro.voiceState === 'listening')
             : (openaiRTC.voiceState === 'listening')
         }
