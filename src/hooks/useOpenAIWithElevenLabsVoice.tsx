@@ -222,10 +222,12 @@ export const useOpenAIWithElevenLabsVoice = ({
       });
 
       const { data, error } = await supabase.functions.invoke('chat-with-iasted', {
-        body: {
+        body: { 
           message: userMessage,
           conversationHistory: conversationHistoryRef.current,
-          systemPrompt
+          systemPrompt,
+          userRole: 'president',
+          generateAudio: false, // Pas besoin d'audio ici, on utilise ElevenLabs séparément
         }
       });
 
