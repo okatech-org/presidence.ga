@@ -22,7 +22,7 @@ serve(async (req) => {
       throw new Error('ELEVENLABS_API_KEY not configured');
     }
 
-    // Déterminer la voix selon le rôle ou utiliser la voix iAsted Pro par défaut
+    // Déterminer la voix selon le rôle ou utiliser une voix par défaut
     let selectedVoiceId = voiceId;
     if (!selectedVoiceId) {
       if (userRole === 'president') {
@@ -30,8 +30,8 @@ serve(async (req) => {
       } else if (userRole === 'minister') {
         selectedVoiceId = 'EXAVITQu4vr4xnSDxMaL'; // Sarah
       } else {
-        // Voix iAsted Pro par défaut (voix personnalisée professionnelle)
-        selectedVoiceId = 'EV6XgOdBELK29O2b4qyM';
+        // Voix par défaut (Aria)
+        selectedVoiceId = '9BWtsMINqrJLrRacOk9x';
       }
     }
 
