@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
@@ -30,6 +30,17 @@ export const useRealtimeSync = ({
 }: UseRealtimeSyncOptions) => {
   const queryClient = useQueryClient();
 
+  // Utiliser des refs pour les callbacks afin d'éviter de déclencher l'effet quand ils changent
+  const onInsertRef = useRef(onInsert);
+  const onUpdateRef = useRef(onUpdate);
+  const onDeleteRef = useRef(onDelete);
+
+  useEffect(() => {
+    onInsertRef.current = onInsert;
+    onUpdateRef.current = onUpdate;
+    onDeleteRef.current = onDelete;
+  }, [onInsert, onUpdate, onDelete]);
+
   useEffect(() => {
     if (!enabled) return;
 
@@ -47,13 +58,13 @@ export const useRealtimeSync = ({
         (payload: RealtimePostgresChangesPayload<any>) => {
           console.log(`[Realtime Sync] Change detected in ${table}:`, payload.eventType);
 
-          // Exécuter les callbacks spécifiques
-          if (payload.eventType === "INSERT" && onInsert) {
-            onInsert(payload);
-          } else if (payload.eventType === "UPDATE" && onUpdate) {
-            onUpdate(payload);
-          } else if (payload.eventType === "DELETE" && onDelete) {
-            onDelete(payload);
+          // Exécuter les callbacks via refs
+          if (payload.eventType === "INSERT" && onInsertRef.current) {
+            onInsertRef.current(payload);
+          } else if (payload.eventType === "UPDATE" && onUpdateRef.current) {
+            onUpdateRef.current(payload);
+          } else if (payload.eventType === "DELETE" && onDeleteRef.current) {
+            onDeleteRef.current(payload);
           }
 
           // Invalider le cache React Query pour forcer un refresh
@@ -74,7 +85,8 @@ export const useRealtimeSync = ({
       console.log(`[Realtime Sync] Unsubscribing from ${table}...`);
       supabase.removeChannel(channel);
     };
-  }, [table, queryKey, event, schema, enabled, queryClient, onInsert, onUpdate, onDelete]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, event, schema, enabled, queryClient, JSON.stringify(queryKey)]);
 };
 
 /**
@@ -185,7 +197,7 @@ export const useRealtimePresidentDashboard = (enabled = true) => {
   useRealtimeSignalements(enabled);
   useRealtimeOpinionPublique(enabled);
   useRealtimePresidentialDecisions(enabled);
-  
+
   console.log("[Realtime Sync] President dashboard realtime sync active");
 };
 
@@ -194,6 +206,6 @@ export const useRealtimePresidentDashboard = (enabled = true) => {
  */
 export const useRealtimeAdminDashboard = (enabled = true) => {
   useRealtimeFeedbacks(enabled);
-  
+
   console.log("[Realtime Sync] Admin dashboard realtime sync active");
 };

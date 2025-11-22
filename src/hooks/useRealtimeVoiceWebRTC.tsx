@@ -82,6 +82,8 @@ export interface UseRealtimeVoiceWebRTC {
     voiceState: 'idle' | 'listening' | 'processing' | 'speaking' | 'thinking' | 'connecting';
     messages: any[];
     audioLevel: number;
+    speechRate: number;
+    setSpeechRate: (rate: number) => void;
     connect: (voice?: 'echo' | 'ash' | 'alloy' | 'shimmer', systemPrompt?: string) => Promise<void>;
     disconnect: () => void;
     toggleConversation: (voice?: 'echo' | 'ash' | 'alloy' | 'shimmer') => Promise<void>;
@@ -97,6 +99,7 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
     const dcRef = useRef<RTCDataChannel | null>(null);
     const audioElRef = useRef<HTMLAudioElement | null>(null);
     const recorderRef = useRef<AudioRecorder | null>(null);
+    const [speechRate, setSpeechRate] = useState(1.0); // 0.5 to 2.0
     const currentTranscriptRef = useRef('');
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameRef = useRef<number | null>(null);
@@ -281,7 +284,18 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
 
             // 1. Obtenir le token éphémère
             console.log('🔑 [WebRTC] Demande token...');
-            const { data: tokenData, error: tokenError } = await supabase.functions.invoke('get-realtime-token');
+
+            // S'assurer d'avoir la session courante
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                throw new Error("Non authentifié");
+            }
+
+            const { data: tokenData, error: tokenError } = await supabase.functions.invoke('get-realtime-token', {
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`
+                }
+            });
 
             if (tokenError || !tokenData) {
                 throw new Error('Impossible d\'obtenir le token: ' + (tokenError?.message || 'Pas de données'));
@@ -307,6 +321,7 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                 console.log('🎵 [WebRTC] Track audio reçu');
                 if (audioElRef.current) {
                     audioElRef.current.srcObject = e.streams[0];
+                    audioElRef.current.playbackRate = speechRate; // Appliquer le débit
                     // Analyser l'audio distant aussi si on veut (ou juste local pour "listening")
                     // Pour l'instant on analyse le local pour "listening" et on pourrait analyser le distant pour "speaking"
                 }
@@ -547,9 +562,9 @@ PAGES RÉELLES (navigation): tableau de bord, assistant iasted, conseil des mini
                 variant: 'destructive',
             });
         }
-    }, [handleDataChannelMessage, toast, startAudioAnalysis]);
+    }, [handleDataChannelMessage, toast, startAudioAnalysis, speechRate]);
 
-    const disconnect = useCallback(() => {
+    const disconnect = useCallback(async () => {
         console.log('🔌 [WebRTC] Déconnexion...');
 
         if (recorderRef.current) {
@@ -575,11 +590,14 @@ PAGES RÉELLES (navigation): tableau de bord, assistant iasted, conseil des mini
         setIsConnected(false);
         setVoiceState('idle');
         currentTranscriptRef.current = '';
+
+        // Wait for cleanup to complete before allowing reconnection
+        await new Promise(resolve => setTimeout(resolve, 300));
     }, [stopAudioAnalysis]);
 
     const toggleConversation = useCallback(async (voice: 'echo' | 'ash' = 'echo', systemPrompt?: string) => {
         if (isConnected) {
-            disconnect();
+            await disconnect();
         } else {
             await connect(voice, systemPrompt);
         }
@@ -591,6 +609,15 @@ PAGES RÉELLES (navigation): tableau de bord, assistant iasted, conseil des mini
         messages,
         isConnected,
         audioLevel, // Expose audio level
+        speechRate,
+        setSpeechRate: (rate: number) => {
+            const clampedRate = Math.max(0.5, Math.min(2.0, rate));
+            setSpeechRate(clampedRate);
+            if (audioElRef.current) {
+                audioElRef.current.playbackRate = clampedRate;
+            }
+            console.log(`🎤 [WebRTC] Speech rate set to ${clampedRate}x`);
+        },
         connect,
         disconnect,
         toggleConversation,

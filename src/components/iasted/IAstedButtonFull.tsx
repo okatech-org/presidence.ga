@@ -5,6 +5,7 @@ interface IAstedButtonProps {
   voiceListening: boolean;
   voiceSpeaking: boolean;
   voiceProcessing: boolean;
+  pulsing?: boolean; // Visual feedback for sound events
   onClick: () => void;
   onDoubleClick: () => void;
   className?: string;
@@ -318,6 +319,18 @@ const styles = `
     filter: brightness(1.6) saturate(3) drop-shadow(0 0 40px rgba(0, 170, 255, 0.9));
   }
 }
+
+/* Pulsation pour feedback sonore */
+.thick-matter-button.pulsing {
+  animation: gentle-pulse-feedback 1s ease-in-out 3;
+}
+
+@keyframes gentle-pulse-feedback {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  50% { transform: scale(1.08); box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185,129, 0); }
+}
+
 
 .organic-membrane {
   position: absolute; inset: -5%; border-radius: 50%;
@@ -1128,6 +1141,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   voiceListening = false,
   voiceSpeaking = false,
   voiceProcessing = false,
+  pulsing = false,
   audioLevel = 0
 }) => {
   const size = 'md'; // Default size
@@ -1299,7 +1313,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
-            className={`thick-matter-button living-matter ${size} ${isClicked ? 'color-shift' : ''} ${isActive ? 'active' : ''} ${isProcessing ? 'processing' : ''} ${isDragging ? 'grabbing' : ''} ${voiceStateClass} relative cursor-grab focus:outline-none overflow-hidden border-0 ${className}`}
+            className={`thick-matter-button living-matter ${size} ${isClicked ? 'color-shift' : ''} ${isActive ? 'active' : ''} ${isProcessing ? 'processing' : ''} ${isDragging ? 'grabbing' : ''} ${pulsing ? 'pulsing' : ''} ${voiceStateClass} relative cursor-grab focus:outline-none overflow-hidden border-0 ${className}`}
             style={{
               '--iasted-icon-size': size === 'sm' ? 'clamp(24px, 5vw, 32px)' : size === 'lg' ? 'clamp(48px, 10vw, 64px)' : 'clamp(36px, 7vw, 48px)',
               '--iasted-text-size': size === 'sm' ? 'clamp(12px, 2.5vw, 14px)' : size === 'lg' ? 'clamp(20px, 4vw, 28px)' : 'clamp(16px, 3vw, 20px)',

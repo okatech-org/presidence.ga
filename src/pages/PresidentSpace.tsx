@@ -48,6 +48,7 @@ import {
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import { MailInbox } from '@/components/iasted/MailInbox';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
+import { DocumentsSection } from '@/components/documents/DocumentsSection';
 import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import { useRealtimePresidentDashboard } from '@/hooks/useRealtimeSync';
 import { cn } from "@/lib/utils";
@@ -56,6 +57,9 @@ import { SectionCard, StatCard, CircularProgress } from "@/components/president/
 import { useTheme } from "next-themes";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { IASTED_SYSTEM_PROMPT } from "@/config/iasted-config";
+import { soundManager } from "@/utils/SoundManager";
+import { useUserContext } from "@/hooks/useUserContext";
+import { generateSystemPrompt } from "@/utils/generateSystemPrompt";
 
 type ThemeConfig = {
   primary: string;
@@ -159,6 +163,12 @@ export default function PresidentSpace() {
 
   // État pour la voix sélectionnée
   const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('ash');
+
+  // État pour la pulsation du bouton
+  const [isPulsing, setIsPulsing] = useState(false);
+
+  // Context utilisateur pour personnalisation
+  const userContext = useUserContext({ spaceName: 'PresidentSpace' });
 
   // Ref pour tracker la dernière section ouverte (pour contexte intelligent)
   const lastOpenedSectionRef = useRef<keyof typeof expandedSections | null>(null);
@@ -315,6 +325,11 @@ export default function PresidentSpace() {
             duration: 2000,
           });
 
+          // Jouer son de navigation et déclencher pulsation
+          soundManager.playSlidingSound();
+          setIsPulsing(true);
+          setTimeout(() => setIsPulsing(false), 3000); // 3 pulsations de 1s chacune
+
           return;
         }
 
@@ -461,9 +476,10 @@ export default function PresidentSpace() {
 
 
   const navigationItems = useMemo(() => [
-    { id: "dashboard", label: "Tableau de Bord", icon: LayoutDashboard, active: true },
-    { id: "courriers", label: "Courriers", icon: Inbox, active: false },
-    { id: "iasted", label: "Assistant iAsted", icon: Bot, active: false },
+    { id: "dashboard", label: "Tableau de Bord", icon: LayoutDashboard, section: "navigation" },
+    { id: "documents", label: "Documents", icon: FileText, section: "navigation" },
+    { id: "courriers", label: "Courriers", icon: Inbox, section: "navigation" },
+    { id: "iasted", label: "iAsted", icon: Bot, section: "navigation" },
   ], []);
 
   const handleLogout = useCallback(async () => {
@@ -900,8 +916,14 @@ export default function PresidentSpace() {
               </div>
             )}
 
+            {activeSection === "documents" && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <DocumentsSection userRole="president" />
+              </div>
+            )}
+
             {activeSection === "courriers" && (
-              <MailInbox role="president" />
+              <MailInbox />
             )}
 
             {activeSection === "conseil-ministres" && (
@@ -985,30 +1007,35 @@ export default function PresidentSpace() {
         </main>
       </div>
 
-      {/* Bouton IAsted flottant */}
-      <IAstedButtonFull
-        onClick={async () => {
-          if (openaiRTC.isConnected) {
-            openaiRTC.disconnect();
-          } else {
-            console.log('🎤 [IAstedButton] Démarrage OpenAI RT');
-            // Formater le prompt système avec les variables dynamiques
-            const formattedSystemPrompt = IASTED_SYSTEM_PROMPT
-              .replace('{{USER_TITLE}}', "Monsieur le Président")
-              .replace('{{CURRENT_TIME_OF_DAY}}', new Date().getHours() < 18 ? "journée" : "soirée");
+      {/* Bouton IAsted flottant - Affiché seulement si l'utilisateur a accès */}
+      {userContext.hasIAstedAccess && (
+        <IAstedButtonFull
+          onClick={async () => {
+            if (openaiRTC.isConnected) {
+              openaiRTC.disconnect();
+            } else {
+              console.log('🎤 [IAstedButton] Démarrage OpenAI RT');
+              // Générer le prompt système personnalisé basé sur le contexte utilisateur
+              const systemPrompt = userContext.roleContext
+                ? generateSystemPrompt(userContext)
+                : IASTED_SYSTEM_PROMPT
+                  .replace('{{USER_TITLE}}', "Monsieur le Président")
+                  .replace('{{CURRENT_TIME_OF_DAY}}', new Date().getHours() < 18 ? "journée" : "soirée");
 
-            await openaiRTC.connect(selectedVoice, formattedSystemPrompt);
-          }
-        }}
-        onDoubleClick={() => {
-          console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal chat');
-          setIastedOpen(true);
-        }}
-        audioLevel={openaiRTC.audioLevel}
-        voiceListening={openaiRTC.voiceState === 'listening'}
-        voiceSpeaking={openaiRTC.voiceState === 'speaking'}
-        voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
-      />
+              await openaiRTC.connect(selectedVoice, systemPrompt);
+            }
+          }}
+          onDoubleClick={() => {
+            console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal chat');
+            setIastedOpen(true);
+          }}
+          audioLevel={openaiRTC.audioLevel}
+          voiceListening={openaiRTC.voiceState === 'listening'}
+          voiceSpeaking={openaiRTC.voiceState === 'speaking'}
+          voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
+          pulsing={isPulsing}
+        />
+      )}
 
       {/* Interface iAsted avec chat et documents */}
       <IAstedChatModal

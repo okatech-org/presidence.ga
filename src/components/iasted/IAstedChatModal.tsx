@@ -974,12 +974,12 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
               {/* Voice Selector */}
               <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 border border-border/50">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setSelectedVoice('ash');
                     localStorage.setItem('iasted-voice-selection', 'ash');
                     if (openaiRTC.isConnected) {
-                      openaiRTC.disconnect();
-                      setTimeout(() => openaiRTC.connect('ash'), 200);
+                      await openaiRTC.disconnect();
+                      await openaiRTC.connect('ash');
                     }
                   }}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${selectedVoice === 'ash'
@@ -990,12 +990,12 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
                   Homme
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setSelectedVoice('shimmer');
                     localStorage.setItem('iasted-voice-selection', 'shimmer');
                     if (openaiRTC.isConnected) {
-                      openaiRTC.disconnect();
-                      setTimeout(() => openaiRTC.connect('shimmer'), 200);
+                      await openaiRTC.disconnect();
+                      await openaiRTC.connect('shimmer');
                     }
                   }}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${selectedVoice === 'shimmer'

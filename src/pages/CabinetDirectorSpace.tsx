@@ -34,10 +34,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "next-themes";
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import IAstedInterface from "@/components/iasted/IAstedInterface";
+import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
+import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MinisterialProject, PresidentialInstruction, InterministerialCoordination, CouncilPreparation } from "@/types/cabinet-operations";
+import { IASTED_SYSTEM_PROMPT } from "@/config/iasted-config";
+import { useUserContext } from "@/hooks/useUserContext";
+import { generateSystemPrompt } from "@/utils/generateSystemPrompt";
+import { DocumentsSection } from '@/components/documents/DocumentsSection';
 
 const CabinetDirectorSpace = () => {
   const navigate = useNavigate();
@@ -45,14 +50,21 @@ const CabinetDirectorSpace = () => {
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
 
+  // Hook OpenAI WebRTC
+  const openaiRTC = useRealtimeVoiceWebRTC();
+
   const [mounted, setMounted] = useState(false);
   const [iastedOpen, setIastedOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('ash');
   const [expandedSections, setExpandedSections] = useState({
     navigation: true,
     operations: true,
     coordination: false,
   });
+
+  // Context utilisateur pour personnalisation
+  const userContext = useUserContext({ spaceName: 'CabinetDirectorSpace' });
 
   // Access Control
   useEffect(() => {
@@ -229,6 +241,16 @@ const CabinetDirectorSpace = () => {
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Tableau de Bord
+                </button>
+                <button
+                  onClick={() => setActiveSection("documents")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "documents"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    } `}
+                >
+                  <FileText className="w-4 h-4" />
+                  Documents
                 </button>
               </nav>
             )}
@@ -690,21 +712,45 @@ const CabinetDirectorSpace = () => {
                 </div>
               </div>
             )}
+            {/* Documents Section */}
+            {activeSection === "documents" && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <DocumentsSection userRole="dgr" />
+              </div>
+            )}
           </div>
         </main>
 
-        {/* iAsted Integration */}
-        <IAstedButtonFull
-          onSingleClick={() => setIastedOpen(true)}
-          onDoubleClick={() => setIastedOpen(true)}
-        />
-
-        {iastedOpen && (
-          <IAstedInterface
-            isOpen={iastedOpen}
-            onClose={() => setIastedOpen(false)}
+        {/* iAsted Integration - Affiché seulement si l'utilisateur a accès */}
+        {userContext.hasIAstedAccess && (
+          <IAstedButtonFull
+            onClick={async () => {
+              if (openaiRTC.isConnected) {
+                openaiRTC.disconnect();
+              } else {
+                // Générer le prompt système personnalisé basé sur le contexte utilisateur
+                const systemPrompt = userContext.roleContext
+                  ? generateSystemPrompt(userContext)
+                  : IASTED_SYSTEM_PROMPT
+                    .replace('{{USER_TITLE}}', "Directeur de Cabinet")
+                    .replace('{{CURRENT_TIME_OF_DAY}}', new Date().getHours() < 18 ? "journée" : "soirée");
+                await openaiRTC.connect(selectedVoice, systemPrompt);
+              }
+            }}
+            onDoubleClick={() => setIastedOpen(true)}
+            audioLevel={openaiRTC.audioLevel}
+            voiceListening={openaiRTC.voiceState === 'listening'}
+            voiceSpeaking={openaiRTC.voiceState === 'speaking'}
+            voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
           />
         )}
+
+        {/* Interface iAsted avec chat et documents */}
+        <IAstedChatModal
+          isOpen={iastedOpen}
+          onClose={() => setIastedOpen(false)}
+          openaiRTC={openaiRTC}
+        />
       </div>
     </div>
   );
