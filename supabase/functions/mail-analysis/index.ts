@@ -6,6 +6,20 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface AnalysisResult {
+    sender_name: string;
+    sender_organization: string;
+    confidentiality_level: string;
+    summary: string;
+    sentiment: string;
+    urgency_score: number;
+    urgency_level: string;
+    suggested_destination_role: string;
+    suggested_folder: string;
+    confidence_score: number;
+    entities: string[];
+}
+
 serve(async (req) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
@@ -71,7 +85,7 @@ serve(async (req) => {
         // For now, let's assume we extract text via a helper (reusing logic from document-ocr conceptually)
         const extractedText = await extractTextFromImage(fileData)
 
-        let analysisResult = {}
+        let analysisResult: Partial<AnalysisResult> = {}
 
         // 5. Analyze based on type
         if (analysisType === 'envelope') {
@@ -133,8 +147,9 @@ serve(async (req) => {
 
     } catch (error) {
         console.error('❌ Error in mail-analysis:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return new Response(
-            JSON.stringify({ success: false, error: error.message }),
+            JSON.stringify({ success: false, error: errorMessage }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
         )
     }
@@ -180,7 +195,7 @@ async function extractTextFromImage(fileData: Blob): Promise<string> {
     }
 }
 
-async function analyzeEnvelopeWithGPT4(text: string): Promise<any> {
+async function analyzeEnvelopeWithGPT4(text: string): Promise<Partial<AnalysisResult>> {
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 
     const systemPrompt = `Tu es un expert en tri de courrier présidentiel. Analyse le texte d'une enveloppe et extrais:
@@ -211,7 +226,7 @@ async function analyzeEnvelopeWithGPT4(text: string): Promise<any> {
     return JSON.parse(result.choices[0].message.content)
 }
 
-async function analyzeContentWithGPT4(text: string, mailMetadata: any): Promise<any> {
+async function analyzeContentWithGPT4(text: string, mailMetadata: any): Promise<Partial<AnalysisResult>> {
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 
     const systemPrompt = `Tu es l'IA de gestion du courrier de la Présidence du Gabon.

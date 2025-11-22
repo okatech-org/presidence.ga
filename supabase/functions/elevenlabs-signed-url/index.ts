@@ -68,7 +68,10 @@ serve(async (req) => {
     console.error('Error in elevenlabs-signed-url:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        error: errorMessage,
+        hint: 'Please configure a valid ElevenLabs agent ID in Settings. Create an agent at elevenlabs.io/app/conversational-ai'
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
