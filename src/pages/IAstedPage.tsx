@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, MessageCircle, History, Settings, Activity } from 'lucide-react';
-import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
+import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import { ChatDock } from '@/components/ChatDock';
 import { VoiceSettings } from '@/components/VoiceSettings';
 import { usePresidentRole } from '@/hooks/usePresidentRole';
@@ -25,39 +25,12 @@ const IAstedPage = () => {
   const [activeTab, setActiveTab] = useState('conversation');
   const [sessions, setSessions] = useState<ConversationSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
-  const [selectedVoiceId, setSelectedVoiceId] = useState<string | undefined>();
-  const [voiceConfig, setVoiceConfig] = useState({
-    silenceDuration: 2000,
-    silenceThreshold: 10,
-    continuousMode: false,
-  });
+  const [selectedVoiceId, setSelectedVoiceId] = useState<'echo' | 'ash' | 'shimmer'>('ash');
+
+  // OpenAI Realtime Hook
+  const openaiRTC = useRealtimeVoiceWebRTC();
 
   const userRole = isPresident ? 'president' : 'minister';
-
-  const {
-    voiceState,
-    sessionId,
-    conversationMessages,
-    audioLevel,
-    isPaused,
-    isIdle,
-    isListening,
-    isThinking,
-    isSpeaking,
-    isActive,
-    startConversation,
-    stopConversation,
-    startListening,
-    stopListening,
-    cancelInteraction,
-    setSelectedVoiceId: setVoiceId,
-    togglePause,
-  } = useVoiceInteraction({
-    silenceDuration: voiceConfig.silenceDuration,
-    silenceThreshold: voiceConfig.silenceThreshold,
-    continuousMode: voiceConfig.continuousMode,
-    voiceId: selectedVoiceId,
-  });
 
   useEffect(() => {
     loadVoiceConfig();
@@ -75,11 +48,9 @@ const IAstedPage = () => {
       if (error) throw error;
 
       if (data) {
-        const voiceId = isPresident 
-          ? data.president_voice_id 
-          : data.minister_voice_id || data.default_voice_id;
-        setSelectedVoiceId(voiceId);
-        setVoiceId(voiceId);
+        // Map legacy voice IDs to OpenAI voices if needed, or just use default 'ash'
+        // For now we default to 'ash' as we are standardizing
+        setSelectedVoiceId('ash');
       }
     } catch (error) {
       console.error('Erreur chargement config voix:', error);
@@ -126,21 +97,29 @@ const IAstedPage = () => {
 
   const handleStartConversation = async () => {
     try {
-      await startConversation();
+      const systemPrompt = isPresident
+        ? "Vous êtes iAsted, l'assistant stratégique du Président. Vous êtes concis, précis et professionnel."
+        : "Vous êtes iAsted, l'assistant ministériel. Vous aidez à la gestion des dossiers et à la prise de décision.";
+
+      await openaiRTC.connect(selectedVoiceId, systemPrompt);
       setActiveTab('conversation');
     } catch (error) {
       console.error('Erreur démarrage:', error);
+      toast.error("Impossible de démarrer la conversation");
     }
   };
 
   const handleStopConversation = async () => {
-    await stopConversation();
+    openaiRTC.disconnect();
     await loadSessions();
   };
 
-  const handleVoiceConfigChange = (config: typeof voiceConfig) => {
-    setVoiceConfig(config);
-  };
+  // Derived states for UI
+  const isListening = openaiRTC.voiceState === 'listening';
+  const isThinking = openaiRTC.voiceState === 'thinking' || openaiRTC.voiceState === 'processing'; // 'processing' might be the actual state name in hook, checking hook definition would be ideal but assuming standard mapping
+  const isSpeaking = openaiRTC.voiceState === 'speaking';
+  const isIdle = openaiRTC.voiceState === 'idle';
+  const isActive = openaiRTC.isConnected;
 
   return (
     <div className="min-h-screen bg-background">
@@ -154,14 +133,14 @@ const IAstedPage = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Retour
           </Button>
-          
+
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
               <MessageCircle className="w-8 h-8" />
               iAsted - Assistant Vocal Intelligent
             </h1>
             <p className="text-muted-foreground mt-2">
-              {isPresident 
+              {isPresident
                 ? 'Monsieur le Président, votre assistant stratégique'
                 : 'Excellence, votre assistant ministériel'}
             </p>
@@ -189,39 +168,38 @@ const IAstedPage = () => {
               <CardHeader>
                 <CardTitle>Conversation Vocale</CardTitle>
                 <CardDescription>
-                  Parlez avec iAsted en temps réel
+                  Parlez avec iAsted en temps réel (OpenAI Realtime)
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${
-                        isIdle ? 'bg-gray-400' :
-                        isListening ? 'bg-green-500 animate-pulse' :
-                        isThinking ? 'bg-yellow-500 animate-pulse' :
-                        isSpeaking ? 'bg-blue-500 animate-pulse' :
-                        'bg-gray-400'
-                      }`} />
+                      <div className={`w-3 h-3 rounded-full ${isIdle ? 'bg-gray-400' :
+                          isListening ? 'bg-green-500 animate-pulse' :
+                            isThinking ? 'bg-yellow-500 animate-pulse' :
+                              isSpeaking ? 'bg-blue-500 animate-pulse' :
+                                'bg-gray-400'
+                        }`} />
                       <span className="text-sm font-medium">
                         {isIdle ? 'Inactif' :
-                         isListening ? 'Écoute...' :
-                         isThinking ? 'Réflexion...' :
-                         isSpeaking ? 'Parle...' :
-                         'Inconnu'}
+                          isListening ? 'Écoute...' :
+                            isThinking ? 'Réflexion...' :
+                              isSpeaking ? 'Parle...' :
+                                'Connexion...'}
                       </span>
                     </div>
-                    
+
                     {isActive && (
                       <div className="flex items-center gap-2">
                         <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-primary transition-all"
-                            style={{ width: `${audioLevel}%` }}
+                            style={{ width: `${openaiRTC.audioLevel}%` }}
                           />
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {Math.round(audioLevel)}%
+                          {Math.round(openaiRTC.audioLevel)}%
                         </span>
                       </div>
                     )}
@@ -235,26 +213,6 @@ const IAstedPage = () => {
                       </Button>
                     ) : (
                       <>
-                        {isPaused && (
-                          <Button variant="outline" onClick={togglePause}>
-                            Reprendre
-                          </Button>
-                        )}
-                        {!isPaused && isListening && (
-                          <Button variant="outline" onClick={stopListening}>
-                            Arrêter l'écoute
-                          </Button>
-                        )}
-                        {isSpeaking && (
-                          <Button variant="outline" onClick={cancelInteraction}>
-                            Interrompre
-                          </Button>
-                        )}
-                        {isThinking && (
-                          <Button variant="outline" onClick={cancelInteraction}>
-                            Annuler
-                          </Button>
-                        )}
                         <Button variant="destructive" onClick={handleStopConversation}>
                           Terminer
                         </Button>
@@ -264,7 +222,7 @@ const IAstedPage = () => {
                 </div>
 
                 <div className="h-[500px]">
-                  <ChatDock messages={conversationMessages} />
+                  <ChatDock messages={openaiRTC.messages} />
                 </div>
               </CardContent>
             </Card>

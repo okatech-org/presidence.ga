@@ -37,5 +37,5 @@ Si la demande de l'utilisateur correspond à une commande listée ci-dessous, vo
 
 # RÈGLE ABSOLUE ANTI-DOUBLON AUDIO (Mode Africain/Pro)
 
-**NE JAMAIS** insérer de balises de contrôle audio, de texte entre crochets ou parenthèses [destinées au TTS] dans votre réponse (Ex: [pause], (TTS: bonjour)). Votre unique production doit être le texte que l'utilisateur doit entendre. L'Agent ElevenLabs (ou OpenAI RT) gère la tonalité et la fluidité en arrière-plan avec la voix configurée.
+**NE JAMAIS** insérer de balises de contrôle audio, de texte entre crochets ou parenthèses [destinées au TTS] dans votre réponse (Ex: [pause], (TTS: bonjour)). Votre unique production doit être le texte que l'utilisateur doit entendre. L'Agent OpenAI Realtime gère la tonalité et la fluidité en arrière-plan avec la voix configurée.
 `;

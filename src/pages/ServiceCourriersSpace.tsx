@@ -19,7 +19,8 @@ import { IncomingMail, MailStats as MailStatsType } from "@/types/service-courri
 import { MailCard } from "@/components/courrier/MailCard";
 import { MailStats } from "@/components/courrier/MailStats";
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import IAstedInterface from "@/components/iasted/IAstedInterface";
+import { IAstedChatModal } from "@/components/iasted/IAstedChatModal";
+import { useRealtimeVoiceWebRTC } from "@/hooks/useRealtimeVoiceWebRTC";
 
 import { MailSplitViewer } from "@/components/courrier/MailSplitViewer";
 
@@ -31,6 +32,9 @@ const ServiceCourriersSpace = () => {
   const [mounted, setMounted] = useState(false);
   const [iastedOpen, setIastedOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
+
+  // Voice Hook
+  const openaiRTC = useRealtimeVoiceWebRTC();
 
   // Selection state for Split View
   const [selectedMail, setSelectedMail] = useState<IncomingMail | null>(null);
@@ -569,15 +573,24 @@ const ServiceCourriersSpace = () => {
 
       {/* IAsted Integration */}
       <IAstedButtonFull
-        voiceListening={false}
-        voiceSpeaking={false}
-        voiceProcessing={false}
-        onClick={() => setIastedOpen(true)}
+        voiceListening={openaiRTC.voiceState === 'listening'}
+        voiceSpeaking={openaiRTC.voiceState === 'speaking'}
+        voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
+        audioLevel={openaiRTC.audioLevel}
+        onClick={async () => {
+          if (openaiRTC.isConnected) {
+            openaiRTC.disconnect();
+          } else {
+            const systemPrompt = "Vous êtes iAsted, l'assistant intelligent du Service Courrier. Vous aidez à la gestion, au tri et à la validation des courriers entrants.";
+            await openaiRTC.connect('ash', systemPrompt);
+          }
+        }}
         onDoubleClick={() => setIastedOpen(true)}
       />
-      <IAstedInterface
+      <IAstedChatModal
         isOpen={iastedOpen}
         onClose={() => setIastedOpen(false)}
+        openaiRTC={openaiRTC}
       />
     </div>
   );

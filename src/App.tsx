@@ -21,10 +21,8 @@ const ServiceCourriersSpace = lazy(() => import("./pages/ServiceCourriersSpace")
 const ServiceReceptionSpace = lazy(() => import("./pages/ServiceReceptionSpace"));
 const ProtocolDirectorSpace = lazy(() => import("./pages/ProtocolDirectorSpace"));
 const DgssSpace = lazy(() => import("./pages/DgssSpace"));
-const IAstedConfig = lazy(() => import("./pages/IAstedConfig"));
 const IAstedPage = lazy(() => import("./pages/IAstedPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const IAstedConfigWizard = lazy(() => import("./pages/IAstedConfigWizard"));
 
 // Configuration optimisée de React Query avec cache intelligent
 const queryClient = new QueryClient({
@@ -72,8 +70,6 @@ const App = () => (
               <Route path="/service-reception-space" element={<ServiceReceptionSpace />} />
               <Route path="/protocol-director-space" element={<ProtocolDirectorSpace />} />
               <Route path="/dgss-space" element={<DgssSpace />} />
-              <Route path="/iasted-config" element={<IAstedConfig />} />
-              <Route path="/iasted-setup" element={<IAstedConfigWizard />} />
               <Route path="/iasted" element={<IAstedPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
