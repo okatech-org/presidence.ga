@@ -2,15 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, MessageCircle, Brain } from 'lucide-react';
 
 interface IAstedButtonProps {
-  onSingleClick: () => void; // Simple clic : activer mode vocal pur OU basculer vocal si modal ouvert
-  onDoubleClick: () => void; // Double clic : ouvrir modal en mode texte
+  voiceListening: boolean;
+  voiceSpeaking: boolean;
+  voiceProcessing: boolean;
+  onClick: () => void;
+  onDoubleClick: () => void;
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
-  voiceListening?: boolean;
-  voiceSpeaking?: boolean;
-  voiceProcessing?: boolean;
-  isInterfaceOpen?: boolean;
-  isVoiceModeActive?: boolean; // Indique si le mode vocal est actuellement actif
+  audioLevel?: number; // 0 to 1
 }
 
 interface Shockwave {
@@ -1123,24 +1121,23 @@ const styles = `
 }
 `;
 
-export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({ 
-  onSingleClick, 
+export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
+  onClick,
   onDoubleClick,
-  className = '', 
-  size = 'md', 
-  voiceListening = false, 
-  voiceSpeaking = false, 
-  voiceProcessing = false, 
-  isInterfaceOpen = false,
-  isVoiceModeActive = false
+  className = '',
+  voiceListening = false,
+  voiceSpeaking = false,
+  voiceProcessing = false,
+  audioLevel = 0
 }) => {
+  const size = 'md'; // Default size
   const [shockwaves, setShockwaves] = useState<Shockwave[]>([]);
   const [isClicked, setIsClicked] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartPos = useRef<Position>({ x: 0, y: 0 });
   const buttonPosition = useRef<Position>({ x: 0, y: 0 });
@@ -1166,11 +1163,11 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
         }
         return size === 'sm' ? 80 : size === 'lg' ? 160 : 128;
       };
-      
+
       const btnSize = getSize();
-      const defaultPos = { 
-        x: window.innerWidth - btnSize - 40, 
-        y: window.innerHeight - btnSize - 40 
+      const defaultPos = {
+        x: window.innerWidth - btnSize - 40,
+        y: window.innerHeight - btnSize - 40
       };
       setPosition(defaultPos);
       buttonPosition.current = defaultPos;
@@ -1190,33 +1187,33 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
     if (isDragging) {
       return;
     }
-    
+
     const shockwaveId = Date.now();
     setShockwaves([...shockwaves, { id: shockwaveId }]);
     setIsClicked(true);
-    
+
     setIsProcessing(true);
-    
+
     setTimeout(() => {
       setShockwaves(prev => prev.filter(r => r.id !== shockwaveId));
     }, 1000);
-    
+
     setTimeout(() => {
       setIsClicked(false);
     }, 1500);
-    
+
     setTimeout(() => {
       setIsProcessing(false);
     }, 3000);
-    
+
     // Gestion des clics simples vs doubles avec délai de 300ms
     clickCount.current += 1;
-    
+
     if (clickCount.current === 1) {
       // Premier clic - attendre pour voir s'il y a un double clic
       clickTimer.current = setTimeout(() => {
         // Simple clic confirmé
-        onSingleClick();
+        onClick();
         clickCount.current = 0;
       }, 300); // Délai de 300ms pour détecter le double clic
     } else if (clickCount.current === 2) {
@@ -1231,7 +1228,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsActive(true);
-    
+
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       dragStartPos.current = {
@@ -1244,7 +1241,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   const handleMouseUp = () => {
     setIsActive(false);
     setIsDragging(false);
-    
+
     if (containerRef.current) {
       const pos = buttonPosition.current;
       localStorage.setItem('iasted-button-position', JSON.stringify(pos));
@@ -1254,7 +1251,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   const handleMouseLeave = () => {
     setIsActive(false);
     setIsDragging(false);
-    
+
     if (containerRef.current) {
       const pos = buttonPosition.current;
       localStorage.setItem('iasted-button-position', JSON.stringify(pos));
@@ -1263,25 +1260,25 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isActive) return;
-    
+
     const deltaX = e.movementX;
     const deltaY = e.movementY;
-    
+
     if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
       setIsDragging(true);
     }
-    
+
     if (isDragging && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const newX = e.clientX - dragStartPos.current.x;
       const newY = e.clientY - dragStartPos.current.y;
-      
+
       const maxX = window.innerWidth - rect.width;
       const maxY = window.innerHeight - rect.height;
-      
+
       const constrainedX = Math.max(0, Math.min(newX, maxX));
       const constrainedY = Math.max(0, Math.min(newY, maxY));
-      
+
       setPosition({ x: constrainedX, y: constrainedY });
       buttonPosition.current = { x: constrainedX, y: constrainedY };
     }
@@ -1290,8 +1287,8 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   return (
     <>
       <style>{styles}</style>
-      
-      <div 
+
+      <div
         ref={containerRef}
         className={`perspective-container ${isDragging ? 'grabbing' : ''}`}
         onMouseMove={handleMouseMove}
@@ -1310,90 +1307,85 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
           >
             {/* Couche de profondeur */}
             <div className="depth-layer"></div>
-            
+
             {/* Petite sphère satellite */}
             <div className="satellite-particle"></div>
-            
+
             {/* Couche cellulaire respirante */}
             <div className="cellular-layer"></div>
-            
+
             {/* Vagues de fluide organique */}
             <div className="fluid-waves">
               <div className="wave-layer wave-layer-1"></div>
               <div className="wave-layer wave-layer-2"></div>
               <div className="wave-layer wave-layer-3"></div>
             </div>
-            
+
             {/* Membrane organique palpitante */}
             <div className="organic-membrane"></div>
-            
+
             {/* Membrane secondaire pour plus de profondeur */}
             <div className="organic-membrane-secondary"></div>
-            
+
             {/* Background morphing */}
             <div className="absolute inset-0 morphing-bg rounded-full"></div>
-            
+
             {/* Reflets mobiles */}
             <div className="moving-highlights">
               <div className="highlight-1"></div>
               <div className="highlight-2"></div>
               <div className="highlight-3"></div>
             </div>
-            
+
             {/* Effet de brillance mobile */}
             <div className="shine-effect"></div>
-            
+
             {/* Effet de substance épaisse */}
             <div className="substance-effect"></div>
-            
+
             {/* Couches de fluide interne */}
             <div className="inner-fluid-layer layer-1"></div>
             <div className="inner-fluid-layer layer-2"></div>
             <div className="inner-fluid-layer layer-3"></div>
-            
+
             {/* Effet de tourbillons */}
             <div className="vortex-container">
               <div className="vortex vortex-1"></div>
               <div className="vortex vortex-2"></div>
             </div>
-            
+
             {/* Particules additionnelles */}
             <div className="particle-container">
               <div className="floating-particle particle-float-1"></div>
               <div className="floating-particle particle-float-2"></div>
             </div>
-            
+
             {/* Veines organiques */}
             <div className="organic-veins"></div>
-            
+
             {/* Émissions d'ondes synchronisées avec le battement */}
             <div className="wave-emission wave-1"></div>
             <div className="wave-emission wave-2"></div>
             <div className="wave-emission wave-3"></div>
-            
+
             {/* Texture organique de surface */}
             <div className="organic-texture"></div>
-            
+
             {/* Couche de brillance */}
             <div className="highlight-layer"></div>
-            
+
             {/* Bulles respiratoires */}
             <div className="breathing-bubble bubble-1"></div>
             <div className="breathing-bubble bubble-2"></div>
             <div className="breathing-bubble bubble-3"></div>
-            
+
             {/* Effets d'onde de choc au clic */}
             {shockwaves.map(shockwave => (
               <div key={shockwave.id} className="shockwave-effect"></div>
             ))}
-            
+
             {/* Badge de mode vocal actif */}
-            {isVoiceModeActive && (
-              <div className="voice-mode-badge">
-                <Mic />
-              </div>
-            )}
-            
+
             {/* Conteneur des icônes au centre - À l'intérieur du bouton */}
             <div className="fixed-icons-container">
               <div className="icon-container">
@@ -1405,8 +1397,6 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
                   </span>
                 ) : voiceProcessing ? (
                   <Brain className="text-white icon-svg" style={{ opacity: 1, transform: 'scale(1.2)' }} />
-                ) : isInterfaceOpen ? (
-                  <MessageCircle className="text-white icon-svg" style={{ opacity: 1 }} />
                 ) : (
                   <>
                     <span className="alternating-element text-element text-white iasted-text">

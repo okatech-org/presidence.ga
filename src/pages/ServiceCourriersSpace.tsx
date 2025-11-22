@@ -21,6 +21,8 @@ import { MailStats } from "@/components/courrier/MailStats";
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import IAstedInterface from "@/components/iasted/IAstedInterface";
 
+import { MailSplitViewer } from "@/components/courrier/MailSplitViewer";
+
 const ServiceCourriersSpace = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,9 @@ const ServiceCourriersSpace = () => {
   const [mounted, setMounted] = useState(false);
   const [iastedOpen, setIastedOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
+
+  // Selection state for Split View
+  const [selectedMail, setSelectedMail] = useState<IncomingMail | null>(null);
 
   // Data state
   const [mails, setMails] = useState<IncomingMail[]>([]);
@@ -87,49 +92,58 @@ const ServiceCourriersSpace = () => {
   };
 
   const fetchMails = async () => {
-    // Mock data for demonstration
-    const mockMails: IncomingMail[] = [
-      {
-        id: "1",
-        reference_number: "COUR-2025-001",
-        sender: "Ministère de l'Intérieur",
-        subject: "Rapport mensuel de sécurité",
-        received_date: new Date().toISOString(),
-        type: "lettre",
-        urgency: "haute",
-        status: "en_traitement",
-        assigned_to: "cabinet_private",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: "2",
-        reference_number: "COUR-2025-002",
-        sender: "Ambassade de France",
-        subject: "Invitation réception officielle",
-        received_date: new Date().toISOString(),
-        type: "invitation",
-        urgency: "normale",
-        status: "recu",
-        assigned_to: "protocol",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: "3",
-        reference_number: "COUR-2025-003",
-        sender: "Citoyen Lambda",
-        subject: "Demande d'audience",
-        received_date: new Date(Date.now() - 86400000).toISOString(),
-        type: "lettre",
-        urgency: "faible",
-        status: "distribue",
-        assigned_to: "reception",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+    try {
+      const { data, error } = await supabase
+        .from('mails')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setMails(data as unknown as IncomingMail[]);
+      } else {
+        // Fallback to mock data if no real data exists
+        const mockMails: IncomingMail[] = [
+          {
+            id: "1",
+            reference_number: "COUR-2025-001",
+            sender: "Ministère de l'Intérieur",
+            subject: "Rapport mensuel de sécurité",
+            received_date: new Date().toISOString(),
+            type: "lettre",
+            urgency: "haute",
+            status: "en_traitement",
+            assigned_to: "cabinet_private",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            digital_copy_url: "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?q=80&w=2070&auto=format&fit=crop"
+          },
+          {
+            id: "2",
+            reference_number: "COUR-2025-002",
+            sender: "Ambassade de France",
+            subject: "Invitation réception officielle",
+            received_date: new Date().toISOString(),
+            type: "invitation",
+            urgency: "normale",
+            status: "recu",
+            assigned_to: "protocol",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            digital_copy_url: "https://images.unsplash.com/photo-1555421689-491a97ff2040?q=80&w=2070&auto=format&fit=crop"
+          }
+        ];
+        setMails(mockMails);
       }
-    ];
-    setMails(mockMails);
+    } catch (error) {
+      console.error("Error fetching mails:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les courriers.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLogout = async () => {
@@ -167,6 +181,16 @@ const ServiceCourriersSpace = () => {
       assigned_to: "",
       notes: "",
       digital_copy_url: ""
+    });
+  };
+
+  const handleMailValidation = (updatedMail: IncomingMail) => {
+    setMails(prev => prev.map(m => m.id === updatedMail.id ? updatedMail : m));
+    setSelectedMail(null);
+    toast({
+      title: "Courrier validé et transmis",
+      description: `Le courrier ${updatedMail.reference_number} a été envoyé au destinataire.`,
+      variant: "default",
     });
   };
 
@@ -218,8 +242,8 @@ const ServiceCourriersSpace = () => {
     <button
       onClick={() => setActiveSection(id)}
       className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 ${activeSection === id
-          ? "neu-inset text-primary font-medium"
-          : "hover:bg-white/50 dark:hover:bg-black/20"
+        ? "neu-inset text-primary font-medium"
+        : "hover:bg-white/50 dark:hover:bg-black/20"
         }`}
     >
       <div className="flex items-center gap-3">
@@ -236,6 +260,15 @@ const ServiceCourriersSpace = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 transition-colors duration-300">
+      {/* Split View Modal */}
+      {selectedMail && (
+        <MailSplitViewer
+          mail={selectedMail}
+          onClose={() => setSelectedMail(null)}
+          onValidate={handleMailValidation}
+        />
+      )}
+
       <div className="flex gap-6 max-w-[1600px] mx-auto">
         {/* Sidebar */}
         <aside className="neu-card w-64 flex-shrink-0 p-6 flex flex-col min-h-[calc(100vh-3rem)] overflow-hidden sticky top-6">
@@ -479,7 +512,7 @@ const ServiceCourriersSpace = () => {
                     <MailCard
                       key={mail.id}
                       mail={mail}
-                      onView={(m) => console.log("View mail", m)}
+                      onView={(m) => setSelectedMail(m)}
                     />
                   ))}
                 </div>
@@ -520,7 +553,7 @@ const ServiceCourriersSpace = () => {
                   <MailCard
                     key={mail.id}
                     mail={mail}
-                    onView={(m) => console.log("View mail", m)}
+                    onView={(m) => setSelectedMail(m)}
                   />
                 ))}
                 {filteredMails.length === 0 && (
@@ -536,7 +569,10 @@ const ServiceCourriersSpace = () => {
 
       {/* IAsted Integration */}
       <IAstedButtonFull
-        onSingleClick={() => setIastedOpen(true)}
+        voiceListening={false}
+        voiceSpeaking={false}
+        voiceProcessing={false}
+        onClick={() => setIastedOpen(true)}
         onDoubleClick={() => setIastedOpen(true)}
       />
       <IAstedInterface

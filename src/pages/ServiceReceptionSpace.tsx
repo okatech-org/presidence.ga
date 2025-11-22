@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import ServiceReception from "./ServiceReception";
+import ServiceReceptionHistory from "@/components/iasted/ServiceReceptionHistory";
 import {
   LogOut,
   UserCheck,
@@ -20,7 +22,9 @@ import {
   Moon,
   Building2,
   UserPlus,
-  CreditCard
+  CreditCard,
+  Mail,
+  History
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -47,6 +51,7 @@ const ServiceReceptionSpace = () => {
     navigation: true,
     visitors: true,
     accreditations: false,
+    courrier: true,
   });
 
   // Access Control
@@ -227,7 +232,7 @@ const ServiceReceptionSpace = () => {
           </div>
 
           {/* Accreditations */}
-          <div className="mb-4 flex-1">
+          <div className="mb-4">
             <button
               onClick={() => toggleSection('accreditations')}
               className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
@@ -246,6 +251,41 @@ const ServiceReceptionSpace = () => {
                 >
                   <CreditCard className="w-4 h-4" />
                   Demandes
+                </button>
+              </nav>
+            )}
+          </div>
+
+          {/* Courrier */}
+          <div className="mb-4 flex-1">
+            <button
+              onClick={() => toggleSection('courrier')}
+              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+            >
+              COURRIER
+              {expandedSections.courrier ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            </button>
+            {expandedSections.courrier && (
+              <nav className="space-y-1 ml-2">
+                <button
+                  onClick={() => setActiveSection("mail-ingestion")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "mail-ingestion"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    } `}
+                >
+                  <Mail className="w-4 h-4" />
+                  Nouveau Pli
+                </button>
+                <button
+                  onClick={() => setActiveSection("mail-history")}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "mail-history"
+                    ? "neu-inset text-primary font-semibold"
+                    : "neu-raised hover:shadow-neo-md"
+                    } `}
+                >
+                  <History className="w-4 h-4" />
+                  Historique
                 </button>
               </nav>
             )}
@@ -547,12 +587,37 @@ const ServiceReceptionSpace = () => {
                 </div>
               </div>
             )}
+
+            {/* Mail Ingestion Section */}
+            {activeSection === "mail-ingestion" && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold">Ingestion du Courrier</h2>
+                  <p className="text-muted-foreground">Numérisation et enregistrement des plis entrants</p>
+                </div>
+                <ServiceReception embedded={true} />
+              </div>
+            )}
+
+            {/* Mail History Section */}
+            {activeSection === "mail-history" && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold">Historique du Courrier</h2>
+                  <p className="text-muted-foreground">Suivi des plis scannés et statuts</p>
+                </div>
+                <ServiceReceptionHistory />
+              </div>
+            )}
           </div>
         </main>
 
         {/* iAsted Integration */}
         <IAstedButtonFull
-          onSingleClick={() => setIastedOpen(true)}
+          voiceListening={false}
+          voiceSpeaking={false}
+          voiceProcessing={false}
+          onClick={() => setIastedOpen(true)}
           onDoubleClick={() => setIastedOpen(true)}
         />
 

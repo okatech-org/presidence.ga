@@ -99,7 +99,7 @@ const IAstedConfig: React.FC = () => {
       }
 
       await handleSave();
-      
+
       toast({
         title: "Succès",
         description: "Agent configuré avec succès",
@@ -207,9 +207,9 @@ const IAstedConfig: React.FC = () => {
                 />
                 <p className="text-xs text-muted-foreground">
                   Créez un agent sur{' '}
-                  <a 
-                    href="https://elevenlabs.io/app/conversational-ai" 
-                    target="_blank" 
+                  <a
+                    href="https://elevenlabs.io/app/conversational-ai"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-foreground"
                   >
@@ -219,7 +219,7 @@ const IAstedConfig: React.FC = () => {
                 </p>
               </div>
 
-              <Button 
+              <Button
                 onClick={handleValidateAgent}
                 disabled={creating || !config.agentId}
                 className="w-full"

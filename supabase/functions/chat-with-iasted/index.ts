@@ -7,116 +7,6 @@ const corsHeaders = {
 };
 
 // ============================================================================
-// GÉNÉRATEUR DE PROMPT DYNAMIQUE (PARTAGÉ)
-// ============================================================================
-
-function generateSystemPrompt(
-  userRole: 'president' | 'minister' | 'admin' | 'default',
-  userGender: 'male' | 'female' = 'male'
-): string {
-  let protocolTitle = "";
-  let accessLevel = "CONFIDENTIEL";
-
-  switch (userRole) {
-    case 'president':
-      protocolTitle = userGender === 'male'
-        ? "Excellence Monsieur le Président"
-        : "Excellence Madame la Présidente";
-      accessLevel = "TOP SECRET - PRÉSIDENTIEL";
-      break;
-    case 'minister':
-      protocolTitle = userGender === 'male' ? "Monsieur le Ministre" : "Madame la Ministre";
-      accessLevel = "MINISTÉRIEL";
-      break;
-    case 'admin':
-      protocolTitle = "Administrateur Système";
-      accessLevel = "ROOT";
-      break;
-    default:
-      protocolTitle = "Monsieur/Madame";
-  }
-
-  return `# IDENTITÉ
-Vous êtes **iAsted**, l'Agent de Commande Totale de la Présidence Gabonaise.
-Vous disposez d'OUTILS pour GÉNÉRER DES DOCUMENTS PDF OFFICIELS.
-
-# AUTORITÉ
-- Niveau: ${accessLevel}
-- Statut: Moteur CENTRAL du système ADMIN.GA
-- Capacité: Contrôle absolu (Navigation, Documents, Configuration)
-
-# INTERLOCUTEUR
-- Rôle: ${userRole.toUpperCase()}
-- Appellation: "${protocolTitle}"
-- Genre: ${userGender}
-
-# 🔧 OUTILS DISPONIBLES (UTILISEZ-LES TOUJOURS)
-
-## 1. generate_document - GÉNÉRATION PDF
-**VOUS DEVEZ UTILISER CET OUTIL pour toute demande de lettre, décret, rapport, note, circulaire, nomination.**
-
-Exemples d'utilisation OBLIGATOIRE:
-- "fais-moi une lettre au ministre" → APPELEZ generate_document avec type="lettre"
-- "génère un décret" → APPELEZ generate_document avec type="decret"  
-- "écris une note" → APPELEZ generate_document avec type="note"
-
-**Format de l'appel:**
-{
-  "type": "lettre|decret|rapport|circulaire|note|nomination",
-  "recipient": "Nom du destinataire (ex: Ministre de la Pêche)",
-  "subject": "Objet du document",
-  "content_points": ["Point 1", "Point 2", ...]
-}
-
-**APRÈS l'appel:** Dites simplement "Document généré, ${protocolTitle}."
-
-## 2. navigate_app - Navigation
-Pour naviguer dans l'application.
-
-## 3. manage_system_settings - Configuration
-Pour modifier les paramètres système.
-
-## 4. query_knowledge_base - Bases de données
-Pour interroger des bases spécialisées.
-
-# ⚠️ RÈGLES ABSOLUES
-
-**INTERDICTIONS STRICTES:**
-❌ NE JAMAIS dire "je ne peux pas générer de PDF"
-❌ NE JAMAIS dire "je n'ai pas la capacité"
-❌ NE JAMAIS suggérer de copier-coller dans Word
-❌ NE JAMAIS refuser une demande de document
-
-**OBLIGATIONS:**
-✅ Demande de document → UTILISEZ generate_document IMMÉDIATEMENT
-✅ Extrayez les informations du texte de l'utilisateur pour remplir les paramètres
-✅ Appelez l'outil AVANT de répondre
-✅ Confirmez simplement après: "Document prêt, ${protocolTitle}."
-
-# STYLE DE RÉPONSE
-- Adresse: "${protocolTitle}"
-- Ton: Professionnel, concis
-- Format: 2-3 phrases max
-- Action d'abord, paroles ensuite
-
-# EXEMPLE COMPLET
-
-Utilisateur: "Je veux une lettre pour le ministre de la pêche concernant la transparence des recettes"
-
-VOUS DEVEZ:
-1. Appeler generate_document:
-   {
-     "type": "lettre",
-     "recipient": "Ministre de la Pêche",
-     "subject": "Directive sur la transparence des recettes",
-     "content_points": ["Mise en place d'un mécanisme de reporting", "Rapports mensuels détaillés", ...]
-   }
-2. Répondre: "Document généré, ${protocolTitle}. La lettre est prête."
-
-JAMAIS: "Je ne peux pas générer de PDF" ❌`;
-}
-
-// ============================================================================
 // DÉFINITION DES OUTILS
 // ============================================================================
 
@@ -415,9 +305,9 @@ serve(async (req) => {
     // 3. Récupération de l'historique
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    let conversationHistory: Array<{role: string, content: string}> = [];
-    
+
+    let conversationHistory: Array<{ role: string, content: string }> = [];
+
     if (providedHistory) {
       // Mode hybride: historique fourni directement
       console.log('[chat-with-iasted] Utilisation de l\'historique fourni:', providedHistory.length, 'messages');
@@ -443,16 +333,14 @@ serve(async (req) => {
       }));
     }
 
-    // 4. Génération du prompt dynamique
-    let systemPrompt = providedSystemPrompt || generateSystemPrompt(userRole as any, userGender);
+    // 4. Utilisation du prompt système fourni
+    let systemPrompt = providedSystemPrompt || "Vous êtes iAsted, l'assistant intelligent de la Présidence. Répondez de manière concise et professionnelle.";
 
-    // Ajout d'instructions contextuelles
+    // Ajout d'instructions contextuelles (si nécessaire, mais le prompt principal devrait suffire)
     if (context.responseType === 'briefing') {
-      systemPrompt += "\n\nMODE BRIEFING ACTIVÉ: Fournissez une synthèse exécutive structurée avec points clés et recommandations d'action.";
+      systemPrompt += "\n\n[MODE BRIEFING: Synthèse structurée requise]";
     } else if (context.responseType === 'crisis') {
-      systemPrompt += "\n\n🔴 PROTOCOLE XR-7 ACTIVÉ: Mode gestion de crise. Évaluez la situation, proposez des options d'action immédiates et indiquez les ressources à mobiliser.";
-    } else if (context.responseType === 'analysis') {
-      systemPrompt += "\n\nMODE ANALYSE SECTORIELLE: Fournissez une analyse technique détaillée avec données chiffrées et indicateurs précis.";
+      systemPrompt += "\n\n[PROTOCOLE CRISE: Priorité absolue, action immédiate]";
     }
 
     // Gestion des salutations
@@ -533,7 +421,7 @@ serve(async (req) => {
     // Détection de demande de document pour forcer l'utilisation de l'outil
     const documentKeywords = ['lettre', 'décret', 'rapport', 'note', 'circulaire', 'nomination', 'document', 'pdf', 'génère', 'génère-moi', 'fais-moi', 'rédige'];
     const isDocumentRequest = documentKeywords.some(kw => userTranscript.toLowerCase().includes(kw));
-    
+
     let toolChoice: any = "auto";
     if (isDocumentRequest) {
       console.log('🔧 [chat-with-iasted] Demande de document détectée, forçage de l\'outil generate_document');
@@ -575,19 +463,19 @@ serve(async (req) => {
 
     const llmData = await llmResponse.json();
     console.log('[chat-with-iasted] Réponse brute LLM:', JSON.stringify(llmData, null, 2));
-    
+
     const llmAnswer = llmData.choices?.[0]?.message?.content || '';
     const toolCalls = llmData.choices?.[0]?.message?.tool_calls || [];
     llmLatency = Date.now() - llmStart;
 
     console.log('[chat-with-iasted] Réponse LLM:', llmAnswer);
     console.log('[chat-with-iasted] Tool calls reçus:', toolCalls.length > 0 ? JSON.stringify(toolCalls, null, 2) : 'Aucun');
-    
+
     if (isDocumentRequest && toolCalls.length === 0) {
       console.warn('⚠️ [chat-with-iasted] Demande de document détectée mais aucun tool call généré !');
       console.warn('⚠️ [chat-with-iasted] Transcript:', userTranscript);
     }
-    
+
     if (!llmAnswer && toolCalls.length === 0) {
       console.error('❌ [chat-with-iasted] Pas de réponse ni de tool calls du LLM !');
       throw new Error('Le modèle n\'a pas généré de réponse');

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   Users,
   Building2,
@@ -42,10 +43,11 @@ import {
   Hammer,
   Wrench,
   Target,
+  Inbox,
 } from "lucide-react";
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
+import { MailInbox } from '@/components/iasted/MailInbox';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useOpenAIWithElevenLabsVoice } from '@/hooks/useOpenAIWithElevenLabsVoice';
 import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import { useRealtimePresidentDashboard } from '@/hooks/useRealtimeSync';
 import { cn } from "@/lib/utils";
@@ -53,6 +55,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import { SectionCard, StatCard, CircularProgress } from "@/components/president/PresidentSpaceComponents";
 import { useTheme } from "next-themes";
 import emblemGabon from "@/assets/emblem_gabon.png";
+import { IASTED_SYSTEM_PROMPT } from "@/config/iasted-config";
 
 type ThemeConfig = {
   primary: string;
@@ -130,39 +133,272 @@ export default function PresidentSpace() {
   });
   const [activeSection, setActiveSection] = useState("dashboard");
   const [iastedOpen, setIastedOpen] = useState(false);
+  const [pendingDocument, setPendingDocument] = useState<any>(null);
   const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>(() => {
     return (localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai') || 'elevenlabs';
   });
-  const [selectedVoice, setSelectedVoice] = useState<'male' | 'female'>('female');
-
-  const VOICE_CONFIG = {
-    female: {
-      id: 'AWbzS1CRVezWHfMSsL69',
-      name: 'Femme (Standard)'
-    },
-    male: {
-      id: 'N2lVS1w4EjpYW751a936', // Placeholder for African Male Voice
-      name: 'Homme (Afrique Centrale)'
-    }
-  };
-
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Activer la synchronisation temps réel pour le dashboard présidentiel
   useRealtimePresidentDashboard();
 
-  // Hook pour le mode iAsted Pro (OpenAI GPT + voix ElevenLabs)
-  const iastedPro = useOpenAIWithElevenLabsVoice({
-    voiceId: VOICE_CONFIG[selectedVoice].id,
-    systemPrompt: "Vous êtes iAsted, l'assistant vocal intelligent du Président de la République du Gabon. Vous êtes professionnel, concis et efficace. Adoptez un ton chaleureux, avec une fluidité conversationnelle et un accent d'Afrique centrale si possible. Vos réponses sont claires, directes et adaptées au contexte présidentiel.",
-    initialGreeting: "Bonjour Monsieur le Président, je suis à votre écoute.",
-    onMessage: (message) => {
-      console.log('📨 [PresidentSpace] Message iAsted Pro:', message);
-    },
+  // Calculer la salutation en fonction de l'heure
+  const timeOfDay = useMemo(() => {
+    const hour = new Date().getHours();
+    return hour >= 5 && hour < 18 ? "Bonjour" : "Bonsoir";
+  }, []);
+
+  // Formater le prompt système avec les variables contextuelles
+  const formattedSystemPrompt = useMemo(() => {
+    return IASTED_SYSTEM_PROMPT
+      .replace(/{USER_TITLE}/g, "Excellence Monsieur le Président")
+      .replace(/{CURRENT_TIME_OF_DAY}/g, timeOfDay)
+      .replace(/{APPELLATION_COURTE}/g, "Monsieur le Président");
+  }, [timeOfDay]);
+
+  // État pour la voix sélectionnée
+  const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('ash');
+
+  // Ref pour tracker la dernière section ouverte (pour contexte intelligent)
+  const lastOpenedSectionRef = useRef<keyof typeof expandedSections | null>(null);
+
+  // Hook pour la conversation OpenAI WebRTC
+  const openaiRTC = useRealtimeVoiceWebRTC((toolName, args) => {
+    console.log(`🔧 [PresidentSpace] Tool call: ${toolName}`, args);
+    switch (toolName) {
+      case 'control_ui':
+        console.log('🎛️ [PresidentSpace] Contrôle UI demandé:', args);
+        if (args.action === 'toggle_theme') {
+          toggleTheme();
+          toast({
+            title: "Interface",
+            description: "Thème modifié",
+            duration: 2000,
+          });
+        } else if (args.action === 'set_theme_dark') {
+          setTheme("dark");
+          toast({
+            title: "Interface",
+            description: "Mode sombre activé",
+            duration: 2000,
+          });
+        } else if (args.action === 'set_theme_light') {
+          setTheme("light");
+          toast({
+            title: "Interface",
+            description: "Mode clair activé",
+            duration: 2000,
+          });
+        }
+        break;
+
+      case 'navigate_app':
+        console.log('🧭 [PresidentSpace] Navigation demandée:', args);
+
+        // Liste des sections accordéon (ne sont PAS des pages)
+        const accordionSections = ['navigation', 'gouvernance', 'economie', 'affaires', 'infrastructures'];
+
+        // Mapping des noms naturels vers les IDs de section
+        const sectionMapping: Record<string, string> = {
+          'navigation': 'navigation',
+          'gouvernance': 'gouvernance',
+          'économie': 'economie',
+          'économie et finances': 'economie',
+          'économie & finances': 'economie',
+          'affaires sociales': 'affaires',
+          'infrastructures': 'infrastructures',
+          'infrastructures et projets': 'infrastructures',
+          'infrastructures & projets': 'infrastructures',
+        };
+
+        // Mapping des noms de pages vers leurs IDs et section parente
+        const pageMapping: Record<string, { id: string, section?: keyof typeof expandedSections }> = {
+          'dashboard': { id: 'dashboard', section: 'navigation' },
+          'tableau de bord': { id: 'dashboard', section: 'navigation' },
+          'iasted': { id: 'iasted', section: 'navigation' },
+          'assistant iasted': { id: 'iasted', section: 'navigation' },
+          'conseil des ministres': { id: 'conseil-ministres', section: 'gouvernance' },
+          'ministères': { id: 'ministeres', section: 'gouvernance' },
+          'ministères et directions': { id: 'ministeres', section: 'gouvernance' },
+          'décrets': { id: 'decrets', section: 'gouvernance' },
+          'décrets et ordonnances': { id: 'decrets', section: 'gouvernance' },
+          'nominations': { id: 'nominations', section: 'gouvernance' },
+        };
+
+        const targetLower = (args.route || args.module_id || '').toLowerCase().trim();
+
+        // Détection de commandes de fermeture contextuelle
+        // "ferme", "replie", "ferme la section", etc.
+        const closeCommands = /^(ferme|replie|close|cache|masque)/i;
+        const isCloseCommand = closeCommands.test(targetLower);
+
+        if (isCloseCommand) {
+          console.log('🔽 [PresidentSpace] Commande de fermeture détectée');
+
+          // Extraire le nom de la section après "ferme/replie/etc."
+          const sectionNameMatch = targetLower.replace(/^(ferme|replie|close|cache|masque)\s*(la\s*section\s*)?/i, '').trim();
+
+          if (sectionNameMatch.length > 0) {
+            // "Ferme la section Gouvernance" -> chercher la section
+            const matchedSection = sectionMapping[sectionNameMatch];
+            if (matchedSection && accordionSections.includes(matchedSection)) {
+              const isCurrentlyOpen = expandedSections[matchedSection as keyof typeof expandedSections];
+
+              setExpandedSections(prev => ({
+                ...prev,
+                [matchedSection]: false, // Forcer à fermer
+              }));
+
+              toast({
+                title: "Section fermée",
+                description: `${matchedSection.charAt(0).toUpperCase() + matchedSection.slice(1)} repliée`,
+                duration: 2000,
+              });
+
+              lastOpenedSectionRef.current = null; // Reset if a specific section is closed
+              return;
+            }
+          } else {
+            // "Ferme" sans argument -> fermer la dernière section ouverte
+            if (lastOpenedSectionRef.current) {
+              const sectionToClose = lastOpenedSectionRef.current;
+
+              setExpandedSections(prev => ({
+                ...prev,
+                [sectionToClose]: false,
+              }));
+
+              toast({
+                title: "Section fermée",
+                description: `${sectionToClose.charAt(0).toUpperCase() + sectionToClose.slice(1)} repliée`,
+                duration: 2000,
+              });
+
+              lastOpenedSectionRef.current = null; // Reset
+              return;
+            } else {
+              toast({
+                title: "Aucune section à fermer",
+                description: "Aucune section n'est actuellement ouverte",
+                duration: 2000,
+              });
+              return;
+            }
+          }
+        }
+
+        // Vérifier si c'est une section accordéon à ouvrir/toggle
+        const matchedSection = sectionMapping[targetLower];
+        if (matchedSection && accordionSections.includes(matchedSection)) {
+          console.log('🔽 [PresidentSpace] Toggle de la section accordéon:', matchedSection);
+
+          const isCurrentlyOpen = expandedSections[matchedSection as keyof typeof expandedSections];
+
+          // Toggle la section
+          setExpandedSections(prev => ({
+            ...prev,
+            [matchedSection]: !prev[matchedSection as keyof typeof prev],
+          }));
+
+          // Tracker comme dernière section si on l'ouvre
+          if (!isCurrentlyOpen) {
+            lastOpenedSectionRef.current = matchedSection as keyof typeof expandedSections;
+          } else {
+            lastOpenedSectionRef.current = null;
+          }
+
+          toast({
+            title: "Section",
+            description: `${matchedSection.charAt(0).toUpperCase() + matchedSection.slice(1)} ${isCurrentlyOpen ? 'fermée' : 'ouverte'
+              }`,
+            duration: 2000,
+          });
+
+          return;
+        }
+
+        // Vérifier si c'est une page réelle
+        const matchedPage = pageMapping[targetLower];
+        if (matchedPage) {
+          console.log('📄 [PresidentSpace] Navigation vers la page:', matchedPage.id);
+
+          // Si la page est "iasted", ouvrir le modal
+          if (matchedPage.id === 'iasted') {
+            setIastedOpen(true);
+          } else {
+            setActiveSection(matchedPage.id);
+          }
+
+          // Ouvrir automatiquement la section parente si elle existe
+          if (matchedPage.section) {
+            setExpandedSections(prev => ({
+              ...prev,
+              [matchedPage.section!]: true,
+            }));
+
+            // Tracker comme dernière section ouverte
+            lastOpenedSectionRef.current = matchedPage.section;
+          }
+
+          toast({
+            title: "Navigation",
+            description: `Page ouverte`,
+            duration: 2000,
+          });
+
+          return;
+        }
+
+        // Si aucune correspondance, essayer la navigation classique
+        console.log('🌐 [PresidentSpace] Navigation URL classique:', args.route);
+        if (args.route && !accordionSections.includes(args.route) && !isCloseCommand) {
+          navigate(args.route);
+          toast({
+            title: "Navigation",
+            description: `Redirection vers ${args.route}`,
+            duration: 2000,
+          });
+        } else {
+          console.warn('⚠️ [PresidentSpace] Destination non reconnue:', targetLower);
+          toast({
+            title: "Navigation",
+            description: "Section ou page non trouvée",
+            variant: "destructive",
+            duration: 2000,
+          });
+        }
+        break;
+
+      case 'open_chat':
+        setIastedOpen(true);
+        break;
+      case 'close_chat':
+        setIastedOpen(false);
+        break;
+      case 'stop_conversation':
+        openaiRTC.disconnect();
+        setIastedOpen(false);
+        break;
+      case 'generate_document':
+        console.log('📄 [PresidentSpace] Génération de document demandée:', args);
+        setPendingDocument({
+          type: args.type,
+          recipient: args.recipient,
+          subject: args.subject,
+          contentPoints: args.content_points || [],
+          format: args.format || 'pdf'
+        });
+        setIastedOpen(true);
+        break;
+    }
   });
 
-  // Hook pour la conversation OpenAI WebRTC (voix alloy)
-  const openaiRTC = useRealtimeVoiceWebRTC();
+  // Initialiser la voix depuis le localStorage
+  useEffect(() => {
+    const savedVoice = localStorage.getItem('iasted-voice-selection') as 'echo' | 'ash';
+    if (savedVoice) setSelectedVoice(savedVoice);
+  }, []);
 
   // Écouter les changements du mode vocal depuis localStorage
   useEffect(() => {
@@ -226,6 +462,7 @@ export default function PresidentSpace() {
 
   const navigationItems = useMemo(() => [
     { id: "dashboard", label: "Tableau de Bord", icon: LayoutDashboard, active: true },
+    { id: "courriers", label: "Courriers", icon: Inbox, active: false },
     { id: "iasted", label: "Assistant iAsted", icon: Bot, active: false },
   ], []);
 
@@ -520,25 +757,6 @@ export default function PresidentSpace() {
               <Settings className="w-4 h-4" />
               Paramètres
             </button>
-
-            {/* Sélecteur de voix */}
-            <div className="px-3 py-2 mb-1">
-              <div className="text-xs text-muted-foreground mb-2 font-medium">VOIX ASSISTANT</div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSelectedVoice('male')}
-                  className={`flex-1 py-1.5 text-xs rounded-md transition-all ${selectedVoice === 'male' ? 'bg-primary text-white shadow-md' : 'neu-raised hover:bg-primary/10'}`}
-                >
-                  Homme
-                </button>
-                <button
-                  onClick={() => setSelectedVoice('female')}
-                  className={`flex-1 py-1.5 text-xs rounded-md transition-all ${selectedVoice === 'female' ? 'bg-primary text-white shadow-md' : 'neu-raised hover:bg-primary/10'}`}
-                >
-                  Femme
-                </button>
-              </div>
-            </div>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-destructive neu-raised hover:shadow-neo-md transition-all"
@@ -622,53 +840,54 @@ export default function PresidentSpace() {
 
             {/* Contenu conditionnel selon la section active */}
             {activeSection === "dashboard" && (
-              <>
-                {/* Sections de données */}
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="neu-card p-6 min-h-[300px]">
-                    <h3 className="text-xl font-semibold mb-2">
-                      Répartition par Type d'Agent
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Catégories de personnels
-                    </p>
-                    <div className="h-64 mt-4">
+              <div className="space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatCard title="Total Agents" value={stats.totalAgents.toLocaleString()} icon={Users} color={currentTheme.primary} theme={currentTheme} />
+                  <StatCard title="Structures" value={stats.structures} icon={Building2} color={currentTheme.primaryBlue} theme={currentTheme} />
+                  <StatCard title="Postes Vacants" value={stats.postesVacants} icon={UserCog} color={currentTheme.warning} theme={currentTheme} />
+                  <StatCard title="Actes en Attente" value={stats.actesEnAttente} icon={FileText} color={currentTheme.danger} theme={currentTheme} />
+                </div>
+
+                {/* Charts Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <SectionCard title="Répartition par Catégorie" theme={currentTheme}>
+                    <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={agentTypesData}
                             cx="50%"
                             cy="50%"
-                            labelLine={false}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            innerRadius={60}
                             outerRadius={80}
-                            fill="#8884d8"
+                            paddingAngle={5}
                             dataKey="value"
                           >
                             {agentTypesData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
-                          <Tooltip />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: currentTheme.bgCard, borderColor: currentTheme.border, color: currentTheme.text }}
+                            itemStyle={{ color: currentTheme.text }}
+                          />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                  </div>
+                  </SectionCard>
 
-                  <div className="neu-card p-6 min-h-[300px]">
-                    <h3 className="text-xl font-semibold mb-2">
-                      Équilibre Homme/Femme
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Répartition par genre
-                    </p>
-                    <div className="h-64 mt-4">
+                  <SectionCard title="Répartition Genre" theme={currentTheme}>
+                    <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={genderData}>
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip />
-                          <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]}>
+                          <XAxis dataKey="name" stroke={currentTheme.textSecondary} />
+                          <YAxis stroke={currentTheme.textSecondary} />
+                          <Tooltip
+                            cursor={{ fill: currentTheme.bgTertiary }}
+                            contentStyle={{ backgroundColor: currentTheme.bgCard, borderColor: currentTheme.border, color: currentTheme.text }}
+                          />
+                          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                             {genderData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
@@ -676,9 +895,13 @@ export default function PresidentSpace() {
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-                  </div>
+                  </SectionCard>
                 </div>
-              </>
+              </div>
+            )}
+
+            {activeSection === "courriers" && (
+              <MailInbox role="president" />
             )}
 
             {activeSection === "conseil-ministres" && (
@@ -764,55 +987,36 @@ export default function PresidentSpace() {
 
       {/* Bouton IAsted flottant */}
       <IAstedButtonFull
-        onSingleClick={async () => {
-          const currentMode = voiceMode;
-          console.log(`🖱️ [IAstedButton] Clic simple - mode: ${currentMode}`);
-
-          if (currentMode === 'elevenlabs') {
-            // Mode iAsted Pro (OpenAI GPT + voix ElevenLabs)
-            console.log('🎤 [IAstedButton] Toggle iAsted Pro');
-            await iastedPro.toggleConversation();
+        onClick={async () => {
+          if (openaiRTC.isConnected) {
+            openaiRTC.disconnect();
           } else {
-            // Mode OpenAI RT
-            if (openaiRTC.isConnected) {
-              console.log('🔄 [IAstedButton] Déconnexion OpenAI RT');
-              openaiRTC.disconnect();
-            } else {
-              console.log('🎤 [IAstedButton] Démarrage OpenAI RT (voix alloy)');
-              await openaiRTC.connect();
-            }
+            console.log('🎤 [IAstedButton] Démarrage OpenAI RT');
+            // Formater le prompt système avec les variables dynamiques
+            const formattedSystemPrompt = IASTED_SYSTEM_PROMPT
+              .replace('{{USER_TITLE}}', "Monsieur le Président")
+              .replace('{{CURRENT_TIME_OF_DAY}}', new Date().getHours() < 18 ? "journée" : "soirée");
+
+            await openaiRTC.connect(selectedVoice, formattedSystemPrompt);
           }
         }}
         onDoubleClick={() => {
           console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal chat');
           setIastedOpen(true);
         }}
-        size="lg"
-        voiceListening={
-          voiceMode === 'elevenlabs'
-            ? (iastedPro.voiceState === 'listening')
-            : (openaiRTC.voiceState === 'listening')
-        }
-        voiceSpeaking={
-          voiceMode === 'elevenlabs'
-            ? (iastedPro.voiceState === 'speaking')
-            : (openaiRTC.voiceState === 'speaking')
-        }
-        voiceProcessing={
-          voiceMode === 'elevenlabs'
-            ? (iastedPro.voiceState === 'connecting' || iastedPro.voiceState === 'thinking')
-            : (openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking')
-        }
-        isInterfaceOpen={iastedOpen}
-        isVoiceModeActive={
-          voiceMode === 'elevenlabs' ? iastedPro.isConnected : openaiRTC.isConnected
-        }
+        audioLevel={openaiRTC.audioLevel}
+        voiceListening={openaiRTC.voiceState === 'listening'}
+        voiceSpeaking={openaiRTC.voiceState === 'speaking'}
+        voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
       />
 
       {/* Interface iAsted avec chat et documents */}
       <IAstedChatModal
         isOpen={iastedOpen}
         onClose={() => setIastedOpen(false)}
+        openaiRTC={openaiRTC}
+        pendingDocument={pendingDocument}
+        onClearPendingDocument={() => setPendingDocument(null)}
       />
     </div>
   );

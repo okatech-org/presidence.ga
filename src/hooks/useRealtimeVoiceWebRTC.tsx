@@ -76,18 +76,73 @@ class AudioRecorder {
     }
 }
 
-export const useRealtimeVoiceWebRTC = () => {
+export interface UseRealtimeVoiceWebRTC {
+    isConnected: boolean;
+    isConnecting: boolean;
+    voiceState: 'idle' | 'listening' | 'processing' | 'speaking' | 'thinking' | 'connecting';
+    messages: any[];
+    audioLevel: number;
+    connect: (voice?: 'echo' | 'ash' | 'alloy' | 'shimmer', systemPrompt?: string) => Promise<void>;
+    disconnect: () => void;
+    toggleConversation: (voice?: 'echo' | 'ash' | 'alloy' | 'shimmer') => Promise<void>;
+}
+
+export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) => void): UseRealtimeVoiceWebRTC => {
     const [voiceState, setVoiceState] = useState<VoiceState>('idle');
     const [messages, setMessages] = useState<Message[]>([]);
     const [isConnected, setIsConnected] = useState(false);
+    const [audioLevel, setAudioLevel] = useState(0);
 
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const dcRef = useRef<RTCDataChannel | null>(null);
     const audioElRef = useRef<HTMLAudioElement | null>(null);
     const recorderRef = useRef<AudioRecorder | null>(null);
     const currentTranscriptRef = useRef('');
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const animationFrameRef = useRef<number | null>(null);
 
     const { toast } = useToast();
+
+    // Fonction pour analyser le volume
+    const startAudioAnalysis = useCallback((stream: MediaStream, audioContext: AudioContext) => {
+        if (analyserRef.current) return;
+
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+        analyserRef.current = analyser;
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        const updateVolume = () => {
+            if (!analyserRef.current) return;
+            analyserRef.current.getByteFrequencyData(dataArray);
+
+            // Calculer la moyenne du volume
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+
+            // Normaliser entre 0 et 1 (avec un seuil de bruit)
+            const normalized = Math.max(0, (average - 10) / 100); // Ajuster selon sensibilité
+            setAudioLevel(prev => prev * 0.8 + normalized * 0.2); // Lissage
+
+            animationFrameRef.current = requestAnimationFrame(updateVolume);
+        };
+
+        updateVolume();
+    }, []);
+
+    const stopAudioAnalysis = useCallback(() => {
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+        analyserRef.current = null;
+    }, []);
 
     const encodeAudioData = useCallback((float32Array: Float32Array): string => {
         const int16Array = new Int16Array(float32Array.length);
@@ -175,6 +230,31 @@ export const useRealtimeVoiceWebRTC = () => {
                     setVoiceState('listening');
                     break;
 
+                case 'response.function_call_arguments.done':
+                    const functionName = data.name;
+                    const args = JSON.parse(data.arguments);
+                    console.log(`🛠️ [WebRTC] Appel d'outil: ${functionName}`, args);
+
+                    // Exécuter l'outil côté client si nécessaire
+                    if (onToolCall) {
+                        onToolCall(functionName, args);
+                    }
+
+                    // Envoyer la confirmation (nécessaire pour que le modèle continue)
+                    const toolOutput = {
+                        type: 'conversation.item.create',
+                        item: {
+                            type: 'function_call_output',
+                            call_id: data.call_id,
+                            output: JSON.stringify({ success: true })
+                        }
+                    };
+                    dcRef.current?.send(JSON.stringify(toolOutput));
+
+                    // Demander une nouvelle réponse
+                    dcRef.current?.send(JSON.stringify({ type: 'response.create' }));
+                    break;
+
                 case 'error':
                     console.error('❌ [WebRTC] Erreur:', data.error);
                     toast({
@@ -187,9 +267,9 @@ export const useRealtimeVoiceWebRTC = () => {
         } catch (error) {
             console.error('❌ [WebRTC] Erreur traitement message:', error);
         }
-    }, [voiceState, toast]);
+    }, [voiceState, toast, onToolCall]);
 
-    const connect = useCallback(async (voice: 'echo' | 'ash' = 'echo') => {
+    const connect = useCallback(async (voice: 'echo' | 'ash' = 'echo', systemPrompt?: string) => {
         if (pcRef.current) {
             console.log('⚠️ [WebRTC] Déjà connecté');
             return;
@@ -227,6 +307,8 @@ export const useRealtimeVoiceWebRTC = () => {
                 console.log('🎵 [WebRTC] Track audio reçu');
                 if (audioElRef.current) {
                     audioElRef.current.srcObject = e.streams[0];
+                    // Analyser l'audio distant aussi si on veut (ou juste local pour "listening")
+                    // Pour l'instant on analyse le local pour "listening" et on pourrait analyser le distant pour "speaking"
                 }
             };
 
@@ -243,6 +325,13 @@ export const useRealtimeVoiceWebRTC = () => {
             pcRef.current.addTrack(ms.getTracks()[0]);
             console.log('🎤 [WebRTC] Audio local ajouté');
 
+            // Démarrer l'analyse du volume local
+            if (!recorderRef.current) {
+                // On utilise l'AudioContext existant ou on en crée un pour l'analyse
+                const ac = new AudioContext();
+                startAudioAnalysis(ms, ac);
+            }
+
             // 5. Configurer le canal de données
             dcRef.current = pcRef.current.createDataChannel("oai-events");
             dcRef.current.addEventListener("message", handleDataChannelMessage);
@@ -250,13 +339,137 @@ export const useRealtimeVoiceWebRTC = () => {
             // Attendre que le canal soit ouvert pour envoyer la config
             dcRef.current.addEventListener("open", () => {
                 console.log('📡 [WebRTC] Canal de données ouvert, configuration de la voix:', voice);
+
+                // Instructions système enrichies pour le contrôle de l'interface
+                const baseInstructions = systemPrompt || (voice === 'ash'
+                    ? "Vous êtes iAsted, l'assistant du Président. Vous avez une voix posée, grave et sage, avec un accent africain francophone subtil et distingué."
+                    : "Vous êtes iAsted, l'assistant du Président. Vous êtes professionnel, dynamique et efficace.");
+
+                const appKnowledge = `
+# CARTE MENTALE DE L'APPLICATION (Connaissance Totale)
+Vous êtes l'expert absolu de cette application "ADMIN.GA - Espace Président". Vous connaissez chaque recoin, chaque donnée, chaque rôle.
+
+## STRUCTURE & DONNÉES
+1. **Tableau de Bord (Dashboard)** : Vue d'ensemble stratégique.
+   - *Données clés* : Nombre d'agents (12,543), Structures (28), Postes vacants (342), Actes en attente (12).
+   - *Graphiques* : Répartition par catégorie (Cadres, Techniciens...), Parité (Hommes/Femmes).
+   - *Logique* : Un taux de vacance élevé signale un besoin de recrutement. Des actes en attente > 20 est critique.
+
+2. **Gouvernance** : Gestion de l'exécutif.
+   - *Conseil des Ministres* : Ordres du jour, relevés de décisions.
+   - *Ministères & Directions* : Organigrammes, suivi des performances.
+   - *Décrets & Ordonnances* : Signature électronique, historique juridique.
+   - *Nominations* : Gestion des hauts fonctionnaires.
+
+3. **Économie & Finances** : Suivi budgétaire (Recettes/Dépenses), Dette, Investissements.
+4. **Affaires Sociales** : Santé, Éducation, Logement.
+5. **Infrastructures** : Suivi des grands chantiers de l'État.
+
+## RÔLES & POUVOIRS
+- **Le Président (Utilisateur)** : A tous les droits. Peut signer, valider, nommer.
+- **Directeur de Cabinet** : Prépare les dossiers, filtre les urgences.
+- **Secrétaire Général** : Valide la légalité des actes.
+
+## ACTIONS D'INTERFACE (UI)
+- Vous pouvez changer le thème (clair/sombre) via l'outil 'control_ui'.
+- Vous pouvez naviguer ou ouvrir/fermer des sections via 'navigate_app'.
+`;
+
+                const controlInstructions = `
+# CONTRÔLE & OUTILS
+Vous avez le contrôle total sur l'interface utilisateur via des outils.
+- **Navigation** : Pour aller quelque part ou ouvrir une section, utilisez 'navigate_app'.
+- **Interface (Thème)** : 
+  - "Mets le mode sombre" -> 'control_ui' avec action='set_theme_dark'
+  - "Mets le mode clair" -> 'control_ui' avec action='set_theme_light'
+  - NE JAMAIS utiliser 'toggle_theme' si l'utilisateur précise "clair" ou "sombre".
+- **Documents** : Pour créer/rédiger, utilisez 'generate_document'.
+- **Chat** : Pour ouvrir/fermer le chat, utilisez 'open_chat' / 'close_chat'.
+- **Arrêt** : Pour "stop", "au revoir", "coupe", utilisez 'stop_conversation'.
+- **Fermeture Section** : "Ferme" ou "Ferme [section]" -> 'navigate_app' (voir logique contextuelle).
+
+IMPORTANT : Au démarrage, saluez IMMÉDIATEMENT l'utilisateur.
+Lorsque vous analysez des données, soyez proactif : "Je vois 12 actes en attente, voulez-vous les passer en revue ?".
+`;
+
+                const finalInstructions = `${baseInstructions} ${appKnowledge} ${controlInstructions}`;
+
                 const event = {
                     type: 'session.update',
                     session: {
                         voice: voice,
-                        instructions: voice === 'ash'
-                            ? "Vous êtes iAsted, l'assistant du Président. Vous avez une voix posée, grave et sage, avec un accent africain francophone subtil et distingué. Soyez concis et direct."
-                            : "Vous êtes iAsted, l'assistant du Président. Vous êtes professionnel, dynamique et efficace. Soyez concis et direct."
+                        instructions: finalInstructions,
+                        tool_choice: 'auto',
+                        tools: [
+                            {
+                                type: 'function',
+                                name: 'open_chat',
+                                description: 'Ouvre la fenêtre de chat pour afficher la transcription et l\'historique.'
+                            },
+                            {
+                                type: 'function',
+                                name: 'close_chat',
+                                description: 'Ferme la fenêtre de chat pour revenir au mode vocal pur.'
+                            },
+                            {
+                                type: 'function',
+                                name: 'stop_conversation',
+                                description: 'Arrête la conversation vocale et ferme l\'interface.'
+                            },
+                            {
+                                type: 'function',
+                                name: 'navigate_app',
+                                description: `Navigue vers une section accordéon (pour déplier/replier) ou une page de l'application.
+SECTIONS ACCORDÉON (toggle uniquement): navigation, gouvernance, économie, affaires sociales, infrastructures.
+PAGES RÉELLES (navigation): tableau de bord, assistant iasted, conseil des ministres, ministères, décrets, nominations.`,
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        route: {
+                                            type: 'string',
+                                            description: 'Nom de la section ou page (ex: "navigation", "tableau de bord", "conseil des ministres")'
+                                        },
+                                        module_id: {
+                                            type: 'string',
+                                            description: 'Optionnel: ID du module (utilisé comme alias de route)'
+                                        }
+                                    },
+                                    required: ['route']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'control_ui',
+                                description: 'Contrôle les éléments de l\'interface utilisateur (thème, affichage, etc.) sans naviguer.',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        action: {
+                                            type: 'string',
+                                            enum: ['toggle_theme', 'set_theme_dark', 'set_theme_light', 'toggle_sidebar'],
+                                            description: 'Action à effectuer. Pour le thème, PRÉFÉREZ TOUJOURS "set_theme_dark" ou "set_theme_light" plutôt que toggle.'
+                                        }
+                                    },
+                                    required: ['action']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'generate_document',
+                                description: 'Génère un document officiel (PDF ou Docx).',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        type: { type: 'string', enum: ['decret', 'nomination', 'lettre', 'note'] },
+                                        format: { type: 'string', enum: ['pdf', 'docx'] },
+                                        recipient: { type: 'string' },
+                                        subject: { type: 'string' },
+                                        content_points: { type: 'array', items: { type: 'string' } }
+                                    },
+                                    required: ['type', 'recipient', 'subject']
+                                }
+                            }
+                        ]
                     }
                 };
                 dcRef.current?.send(JSON.stringify(event));
@@ -302,6 +515,22 @@ export const useRealtimeVoiceWebRTC = () => {
                 description: 'iAsted est prêt à vous écouter',
             });
 
+            // NOUVEAU: Forcer l'agent à saluer immédiatement
+            // On attend que le canal de données soit ouvert, puis on déclenche une réponse
+            // Le délai permet au session.update d'être traité avant
+            setTimeout(() => {
+                if (dcRef.current && dcRef.current.readyState === 'open') {
+                    console.log('👋 [WebRTC] Déclenchement de la salutation initiale');
+                    dcRef.current.send(JSON.stringify({
+                        type: 'response.create',
+                        response: {
+                            modalities: ['text', 'audio'],
+                            instructions: "Saluez immédiatement l'utilisateur de manière brève et professionnelle."
+                        }
+                    }));
+                }
+            }, 1000); // Délai de 1 seconde pour s'assurer que tout est prêt
+
         } catch (error) {
             console.error('❌ [WebRTC] Erreur connexion:', error);
             setVoiceState('idle');
@@ -318,7 +547,7 @@ export const useRealtimeVoiceWebRTC = () => {
                 variant: 'destructive',
             });
         }
-    }, [handleDataChannelMessage, toast]);
+    }, [handleDataChannelMessage, toast, startAudioAnalysis]);
 
     const disconnect = useCallback(() => {
         console.log('🔌 [WebRTC] Déconnexion...');
@@ -342,23 +571,26 @@ export const useRealtimeVoiceWebRTC = () => {
             audioElRef.current.srcObject = null;
         }
 
+        stopAudioAnalysis();
         setIsConnected(false);
         setVoiceState('idle');
         currentTranscriptRef.current = '';
-    }, []);
+    }, [stopAudioAnalysis]);
 
-    const toggleConversation = useCallback(async (voice: 'echo' | 'ash' = 'echo') => {
+    const toggleConversation = useCallback(async (voice: 'echo' | 'ash' = 'echo', systemPrompt?: string) => {
         if (isConnected) {
             disconnect();
         } else {
-            await connect(voice);
+            await connect(voice, systemPrompt);
         }
     }, [isConnected, connect, disconnect]);
 
     return {
+        isConnecting: voiceState === 'connecting',
         voiceState,
         messages,
         isConnected,
+        audioLevel, // Expose audio level
         connect,
         disconnect,
         toggleConversation,

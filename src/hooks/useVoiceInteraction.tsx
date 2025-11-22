@@ -37,7 +37,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   const [isPaused, setIsPaused] = useState(false);
   // Utiliser le voiceId fourni ou la voix Aria par défaut
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>(voiceId || '9BWtsMINqrJLrRacOk9x');
-  
+
   // Log pour debug
   useEffect(() => {
     console.log('🎙️ [useVoiceInteraction] VoiceId actuel:', selectedVoiceId);
@@ -90,7 +90,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   const createSession = useCallback(async (): Promise<string> => {
     // Vérifier d'abord si userId est déjà chargé
     let currentUserId = userId;
-    
+
     // Si userId n'est pas encore chargé, essayer de le récupérer
     if (!currentUserId) {
       // Essayer d'abord avec getSession qui est plus fiable
@@ -138,7 +138,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
     analyserRef.current.getByteFrequencyData(dataArray);
-    
+
     const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
     const normalizedLevel = Math.min(100, (average / 255) * 100);
     setAudioLevel(normalizedLevel);
@@ -149,11 +149,11 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
         console.log('🔇 Début de silence détecté');
         setSilenceDetected(true);
         let timeRemaining = silenceDuration;
-        
+
         silenceTimerRef.current = setInterval(() => {
           timeRemaining -= 100;
           setSilenceTimeRemaining(timeRemaining);
-          
+
           // Quand le silence atteint la durée configurée, arrêter l'écoute automatiquement
           if (timeRemaining <= 0 && voiceState === 'listening') {
             console.log('🔇 Silence confirmé - arrêt automatique de l\'écoute');
@@ -189,14 +189,14 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     try {
       console.log('🎤 Démarrage de l\'écoute...');
 
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 24000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-        } 
+        }
       });
 
       // Créer le contexte audio pour l'analyse
@@ -220,14 +220,14 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
         console.log('⏹️ Enregistrement arrêté');
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         await processAudio(audioBlob);
-        
+
         // Nettoyer
         stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorder.start();
       setVoiceState('listening');
-      
+
       // Démarrer l'analyse audio
       analyzeAudioLevel();
 
@@ -284,7 +284,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
 
       // Calculer la durée de l'audio pour estimer la complexité
       const audioDurationMs = audioBlob.size / 16; // Estimation approximative
-      
+
       // Temps de réflexion adaptatif (2-5 secondes selon la longueur)
       // Audio court (< 2s) = 2s de réflexion
       // Audio moyen (2-5s) = 3s de réflexion  
@@ -292,7 +292,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       let thinkingTime = 2000; // minimum 2 secondes
       if (audioDurationMs > 2000) thinkingTime = 3000;
       if (audioDurationMs > 5000) thinkingTime = Math.min(5000, 4000 + (audioDurationMs - 5000) / 10);
-      
+
       console.log(`🤔 Temps de réflexion: ${thinkingTime}ms (durée audio estimée: ${audioDurationMs}ms)`);
 
       // Appeler chat-with-iasted
@@ -317,18 +317,18 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
 
       // Ajouter les messages à l'historique de la conversation
       if (data.transcript) {
-        setConversationMessages(prev => [...prev, { 
-          role: 'user', 
-          text: data.transcript, 
-          timestamp: new Date() 
+        setConversationMessages(prev => [...prev, {
+          role: 'user',
+          text: data.transcript,
+          timestamp: new Date()
         }]);
       }
-      
+
       if (data.answer) {
-        setConversationMessages(prev => [...prev, { 
-          role: 'assistant', 
-          text: data.answer, 
-          timestamp: new Date() 
+        setConversationMessages(prev => [...prev, {
+          role: 'assistant',
+          text: data.answer,
+          timestamp: new Date()
         }]);
       }
 
@@ -336,7 +336,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
       if (data.route?.category === 'voice_command') {
         console.log('🎙️ Commande vocale détectée:', data.route.command);
         handleVoiceCommand(data.route.command, data.route.args);
-        
+
         // Mode continu - relancer l'écoute si non-pause
         if (continuousMode && !isPaused) {
           setTimeout(() => {
@@ -392,7 +392,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
         console.log('🔊 [playAudioResponse] Démarrage lecture audio');
         console.log('📊 [playAudioResponse] Longueur base64:', audioBase64.length);
         console.log('🔍 [playAudioResponse] Premiers chars:', audioBase64.substring(0, 50));
-        
+
         setVoiceState('speaking');
         onSpeakingChange?.(true);
 
@@ -434,7 +434,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   // Gérer les commandes vocales
   const handleVoiceCommand = (command: string, args: any) => {
     console.log('🎙️ Commande vocale:', command, args);
-    
+
     switch (command) {
       case 'stop_listening':
         console.log('⏹️ Commande: Arrêter l\'écoute');
@@ -444,7 +444,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
           description: "Conversation terminée",
         });
         break;
-        
+
       case 'pause':
         console.log('⏸️ Commande: Pause');
         setIsPaused(true);
@@ -454,7 +454,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
           description: "Dites 'continue' pour reprendre",
         });
         break;
-        
+
       case 'resume':
         console.log('▶️ Commande: Reprendre');
         setIsPaused(false);
@@ -464,7 +464,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
           description: "Je vous écoute à nouveau",
         });
         break;
-        
+
       case 'new_question':
         console.log('🔄 Commande: Nouvelle question');
         if (currentAudioRef.current) {
@@ -476,7 +476,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
           description: "Je vous écoute",
         });
         break;
-        
+
       case 'show_history':
         console.log('📜 Commande: Afficher historique');
         toast({
@@ -484,7 +484,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
           description: "Cette fonctionnalité arrive bientôt",
         });
         break;
-        
+
       case 'change_voice':
         console.log('🎵 Commande: Changer de voix');
         toast({
@@ -492,7 +492,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
           description: "Utilisez les paramètres pour changer de voix",
         });
         break;
-        
+
       default:
         console.warn('⚠️ Commande non reconnue:', command);
     }
@@ -627,7 +627,7 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   // Fonction pour interrompre et démarrer une nouvelle interaction
   const handleInteraction = useCallback(async () => {
     console.log('🎯 [handleInteraction] État actuel:', voiceState);
-    
+
     try {
       if (voiceState === 'idle') {
         console.log('▶️ [handleInteraction] Démarrage conversation...');
@@ -657,26 +657,26 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
   // Fonction pour annuler l'interaction en cours
   const cancelInteraction = useCallback(() => {
     console.log('❌ Annulation de l\'interaction');
-    
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
-    
+
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
-    
+
     if (silenceTimerRef.current) {
       clearInterval(silenceTimerRef.current);
       silenceTimerRef.current = null;
     }
-    
+
     setSilenceDetected(false);
     setSilenceTimeRemaining(0);
     setVoiceState('idle');
     onSpeakingChange?.(false);
-    
+
     toast({
       title: "Interaction annulée",
       description: "L'interaction vocale a été interrompue",
@@ -705,14 +705,14 @@ export function useVoiceInteraction(options: UseVoiceInteractionOptions = {}) {
     continuousMode,
     continuousModePaused,
     conversationMessages,
-    
+
     // Getters
     isIdle: voiceState === 'idle',
     isListening: voiceState === 'listening',
     isThinking: voiceState === 'thinking',
     isSpeaking: voiceState === 'speaking',
     isActive: voiceState !== 'idle',
-    
+
     // Actions
     startConversation,
     stopConversation,
