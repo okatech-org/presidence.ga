@@ -183,6 +183,33 @@ export type Database = {
         }
         Relationships: []
       }
+      council_preparations: {
+        Row: {
+          agenda_items: string[]
+          created_at: string | null
+          documents_url: string[] | null
+          id: string
+          meeting_date: string
+          status: string
+        }
+        Insert: {
+          agenda_items?: string[]
+          created_at?: string | null
+          documents_url?: string[] | null
+          id?: string
+          meeting_date: string
+          status?: string
+        }
+        Update: {
+          agenda_items?: string[]
+          created_at?: string | null
+          documents_url?: string[] | null
+          id?: string
+          meeting_date?: string
+          status?: string
+        }
+        Relationships: []
+      }
       document_folder_items: {
         Row: {
           added_at: string | null
@@ -497,6 +524,54 @@ export type Database = {
         }
         Relationships: []
       }
+      incoming_mails: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          digital_copy_url: string | null
+          id: string
+          notes: string | null
+          received_date: string
+          reference_number: string
+          sender: string
+          status: string
+          subject: string
+          type: string
+          updated_at: string | null
+          urgency: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          digital_copy_url?: string | null
+          id?: string
+          notes?: string | null
+          received_date?: string
+          reference_number: string
+          sender: string
+          status?: string
+          subject: string
+          type?: string
+          updated_at?: string | null
+          urgency?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          digital_copy_url?: string | null
+          id?: string
+          notes?: string | null
+          received_date?: string
+          reference_number?: string
+          sender?: string
+          status?: string
+          subject?: string
+          type?: string
+          updated_at?: string | null
+          urgency?: string
+        }
+        Relationships: []
+      }
       institution_performance: {
         Row: {
           cas_traites: number | null
@@ -530,6 +605,36 @@ export type Database = {
           periode_fin?: string | null
           score_performance?: number | null
           taux_resolution?: number | null
+        }
+        Relationships: []
+      }
+      interministerial_coordination: {
+        Row: {
+          created_at: string | null
+          id: string
+          meeting_date: string | null
+          ministries_involved: string[]
+          notes: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          meeting_date?: string | null
+          ministries_involved?: string[]
+          notes?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          meeting_date?: string | null
+          ministries_involved?: string[]
+          notes?: string | null
+          status?: string
+          subject?: string
         }
         Relationships: []
       }
@@ -749,6 +854,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ministerial_projects: {
+        Row: {
+          created_at: string | null
+          deadline: string
+          id: string
+          ministry: string
+          priority: string
+          progress: number
+          project_name: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          deadline: string
+          id?: string
+          ministry: string
+          priority?: string
+          progress?: number
+          project_name: string
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          deadline?: string
+          id?: string
+          ministry?: string
+          priority?: string
+          progress?: number
+          project_name?: string
+          status?: string
+        }
+        Relationships: []
+      }
       national_kpis: {
         Row: {
           cas_critiques: number | null
@@ -900,6 +1038,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      presidential_instructions: {
+        Row: {
+          assigned_to: string
+          created_at: string | null
+          due_date: string
+          id: string
+          instruction: string
+          priority: string
+          status: string
+        }
+        Insert: {
+          assigned_to: string
+          created_at?: string | null
+          due_date: string
+          id?: string
+          instruction: string
+          priority?: string
+          status?: string
+        }
+        Update: {
+          assigned_to?: string
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          instruction?: string
+          priority?: string
+          status?: string
+        }
+        Relationships: []
       }
       private_audiences: {
         Row: {
