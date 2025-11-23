@@ -29,7 +29,7 @@ export const AIConfigSection = () => {
     const fetchConfig = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('system_config')
                 .select('*')
                 .in('key', ['ai_system_prompts', 'ai_voice_config']);
@@ -37,8 +37,8 @@ export const AIConfigSection = () => {
             if (error) throw error;
 
             if (data) {
-                const prompts = data.find(d => d.key === 'ai_system_prompts')?.value;
-                const voice = data.find(d => d.key === 'ai_voice_config')?.value;
+                const prompts = data.find((d: any) => d.key === 'ai_system_prompts')?.value;
+                const voice = data.find((d: any) => d.key === 'ai_voice_config')?.value;
 
                 if (prompts) setSystemPrompts(prompts as Record<string, string>);
                 if (voice) setVoiceConfig(voice as any);
@@ -58,7 +58,7 @@ export const AIConfigSection = () => {
     const handleSavePrompts = async () => {
         setLoading(true);
         try {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('system_config')
                 .upsert({
                     key: 'ai_system_prompts',
@@ -86,7 +86,7 @@ export const AIConfigSection = () => {
     const handleSaveVoiceConfig = async () => {
         setLoading(true);
         try {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('system_config')
                 .upsert({
                     key: 'ai_voice_config',

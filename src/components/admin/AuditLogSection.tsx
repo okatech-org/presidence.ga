@@ -31,7 +31,7 @@ export const AuditLogSection = () => {
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('audit_logs')
                 .select('*')
                 .order('created_at', { ascending: false })
