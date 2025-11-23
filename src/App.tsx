@@ -12,7 +12,6 @@ const IndexFallback = lazy(() => import("./pages/IndexFallback"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Demo = lazy(() => import("./pages/Demo"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const PresidentSpace = lazy(() => import("./pages/PresidentSpace"));
 const CabinetDirectorSpace = lazy(() => import("./pages/CabinetDirectorSpace"));
 const PrivateCabinetDirectorSpace = lazy(() => import("./pages/PrivateCabinetDirectorSpace"));
@@ -21,6 +20,7 @@ const ServiceCourriersSpace = lazy(() => import("./pages/ServiceCourriersSpace")
 const ServiceReceptionSpace = lazy(() => import("./pages/ServiceReceptionSpace"));
 const ProtocolDirectorSpace = lazy(() => import("./pages/ProtocolDirectorSpace"));
 const DgssSpace = lazy(() => import("./pages/DgssSpace"));
+const AdminSpace = lazy(() => import("./pages/AdminSpace"));
 const IAstedPage = lazy(() => import("./pages/IAstedPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -61,7 +61,6 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/demo" element={<Demo />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
               <Route path="/president-space" element={<PresidentSpace />} />
               <Route path="/cabinet-director-space" element={<CabinetDirectorSpace />} />
               <Route path="/private-cabinet-director-space" element={<PrivateCabinetDirectorSpace />} />
@@ -70,6 +69,7 @@ const App = () => (
               <Route path="/service-reception-space" element={<ServiceReceptionSpace />} />
               <Route path="/protocol-director-space" element={<ProtocolDirectorSpace />} />
               <Route path="/dgss-space" element={<DgssSpace />} />
+              <Route path="/admin-space" element={<AdminSpace />} />
               <Route path="/iasted" element={<IAstedPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

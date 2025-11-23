@@ -14,7 +14,8 @@ export const IASTED_AUTHORIZED_ROLES: AppRole[] = [
     'cabinet_private',  // Directeur de Cabinet Privé
     'sec_gen',          // Secrétariat Général
     'dgss',             // Renseignement
-    'protocol'          // Directeur de Protocole
+    'protocol',         // Directeur de Protocole
+    'admin'             // Administrateur Système
 ];
 
 export interface RoleContext {
@@ -135,8 +136,29 @@ export const ROLE_CONTEXTS: Record<AppRole, RoleContext | null> = {
         ],
         contextDescription: 'Vous assistez le Directeur du Protocole de la Présidence'
     },
+    admin: {
+        role: 'admin',
+        defaultTitle: {
+            male: 'Administrateur Système',
+            female: 'Administratrice Système'
+        },
+        tone: 'professional',
+        accessLevel: 'full',
+        availableTools: [
+            'control_ui',
+            'navigate_app',
+            'generate_document',
+            'access_all_data',
+            'manage_users',
+            'manage_roles',
+            'view_audit_logs',
+            'system_configuration',
+            'impersonate_user',
+            'override_permissions'
+        ],
+        contextDescription: "Vous assistez l'Administrateur Système pour la gestion technique et la sécurité de la plateforme iAsted."
+    },
     // Roles without iAsted access
-    admin: null,
     minister: null,
     user: null,
     courrier: null,
@@ -179,6 +201,11 @@ export const SPACE_CONTEXTS: Record<string, SpaceContext> = {
         spaceName: 'ProtocolSpace',
         displayName: 'Protocole',
         description: 'le service du protocole'
+    },
+    AdminSpace: {
+        spaceName: 'AdminSpace',
+        displayName: 'Administration Système',
+        description: "l'interface d'administration système"
     }
 };
 

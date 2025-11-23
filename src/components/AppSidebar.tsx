@@ -1,8 +1,8 @@
-import { 
-  Home, 
-  Shield, 
-  User, 
-  Mic, 
+import {
+  Home,
+  Shield,
+  User,
+  Mic,
   LayoutDashboard,
   Users,
   AlertTriangle,
@@ -31,15 +31,15 @@ import {
 
 // Menu pour non-présidents
 const standardMenuItems = [
-  { 
-    title: "Tableau de bord", 
-    url: "/dashboard", 
+  {
+    title: "Tableau de bord",
+    url: "/dashboard",
     icon: LayoutDashboard,
     description: "Vue d'ensemble"
   },
-  { 
-    title: "iAsted - Assistant IA", 
-    url: "/iasted", 
+  {
+    title: "iAsted - Assistant IA",
+    url: "/iasted",
     icon: Mic,
     description: "Intelligence artificielle"
   },
@@ -47,20 +47,20 @@ const standardMenuItems = [
 
 // Pilotage Stratégique
 const pilotageStrategique = [
-  { 
-    title: "Vue d'Ensemble", 
+  {
+    title: "Vue d'Ensemble",
     hash: "#vue-ensemble",
     icon: LayoutDashboard,
     description: "KPIs & Situation"
   },
-  { 
-    title: "Opinion Publique", 
+  {
+    title: "Opinion Publique",
     hash: "#opinion-publique",
     icon: Users,
     description: "Pouls du Pays"
   },
-  { 
-    title: "Vision Nationale", 
+  {
+    title: "Vision Nationale",
     hash: "#vision-nationale",
     icon: Target,
     description: "Gabon 2025"
@@ -69,15 +69,15 @@ const pilotageStrategique = [
 
 // Actions Urgentes
 const actionsUrgentes = [
-  { 
-    title: "Situations Critiques", 
+  {
+    title: "Situations Critiques",
     hash: "#situations-critiques",
     icon: AlertTriangle,
     description: "Arbitrages requis",
     badge: "23"
   },
-  { 
-    title: "Protocole XR-7", 
+  {
+    title: "Protocole XR-7",
     hash: "#module-xr7",
     icon: Shield,
     description: "Urgence Nationale",
@@ -87,14 +87,14 @@ const actionsUrgentes = [
 
 // Contrôle & Institutions
 const controleInstitutions = [
-  { 
-    title: "Performance Institutions", 
+  {
+    title: "Performance Institutions",
     hash: "#institutions",
     icon: TrendingUp,
     description: "Conseil Numérique"
   },
-  { 
-    title: "Audit Trail", 
+  {
+    title: "Audit Trail",
     hash: "#audit",
     icon: Eye,
     description: "Traçabilité"
@@ -103,8 +103,8 @@ const controleInstitutions = [
 
 // Outils
 const outilsDecision = [
-  { 
-    title: "iAsted", 
+  {
+    title: "iAsted",
     url: "/iasted",
     icon: Mic,
     description: "Assistant IA",
@@ -136,9 +136,9 @@ export function AppSidebar() {
       <SidebarHeader className="px-4 py-4 border-b border-border/40">
         <div className="flex items-center gap-3">
           <div className="neu-raised w-12 h-12 rounded-full flex items-center justify-center p-2 shrink-0">
-            <img 
-              src={emblemGabon} 
-              alt="Emblème de la République Gabonaise" 
+            <img
+              src={emblemGabon}
+              alt="Emblème de la République Gabonaise"
               className="w-full h-full object-contain"
             />
           </div>
@@ -163,19 +163,18 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu className="space-y-1">
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       asChild
                       tooltip="Espace Présidentiel"
                       isActive={isActive("/president-space")}
                       className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                     >
-                      <NavLink 
+                      <NavLink
                         to="/president-space"
-                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
-                          isActive("/president-space")
-                            ? "bg-background shadow-neo-inset"
-                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
-                        }`}
+                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${isActive("/president-space")
+                          ? "bg-background shadow-neo-inset"
+                          : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                          }`}
                       >
                         <div className={`p-2 rounded-full transition-all ${isActive("/president-space") ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
                           <Shield className="h-4 w-4 shrink-0 text-primary" />
@@ -200,17 +199,16 @@ export function AppSidebar() {
                 <SidebarMenu className="space-y-1">
                   {actionsUrgentes.map((item) => (
                     <SidebarMenuItem key={item.hash}>
-                      <SidebarMenuButton 
+                      <SidebarMenuButton
                         onClick={() => handleHashNavigation(item.hash)}
                         tooltip={item.title}
                         isActive={isActive(item.hash)}
                         className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                       >
-                        <div className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
-                          isActive(item.hash)
-                            ? "bg-background shadow-neo-inset"
-                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
-                        }`}>
+                        <div className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${isActive(item.hash)
+                          ? "bg-background shadow-neo-inset"
+                          : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                          }`}>
                           <div className="p-2 rounded-full bg-destructive/10 shadow-neo-sm">
                             <item.icon className="h-4 w-4 shrink-0 text-destructive" />
                           </div>
@@ -243,17 +241,16 @@ export function AppSidebar() {
                 <SidebarMenu className="space-y-1">
                   {pilotageStrategique.map((item) => (
                     <SidebarMenuItem key={item.hash}>
-                      <SidebarMenuButton 
+                      <SidebarMenuButton
                         onClick={() => handleHashNavigation(item.hash)}
                         tooltip={item.title}
                         isActive={isActive(item.hash)}
                         className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                       >
-                        <div className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
-                          isActive(item.hash)
-                            ? "bg-background shadow-neo-inset"
-                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
-                        }`}>
+                        <div className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${isActive(item.hash)
+                          ? "bg-background shadow-neo-inset"
+                          : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                          }`}>
                           <div className={`p-2 rounded-full transition-all ${isActive(item.hash) ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
                             <item.icon className="h-4 w-4 shrink-0 text-primary" />
                           </div>
@@ -279,17 +276,16 @@ export function AppSidebar() {
                 <SidebarMenu className="space-y-1">
                   {controleInstitutions.map((item) => (
                     <SidebarMenuItem key={item.hash}>
-                      <SidebarMenuButton 
+                      <SidebarMenuButton
                         onClick={() => handleHashNavigation(item.hash)}
                         tooltip={item.title}
                         isActive={isActive(item.hash)}
                         className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                       >
-                        <div className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
-                          isActive(item.hash)
-                            ? "bg-background shadow-neo-inset"
-                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
-                        }`}>
+                        <div className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${isActive(item.hash)
+                          ? "bg-background shadow-neo-inset"
+                          : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                          }`}>
                           <div className={`p-2 rounded-full transition-all ${isActive(item.hash) ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
                             <item.icon className="h-4 w-4 shrink-0 text-primary" />
                           </div>
@@ -315,19 +311,18 @@ export function AppSidebar() {
                 <SidebarMenu className="space-y-1">
                   {outilsDecision.map((item) => (
                     <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton 
-                        asChild 
+                      <SidebarMenuButton
+                        asChild
                         tooltip={item.title}
                         isActive={isActive(item.url)}
                         className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                       >
-                        <NavLink 
-                          to={item.url} 
-                          className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
-                            isActive(item.url)
-                              ? "bg-background shadow-neo-inset"
-                              : "bg-background shadow-neo-sm hover:shadow-neo-md"
-                          }`}
+                        <NavLink
+                          to={item.url}
+                          className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${isActive(item.url)
+                            ? "bg-background shadow-neo-inset"
+                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                            }`}
                         >
                           <div className={`p-2 rounded-full transition-all ${isActive(item.url) ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
                             <item.icon className="h-4 w-4 shrink-0 text-primary" />
@@ -362,19 +357,18 @@ export function AppSidebar() {
               <SidebarMenu className="space-y-1">
                 {standardMenuItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton 
-                      asChild 
+                    <SidebarMenuButton
+                      asChild
                       tooltip={item.title}
                       isActive={isActive(item.url)}
                       className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                     >
-                      <NavLink 
-                        to={item.url} 
-                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
-                          isActive(item.url)
-                            ? "bg-background shadow-neo-inset"
-                            : "bg-background shadow-neo-sm hover:shadow-neo-md"
-                        }`}
+                      <NavLink
+                        to={item.url}
+                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${isActive(item.url)
+                          ? "bg-background shadow-neo-inset"
+                          : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                          }`}
                       >
                         <div className={`p-2 rounded-full transition-all ${isActive(item.url) ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
                           <item.icon className="h-4 w-4 shrink-0 text-primary" />
@@ -388,23 +382,22 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-                
+
                 <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     tooltip="Administration"
-                    isActive={isActive("/admin-dashboard")}
+                    isActive={isActive("/admin-space")}
                     className="rounded-2xl transition-all h-auto p-0 hover:shadow-neo-md"
                   >
-                    <NavLink 
-                      to="/admin-dashboard" 
-                      className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${
-                        isActive("/admin-dashboard")
-                          ? "bg-background shadow-neo-inset"
-                          : "bg-background shadow-neo-sm hover:shadow-neo-md"
-                      }`}
+                    <NavLink
+                      to="/admin-space"
+                      className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all ${isActive("/admin-space")
+                        ? "bg-background shadow-neo-inset"
+                        : "bg-background shadow-neo-sm hover:shadow-neo-md"
+                        }`}
                     >
-                      <div className={`p-2 rounded-full transition-all ${isActive("/admin-dashboard") ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
+                      <div className={`p-2 rounded-full transition-all ${isActive("/admin-space") ? "bg-primary/10" : "bg-card shadow-neo-sm"}`}>
                         <User className="h-4 w-4 shrink-0 text-primary" />
                       </div>
                       {open && (

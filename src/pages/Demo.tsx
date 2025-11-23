@@ -163,7 +163,7 @@ const Demo = () => {
               destination = "/president-space";
               break;
             case 'admin':
-              destination = "/admin-dashboard";
+              destination = "/admin-space";
               break;
             case 'dgss':
               destination = "/dgss-space";
@@ -318,7 +318,7 @@ const Demo = () => {
         });
         setShowAdminDialog(false);
         setAdminCode("");
-        navigate("/admin-dashboard");
+        navigate("/admin-space");
       } else {
         toast({
           title: "Code incorrect",
