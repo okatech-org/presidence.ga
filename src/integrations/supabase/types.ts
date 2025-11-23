@@ -629,7 +629,11 @@ export type Database = {
       mails: {
         Row: {
           content: string | null
+          content_scan_urls: string[] | null
           created_at: string | null
+          current_holder_service: string | null
+          deposited_at: string | null
+          envelope_scan_urls: string[] | null
           id: string
           reception_date: string | null
           sender_name: string | null
@@ -638,10 +642,15 @@ export type Database = {
           subject: string | null
           tracking_number: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           content?: string | null
+          content_scan_urls?: string[] | null
           created_at?: string | null
+          current_holder_service?: string | null
+          deposited_at?: string | null
+          envelope_scan_urls?: string[] | null
           id?: string
           reception_date?: string | null
           sender_name?: string | null
@@ -650,10 +659,15 @@ export type Database = {
           subject?: string | null
           tracking_number?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           content?: string | null
+          content_scan_urls?: string[] | null
           created_at?: string | null
+          current_holder_service?: string | null
+          deposited_at?: string | null
+          envelope_scan_urls?: string[] | null
           id?: string
           reception_date?: string | null
           sender_name?: string | null
@@ -662,6 +676,7 @@ export type Database = {
           subject?: string | null
           tracking_number?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
