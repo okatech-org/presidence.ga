@@ -11,7 +11,6 @@ import { SuperAdminProvider } from "@/contexts/SuperAdminContext";
 // Lazy load all routes for better performance
 const IndexFallback = lazy(() => import("./pages/IndexFallback"));
 const Auth = lazy(() => import("./pages/Auth"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Demo = lazy(() => import("./pages/Demo"));
 const PresidentSpace = lazy(() => import("./pages/PresidentSpace"));
 const CabinetDirectorSpace = lazy(() => import("./pages/CabinetDirectorSpace"));
@@ -65,7 +64,6 @@ const App = () => (
                 <Route path="/" element={<IndexFallback />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/demo" element={<Demo />} />
-                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/president-space" element={<PresidentSpace />} />
                 <Route path="/cabinet-director-space" element={<CabinetDirectorSpace />} />
                 <Route path="/private-cabinet-director-space" element={<PrivateCabinetDirectorSpace />} />
