@@ -164,49 +164,141 @@ const CabinetDirectorSpace = () => {
     checkAccess();
   }, [navigate, toast]);
 
-  // Data Fetching - TEMPORAIRE: Tables non créées encore
+  // Data Fetching
   const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: ["ministerial_projects"],
     queryFn: async () => {
-      // TODO: Créer la table ministerial_projects
-      return [] as MinisterialProject[];
+      const { data, error } = await supabase
+        .from('ministerial_projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as MinisterialProject[];
     },
   });
 
   const { data: instructions = [], isLoading: instructionsLoading } = useQuery({
     queryKey: ["presidential_instructions"],
     queryFn: async () => {
-      // TODO: Créer la table presidential_instructions
-      return [] as PresidentialInstruction[];
+      const { data, error } = await supabase
+        .from('presidential_instructions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as PresidentialInstruction[];
     },
   });
 
-  // Mutations - Désactivées temporairement
+  // Interministerial Coordination Query
+  const { data: coordinations = [], isLoading: coordinationsLoading } = useQuery({
+    queryKey: ["interministerial_coordination"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('interministerial_coordination')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as InterministerialCoordination[];
+    },
+  });
+
+  // Council Preparations Query
+  const { data: councils = [], isLoading: councilsLoading } = useQuery({
+    queryKey: ["council_preparations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('council_preparations')
+        .select('*')
+        .order('meeting_date', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as CouncilPreparation[];
+    },
+  });
+
+  // Mutations
   const createProjectMutation = useMutation({
     mutationFn: async (newProject: Omit<MinisterialProject, "id" | "created_at">) => {
-      console.log("Table ministerial_projects non créée");
-      throw new Error("Table non créée");
+      const { data, error } = await supabase
+        .from('ministerial_projects')
+        .insert([newProject])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ministerial_projects"] });
       toast({ title: "Succès", description: "Projet créé avec succès" });
     },
-    onError: () => {
-      toast({ title: "Erreur", description: "Table non créée dans la base de données", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     },
   });
 
   const createInstructionMutation = useMutation({
     mutationFn: async (newInstruction: Omit<PresidentialInstruction, "id" | "created_at">) => {
-      console.log("Table presidential_instructions non créée");
-      throw new Error("Table non créée");
+      const { data, error } = await supabase
+        .from('presidential_instructions')
+        .insert([newInstruction])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["presidential_instructions"] });
       toast({ title: "Succès", description: "Instruction créée avec succès" });
     },
-    onError: () => {
-      toast({ title: "Erreur", description: "Impossible de créer l'instruction", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Create Coordination Mutation
+  const createCoordinationMutation = useMutation({
+    mutationFn: async (newCoordination: Omit<InterministerialCoordination, "id" | "created_at">) => {
+      const { data, error } = await supabase
+        .from('interministerial_coordination')
+        .insert([newCoordination])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["interministerial_coordination"] });
+      toast({ title: "Succès", description: "Coordination créée avec succès" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Create Council Mutation
+  const createCouncilMutation = useMutation({
+    mutationFn: async (newCouncil: Omit<CouncilPreparation, "id" | "created_at">) => {
+      const { data, error } = await supabase
+        .from('council_preparations')
+        .insert([newCouncil])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["council_preparations"] });
+      toast({ title: "Succès", description: "Préparation de conseil créée avec succès" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     },
   });
 
@@ -261,7 +353,7 @@ const CabinetDirectorSpace = () => {
     blockedProjects: projects.filter(p => p.status === "bloque").length,
   };
 
-  if (projectsLoading || instructionsLoading) {
+  if (projectsLoading || instructionsLoading || coordinationsLoading || councilsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center space-y-4">
@@ -786,6 +878,200 @@ const CabinetDirectorSpace = () => {
             {activeSection === "documents" && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <DocumentsSection userRole="dgr" />
+              </div>
+            )}
+
+            {/* Interministerial Coordination Section */}
+            {activeSection === "interministerial" && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Coordination Interministérielle</h2>
+                    <p className="text-muted-foreground">Gestion des dossiers multi-ministères</p>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="neu-raised hover:shadow-neo-md transition-all">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nouvelle coordination
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Créer une coordination interministérielle</DialogTitle>
+                      </DialogHeader>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+                          const ministriesText = formData.get("ministries") as string;
+                          createCoordinationMutation.mutate({
+                            subject: formData.get("subject") as string,
+                            ministries_involved: ministriesText.split(',').map(m => m.trim()),
+                            status: "planned",
+                            meeting_date: formData.get("meeting_date") as string || undefined,
+                            notes: formData.get("notes") as string || undefined,
+                          });
+                        }}
+                        className="space-y-4 py-4"
+                      >
+                        <div className="space-y-2">
+                          <Label htmlFor="subject">Sujet</Label>
+                          <Input id="subject" name="subject" placeholder="Sujet de la coordination..." required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="ministries">Ministères impliqués (séparés par des virgules)</Label>
+                          <Input
+                            id="ministries"
+                            name="ministries"
+                            placeholder="ex: Économie, Santé, Éducation"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="meeting_date">Date de réunion (optionnel)</Label>
+                          <Input id="meeting_date" name="meeting_date" type="date" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="notes">Notes (optionnel)</Label>
+                          <Input id="notes" name="notes" placeholder="Notes supplémentaires..." />
+                        </div>
+                        <Button type="submit" className="w-full">Créer la coordination</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <div className="grid gap-4">
+                  {coordinations.map((coord) => (
+                    <div key={coord.id} className="neu-card p-6 hover:translate-y-[-2px] transition-all duration-300">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-2">{coord.subject}</h3>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {coord.ministries_involved.map((ministry, idx) => (
+                              <Badge key={idx} variant="outline" className="bg-background/50">
+                                {ministry}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        {getStatusBadge(coord.status)}
+                      </div>
+
+                      {coord.meeting_date && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground pt-4 border-t border-border">
+                          <Calendar className="h-4 w-4" />
+                          Réunion: {new Date(coord.meeting_date).toLocaleDateString('fr-FR')}
+                        </div>
+                      )}
+                      {coord.notes && (
+                        <div className="mt-2 text-sm text-muted-foreground italic">
+                          {coord.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {coordinations.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground">
+                      Aucune coordination interministérielle
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Council Preparations Section */}
+            {activeSection === "council" && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Conseil des Ministres</h2>
+                    <p className="text-muted-foreground">Préparation et suivi des conseils</p>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button className="neu-raised hover:shadow-neo-md transition-all">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nouvelle préparation
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Préparer un Conseil des Ministres</DialogTitle>
+                      </DialogHeader>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+                          const agendaText = formData.get("agenda_items") as string;
+                          createCouncilMutation.mutate({
+                            meeting_date: formData.get("meeting_date") as string,
+                            agenda_items: agendaText.split('\n').filter(item => item.trim()),
+                            status: "draft",
+                          });
+                        }}
+                        className="space-y-4 py-4"
+                      >
+                        <div className="space-y-2">
+                          <Label htmlFor="meeting_date">Date du conseil</Label>
+                          <Input id="meeting_date" name="meeting_date" type="date" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="agenda_items">Points à l'ordre du jour (un par ligne)</Label>
+                          <textarea
+                            id="agenda_items"
+                            name="agenda_items"
+                            className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            placeholder="Point 1&#10;Point 2&#10;Point 3..."
+                            required
+                          />
+                        </div>
+                        <Button type="submit" className="w-full">Créer la préparation</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <div className="grid gap-4">
+                  {councils.map((council) => (
+                    <div key={council.id} className="neu-card p-6 hover:translate-y-[-2px] transition-all duration-300">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Calendar className="h-5 w-5 text-primary" />
+                            <h3 className="font-semibold text-lg">
+                              Conseil du {new Date(council.meeting_date).toLocaleDateString('fr-FR', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </h3>
+                          </div>
+                        </div>
+                        {getStatusBadge(council.status)}
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">Ordre du jour:</p>
+                        <ul className="space-y-1">
+                          {council.agenda_items.map((item, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-sm">
+                              <span className="text-muted-foreground">{idx + 1}.</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ))}
+                  {councils.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground">
+                      Aucune préparation de conseil
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

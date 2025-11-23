@@ -6,57 +6,96 @@ import emblemGabon from '@/assets/emblem_gabon.png';
 // Flag pour s'assurer qu'on initialise qu'une seule fois
 let fontsInitialized = false;
 
-// Helper pour convertir une image URL en Base64
+// Helper pour convertir une image URL en Base64 avec timeout
 async function getBase64ImageFromURL(url: string): Promise<string> {
     return new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+            reject(new Error(`Image load timeout for ${url}`));
+        }, 5000); // 5s timeout
+
         const img = new Image();
         img.setAttribute('crossOrigin', 'anonymous');
         img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.drawImage(img, 0, 0);
-                const dataURL = canvas.toDataURL('image/png');
-                resolve(dataURL);
-            } else {
-                reject(new Error('Canvas context is null'));
+            clearTimeout(timeoutId);
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0);
+                    const dataURL = canvas.toDataURL('image/png');
+                    resolve(dataURL);
+                } else {
+                    reject(new Error('Canvas context is null'));
+                }
+            } catch (e) {
+                reject(e);
             }
         };
-        img.onerror = error => reject(error);
+        img.onerror = error => {
+            clearTimeout(timeoutId);
+            reject(error);
+        };
         img.src = url;
     });
 }
 
 // Fonction pour initialiser les fonts de manière lazy
 function initializeFonts() {
-    if (!fontsInitialized && pdfFonts && (pdfFonts as any).pdfMake) {
-        (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
+    if (!fontsInitialized) {
+        // Debug logging
+        console.log('Initializing PDFMake fonts...');
 
-        // Configuration des polices (si disponibles, sinon fallback)
-        (pdfMake as any).fonts = {
-            Roboto: {
-                normal: 'Roboto-Regular.ttf',
-                bold: 'Roboto-Medium.ttf',
-                italics: 'Roboto-Italic.ttf',
-                bolditalics: 'Roboto-MediumItalic.ttf'
-            },
-            // On utilise Roboto comme fallback pour Times si non dispo dans le vfs standard
-            Times: {
-                normal: 'Roboto-Regular.ttf',
-                bold: 'Roboto-Medium.ttf',
-                italics: 'Roboto-Italic.ttf',
-                bolditalics: 'Roboto-MediumItalic.ttf'
-            }
-        };
+        let vfs: any = undefined;
 
-        fontsInitialized = true;
+        // Check if pdfFonts IS the vfs (contains font files directly)
+        if (pdfFonts && Object.keys(pdfFonts).some(k => k.endsWith('.ttf'))) {
+            vfs = pdfFonts;
+        }
+        // Check if pdfFonts.default IS the vfs
+        else if ((pdfFonts as any).default && Object.keys((pdfFonts as any).default).some((k: string) => k.endsWith('.ttf'))) {
+            vfs = (pdfFonts as any).default;
+        }
+        // Standard paths
+        else {
+            vfs = (pdfFonts as any).pdfMake?.vfs
+                || (pdfFonts as any).vfs
+                || (pdfFonts as any).default?.pdfMake?.vfs
+                || (pdfFonts as any).default?.vfs
+                || (window as any).pdfMake?.vfs;
+        }
+
+        if (vfs) {
+            (pdfMake as any).vfs = vfs;
+            console.log('PDFMake VFS assigned successfully. Keys:', Object.keys(vfs).slice(0, 3));
+
+            // Configuration des polices
+            (pdfMake as any).fonts = {
+                Roboto: {
+                    normal: 'Roboto-Regular.ttf',
+                    bold: 'Roboto-Medium.ttf',
+                    italics: 'Roboto-Italic.ttf',
+                    bolditalics: 'Roboto-MediumItalic.ttf'
+                },
+                // Mapping de Times vers Roboto (fallback)
+                Times: {
+                    normal: 'Roboto-Regular.ttf',
+                    bold: 'Roboto-Medium.ttf',
+                    italics: 'Roboto-Italic.ttf',
+                    bolditalics: 'Roboto-MediumItalic.ttf'
+                }
+            };
+
+            fontsInitialized = true;
+        } else {
+            console.error('CRITICAL: Failed to find PDFMake VFS. Fonts may not load. pdfFonts keys:', Object.keys(pdfFonts));
+        }
     }
 }
 
 interface DocumentData {
-    type: 'lettre' | 'decret' | 'rapport' | 'circulaire' | 'note' | 'nomination';
+    type: 'lettre' | 'decret' | 'rapport' | 'circulaire' | 'note' | 'nomination' | 'communique';
     recipient: string;
     subject: string;
     content_points?: string[];
@@ -293,7 +332,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 { text: data.reference || `N° ${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/PR/${new Date().getFullYear()}`, style: 'reference', alignment: 'center' },
                 { text: currentDate, style: 'metaInfo', alignment: 'center' },
                 { text: '\n' },
-                { text: data.subject.toUpperCase(), style: 'metaInfo', bold: true, alignment: 'center' },
+                { text: (data.subject || 'OBJET DU DÉCRET').toUpperCase(), style: 'metaInfo', bold: true, alignment: 'center' },
                 { text: '\n' },
                 { text: 'LE PRÉSIDENT DE LA RÉPUBLIQUE,', style: 'bodyText', bold: true, alignment: 'center' },
                 { text: '\n' },
@@ -302,8 +341,8 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 { text: '\n' },
                 { text: 'DÉCRÈTE :', style: 'bodyText', bold: true, alignment: 'center' },
                 { text: '\n' },
-                ...(data.content_points || []).map((point, index) => ({
-                    text: `Article ${index + 1}. ${point}`,
+                ...(data.content_points || ['Article 1. Le contenu du décret est inséré ici.']).map((point, index) => ({
+                    text: point.startsWith('Article') ? point : `Article ${index + 1}. ${point}`,
                     style: 'listItem',
                     margin: [0, 8, 0, 8],
                     bold: true
@@ -312,6 +351,24 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 { text: 'Fait à Libreville, le ' + currentDate, style: 'metaInfo', alignment: 'center' },
                 { text: '\n' },
                 { text: data.signature_authority || 'Le Président de la République', style: 'signature', alignment: 'center' },
+            ];
+            break;
+
+        case 'communique':
+            documentDefinition.content = [
+                { text: 'COMMUNIQUÉ', style: 'documentType' },
+                { text: currentDate, style: 'metaInfo', alignment: 'right' },
+                { text: '\n' },
+                { text: (data.subject || 'TITRE DU COMMUNIQUÉ').toUpperCase(), style: 'header', alignment: 'center', margin: [0, 10, 0, 20] },
+                { text: '\n' },
+                ...(data.content_points || ['Texte du communiqué...']).map((point) => ({
+                    text: point,
+                    style: 'bodyText',
+                    alignment: 'justify',
+                    margin: [0, 5, 0, 5]
+                })),
+                { text: '\n\n' },
+                { text: 'La Présidence de la République', style: 'signature', alignment: 'center' },
             ];
             break;
 
@@ -411,13 +468,23 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
             break;
     }
 
-    // Générer le PDF et retourner le Blob
+    // Générer le PDF et retourner le Blob avec timeout
     return new Promise((resolve, reject) => {
-        const pdfDocGenerator = pdfMake.createPdf(documentDefinition);
+        const timeoutId = setTimeout(() => {
+            reject(new Error('PDF generation timeout'));
+        }, 10000); // 10s timeout
 
-        pdfDocGenerator.getBlob((blob) => {
-            resolve(blob);
-        });
+        try {
+            const pdfDocGenerator = pdfMake.createPdf(documentDefinition);
+
+            pdfDocGenerator.getBlob((blob) => {
+                clearTimeout(timeoutId);
+                resolve(blob);
+            });
+        } catch (e) {
+            clearTimeout(timeoutId);
+            reject(e);
+        }
     });
 }
 

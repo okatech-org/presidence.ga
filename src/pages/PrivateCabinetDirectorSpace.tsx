@@ -7,7 +7,7 @@ import {
   Lock, LogOut, Shield, Mail, Calendar, Users, MapPin, MessageSquare,
   ChevronDown, ChevronRight, LayoutDashboard, UserCheck, Plane, Settings,
   Moon, Sun, Plus, Search, Filter, Clock, AlertCircle, CheckCircle2,
-  FileText, Phone, Globe
+  FileText, Phone, Globe, Loader2
 } from "lucide-react";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { useToast } from "@/components/ui/use-toast";
@@ -31,10 +31,15 @@ import type {
   SecurityLevel,
   CorrespondencePriority,
   CorrespondenceStatus,
+  ContactCategory,
+  TripType,
   TripStatus
 } from "@/types/private-cabinet-types";
 import { PrivateAudienceCard } from "@/components/cabinet/PrivateAudienceCard";
 import { EncryptedMessageItem } from "@/components/cabinet/EncryptedMessageItem";
+import { privateCabinetService } from "@/services/privateCabinetService";
+import { useAsyncOperation, useFormValidation } from "@/hooks/useAsyncOperation";
+import { validationUtils, errorMessages } from "@/utils/validation";
 
 const PrivateCabinetDirectorSpace = () => {
   const navigate = useNavigate();
@@ -56,6 +61,50 @@ const PrivateCabinetDirectorSpace = () => {
   const [correspondence, setCorrespondence] = useState<PersonalCorrespondence[]>([]);
   const [vipContacts, setVipContacts] = useState<VIPContact[]>([]);
   const [trips, setTrips] = useState<PrivateTrip[]>([]);
+
+  // Audiences state management
+  const [audienceDialogOpen, setAudienceDialogOpen] = useState(false);
+  const [newAudience, setNewAudience] = useState({
+    person_name: "",
+    person_title: "",
+    subject: "",
+    date: "",
+    time: "",
+    location: "",
+    confidentiality_level: "confidentiel" as ConfidentialityLevel,
+    notes: "",
+    status: "scheduled" as AudienceStatus,
+  });
+
+  const audienceOperation = useAsyncOperation<PrivateAudience>();
+
+  const validateAudienceForm = useMemo(() => (data: typeof newAudience) => {
+    const errors: Record<string, string> = {};
+
+    if (validationUtils.isEmpty(data.person_name)) {
+      errors.person_name = errorMessages.required("Le nom de la personne");
+    }
+
+    if (validationUtils.isEmpty(data.subject)) {
+      errors.subject = errorMessages.required("Le sujet");
+    }
+
+    if (!data.date) {
+      errors.date = errorMessages.required("La date");
+    } else if (!data.time) {
+      errors.time = errorMessages.required("L'heure");
+    } else {
+      const selectedDateTime = new Date(`${data.date}T${data.time}`);
+      if (selectedDateTime < new Date()) {
+        errors.date = "La date et l'heure doivent être dans le futur";
+      }
+    }
+
+    return errors;
+  }, []);
+
+  const { errors: audienceErrors, validate: validateAudience, clearErrors: clearAudienceErrors } =
+    useFormValidation(validateAudienceForm);
 
   // Mock data initialization (fallback if DB is empty)
   useEffect(() => {
@@ -236,6 +285,426 @@ const PrivateCabinetDirectorSpace = () => {
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
+
+  // Audiences handlers
+  const handleCreateAudience = async () => {
+    if (!validateAudience(newAudience)) {
+      toast({
+        title: "Erreur de validation",
+        description: "Veuillez corriger les erreurs avant de continuer",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await audienceOperation.execute(async () => {
+      const audienceData: Omit<PrivateAudience, "id" | "created_at"> = {
+        person_name: newAudience.person_name,
+        person_title: newAudience.person_title || undefined,
+        subject: newAudience.subject,
+        date: `${newAudience.date}T${newAudience.time}`,
+        location: newAudience.location || undefined,
+        confidentiality_level: newAudience.confidentiality_level,
+        status: newAudience.status,
+        notes: newAudience.notes || undefined,
+      } as any;
+
+      return await privateCabinetService.createAudience(audienceData);
+    });
+
+    if (result) {
+      // Optimistic UI update
+      setAudiences(prev => [...prev, result]);
+
+      toast({
+        title: "Succès",
+        description: "Audience créée avec succès",
+      });
+
+      // Reset form and close dialog
+      setNewAudience({
+        person_name: "",
+        person_title: "",
+        subject: "",
+        date: "",
+        time: "",
+        location: "",
+        confidentiality_level: "confidentiel",
+        notes: "",
+        status: "scheduled",
+      });
+      clearAudienceErrors();
+      setAudienceDialogOpen(false);
+    } else if (audienceOperation.state.error) {
+      toast({
+        title: "Erreur",
+        description: audienceOperation.state.error.message || "Impossible de créer l'audience",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateAudienceField = (field: keyof typeof newAudience, value: any) => {
+    setNewAudience(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Messages state management
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [newMessage, setNewMessage] = useState({
+    recipient_id: "",
+    subject: "",
+    content: "",
+    priority: "normal" as MessagePriority,
+    security_level: "enhanced" as SecurityLevel,
+    sender_name: "",
+    sender_role: "",
+  });
+
+  const messageOperation = useAsyncOperation<EncryptedMessage>();
+
+  const validateMessageForm = useMemo(() => (data: typeof newMessage) => {
+    const errors: Record<string, string> = {};
+
+    if (validationUtils.isEmpty(data.recipient_id)) {
+      errors.recipient_id = errorMessages.required("Le destinataire");
+    }
+
+    if (validationUtils.isEmpty(data.subject)) {
+      errors.subject = errorMessages.required("Le sujet");
+    }
+
+    if (validationUtils.isEmpty(data.content)) {
+      errors.content = errorMessages.required("Le message");
+    } else if (!validationUtils.meetsMinLength(data.content, 10)) {
+      errors.content = errorMessages.minLength("Le message", 10);
+    }
+
+    return errors;
+  }, []);
+
+  const { errors: messageErrors, validate: validateMessage, clearErrors: clearMessageErrors } =
+    useFormValidation(validateMessageForm);
+
+  // Messages handlers
+  const handleSendMessage = async () => {
+    if (!validateMessage(newMessage)) {
+      toast({
+        title: "Erreur de validation",
+        description: "Veuillez corriger les erreurs avant de continuer",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await messageOperation.execute(async () => {
+      const messageData: Omit<EncryptedMessage, "id" | "created_at"> = {
+        recipient_id: newMessage.recipient_id,
+        sender_name: newMessage.sender_name,
+        sender_role: newMessage.sender_role || undefined,
+        subject: newMessage.subject,
+        content: newMessage.content,
+        is_read: false,
+        priority: newMessage.priority,
+        security_level: newMessage.security_level,
+      } as any;
+
+      return await privateCabinetService.createMessage(messageData);
+    });
+
+    if (result) {
+      setMessages(prev => [result, ...prev]);
+
+      toast({
+        title: "Succès",
+        description: "Message envoyé avec succès",
+      });
+
+      setNewMessage({
+        recipient_id: "",
+        subject: "",
+        content: "",
+        priority: "normal",
+        security_level: "enhanced",
+        sender_name: "",
+        sender_role: "",
+      });
+      clearMessageErrors();
+      setMessageDialogOpen(false);
+    } else if (messageOperation.state.error) {
+      toast({
+        title: "Erreur",
+        description: messageOperation.state.error.message || "Impossible d'envoyer le message",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateMessageField = (field: keyof typeof newMessage, value: any) => {
+    setNewMessage(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleMarkMessageAsRead = async (messageId: string) => {
+    try {
+      await privateCabinetService.markMessageAsRead(messageId);
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId ? { ...msg, is_read: true } : msg
+      ));
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+    }
+  };
+
+  // Correspondance handlers
+  const handleUpdateCorrespondenceStatus = async (id: string, status: CorrespondenceStatus) => {
+    try {
+      await privateCabinetService.updateCorrespondenceStatus(id, status);
+      setCorrespondence(prev => prev.map(item =>
+        item.id === id ? { ...item, status } : item
+      ));
+      toast({
+        title: "Succès",
+        description: "Statut mis à jour",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleArchiveCorrespondence = async (id: string) => {
+    try {
+      await privateCabinetService.archiveCorrespondence(id);
+      setCorrespondence(prev => prev.map(item =>
+        item.id === id ? { ...item, status: "archive" as CorrespondenceStatus } : item
+      ));
+      toast({
+        title: "Succès",
+        description: "Correspondance archivée",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'archiver",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // VIP Contacts state management
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [newContact, setNewContact] = useState({
+    name: "",
+    title: "",
+    organization: "",
+    country: "",
+    category: "diplomate" as ContactCategory,
+    email: "",
+    phone: "",
+    is_favorite: false,
+    notes: "",
+  });
+
+  const contactOperation = useAsyncOperation<VIPContact>();
+
+  const validateContactForm = useMemo(() => (data: typeof newContact) => {
+    const errors: Record<string, string> = {};
+
+    if (validationUtils.isEmpty(data.name)) {
+      errors.name = errorMessages.required("Le nom");
+    }
+
+    if (data.email && !validationUtils.isValidEmail(data.email)) {
+      errors.email = errorMessages.invalidEmail;
+    }
+
+    if (data.phone && !validationUtils.isValidPhone(data.phone)) {
+      errors.phone = errorMessages.invalidPhone;
+    }
+
+    return errors;
+  }, []);
+
+  const { errors: contactErrors, validate: validateContact, clearErrors: clearContactErrors } =
+    useFormValidation(validateContactForm);
+
+  const handleCreateContact = async () => {
+    if (!validateContact(newContact)) {
+      toast({
+        title: "Erreur de validation",
+        description: "Veuillez corriger les erreurs",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await contactOperation.execute(async () => {
+      const contactData: Omit<VIPContact, "id" | "created_at"> = {
+        name: newContact.name,
+        title: newContact.title || undefined,
+        organization: newContact.organization || undefined,
+        country: newContact.country || undefined,
+        category: newContact.category,
+        email: newContact.email || undefined,
+        phone: newContact.phone || undefined,
+        is_favorite: newContact.is_favorite,
+        notes: newContact.notes || undefined,
+      } as any;
+
+      return await privateCabinetService.createVIPContact(contactData);
+    });
+
+    if (result) {
+      setVipContacts(prev => [...prev, result]);
+      toast({
+        title: "Succès",
+        description: "Contact créé avec succès",
+      });
+
+      setNewContact({
+        name: "",
+        title: "",
+        organization: "",
+        country: "",
+        category: "diplomate",
+        email: "",
+        phone: "",
+        is_favorite: false,
+        notes: "",
+      });
+      clearContactErrors();
+      setContactDialogOpen(false);
+    } else if (contactOperation.state.error) {
+      toast({
+        title: "Erreur",
+        description: contactOperation.state.error.message || "Impossible de créer le contact",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateContactField = (field: keyof typeof newContact, value: any) => {
+    setNewContact(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleToggleFavorite = async (contactId: string) => {
+    try {
+      const contact = vipContacts.find(c => c.id === contactId);
+      if (!contact) return;
+
+      await privateCabinetService.toggleContactFavorite(contactId, !contact.is_favorite);
+      setVipContacts(prev => prev.map(c =>
+        c.id === contactId ? { ...c, is_favorite: !c.is_favorite } : c
+      ));
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+    }
+  };
+
+  // Trips state management
+  const [tripDialogOpen, setTripDialogOpen] = useState(false);
+  const [newTrip, setNewTrip] = useState({
+    destination: "",
+    start_date: "",
+    end_date: "",
+    type: "prive" as TripType,
+    purpose: "",
+    status: "planned" as TripStatus,
+    participants: [] as string[],
+    notes: "",
+  });
+
+  const tripOperation = useAsyncOperation<PrivateTrip>();
+
+  const validateTripForm = useMemo(() => (data: typeof newTrip) => {
+    const errors: Record<string, string> = {};
+
+    if (validationUtils.isEmpty(data.destination)) {
+      errors.destination = errorMessages.required("La destination");
+    }
+
+    if (validationUtils.isEmpty(data.start_date)) {
+      errors.start_date = errorMessages.required("La date de début");
+    }
+
+    if (validationUtils.isEmpty(data.end_date)) {
+      errors.end_date = errorMessages.required("La date de fin");
+    } else if (!validationUtils.isValidDateRange(data.start_date, data.end_date)) {
+      errors.end_date = "La date de fin doit être après la date de début";
+    }
+
+    if (validationUtils.isEmpty(data.purpose)) {
+      errors.purpose = errorMessages.required("L'objet");
+    }
+
+    return errors;
+  }, []);
+
+  const { errors: tripErrors, validate: validateTrip, clearErrors: clearTripErrors } =
+    useFormValidation(validateTripForm);
+
+  const handleCreateTrip = async () => {
+    if (!validateTrip(newTrip)) {
+      toast({
+        title: "Erreur de validation",
+        description: "Veuillez corriger les erreurs",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await tripOperation.execute(async () => {
+      const tripData: Omit<PrivateTrip, "id" | "created_at"> = {
+        destination: newTrip.destination,
+        start_date: `${newTrip.start_date}T00:00:00Z`,
+        end_date: `${newTrip.end_date}T23:59:59Z`,
+        type: newTrip.type,
+        purpose: newTrip.purpose,
+        status: newTrip.status,
+        participants: newTrip.participants.length > 0 ? newTrip.participants : undefined,
+        notes: newTrip.notes || undefined,
+      } as any;
+
+      return await privateCabinetService.createTrip(tripData);
+    });
+
+    if (result) {
+      setTrips(prev => [...prev, result]);
+      toast({
+        title: "Succès",
+        description: "Déplacement créé avec succès",
+      });
+
+      setNewTrip({
+        destination: "",
+        start_date: "",
+        end_date: "",
+        type: "prive",
+        purpose: "",
+        status: "planned",
+        participants: [],
+        notes: "",
+      });
+      clearTripErrors();
+      setTripDialogOpen(false);
+    } else if (tripOperation.state.error) {
+      toast({
+        title: "Erreur",
+        description: tripOperation.state.error.message || "Impossible de créer le déplacement",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateTripField = (field: keyof typeof newTrip, value: any) => {
+    setNewTrip(prev => ({ ...prev, [field]: value }));
+  };
+
+
+
+
 
   const getPriorityBadge = (priority: CorrespondencePriority) => {
     const variants = {
@@ -618,44 +1087,93 @@ const PrivateCabinetDirectorSpace = () => {
                     <h2 className="text-2xl font-bold">Audiences Privées</h2>
                     <p className="text-muted-foreground">Gestion des rendez-vous confidentiels</p>
                   </div>
-                  <Dialog>
+                  <Dialog open={audienceDialogOpen} onOpenChange={setAudienceDialogOpen}>
                     <DialogTrigger asChild>
                       <Button className="neu-raised hover:shadow-neo-md transition-all">
                         <Plus className="h-4 w-4 mr-2" />
                         Nouvelle audience
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Programmer une audience privée</DialogTitle>
                       </DialogHeader>
-                      <div className="space-y-4 py-4">
+                      <div className="space-y4 py-4">
                         <div className="space-y-2">
-                          <Label>Personne</Label>
-                          <Input placeholder="Nom de la personne" />
+                          <Label htmlFor="person_name">Personne *</Label>
+                          <Input
+                            id="person_name"
+                            placeholder="Nom de la personne"
+                            value={newAudience.person_name}
+                            onChange={(e) => handleUpdateAudienceField("person_name", e.target.value)}
+                          />
+                          {audienceErrors.person_name && (
+                            <p className="text-sm text-red-500">{audienceErrors.person_name}</p>
+                          )}
                         </div>
                         <div className="space-y-2">
-                          <Label>Fonction</Label>
-                          <Input placeholder="Titre/Fonction" />
+                          <Label htmlFor="person_title">Fonction</Label>
+                          <Input
+                            id="person_title"
+                            placeholder="Titre/Fonction"
+                            value={newAudience.person_title}
+                            onChange={(e) => handleUpdateAudienceField("person_title", e.target.value)}
+                          />
                         </div>
                         <div className="space-y-2">
-                          <Label>Sujet</Label>
-                          <Input placeholder="Sujet de l'audience" />
+                          <Label htmlFor="subject">Sujet *</Label>
+                          <Input
+                            id="subject"
+                            placeholder="Sujet de l'audience"
+                            value={newAudience.subject}
+                            onChange={(e) => handleUpdateAudienceField("subject", e.target.value)}
+                          />
+                          {audienceErrors.subject && (
+                            <p className="text-sm text-red-500">{audienceErrors.subject}</p>
+                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Date</Label>
-                            <Input type="date" />
+                            <Label htmlFor="date">Date *</Label>
+                            <Input
+                              id="date"
+                              type="date"
+                              value={newAudience.date}
+                              onChange={(e) => handleUpdateAudienceField("date", e.target.value)}
+                            />
+                            {audienceErrors.date && (
+                              <p className="text-sm text-red-500">{audienceErrors.date}</p>
+                            )}
                           </div>
                           <div className="space-y-2">
-                            <Label>Heure</Label>
-                            <Input type="time" />
+                            <Label htmlFor="time">Heure *</Label>
+                            <Input
+                              id="time"
+                              type="time"
+                              value={newAudience.time}
+                              onChange={(e) => handleUpdateAudienceField("time", e.target.value)}
+                            />
+                            {audienceErrors.time && (
+                              <p className="text-sm text-red-500">{audienceErrors.time}</p>
+                            )}
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Niveau de confidentialité</Label>
-                          <Select>
-                            <SelectTrigger>
+                          <Label htmlFor="location">Lieu</Label>
+                          <Input
+                            id="location"
+                            placeholder="Lieu de l'audience"
+                            value={newAudience.location}
+                            onChange={(e) => handleUpdateAudienceField("location", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confidentiality">Niveau de confidentialité *</Label>
+                          <Select
+                            value={newAudience.confidentiality_level}
+                            onValueChange={(value) => handleUpdateAudienceField("confidentiality_level", value as ConfidentialityLevel)}
+                          >
+                            <SelectTrigger id="confidentiality">
                               <SelectValue placeholder="Sélectionner" />
                             </SelectTrigger>
                             <SelectContent>
@@ -665,7 +1183,24 @@ const PrivateCabinetDirectorSpace = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        <Button className="w-full">Programmer l'audience</Button>
+                        <div className="space-y-2">
+                          <Label htmlFor="notes">Notes</Label>
+                          <Textarea
+                            id="notes"
+                            placeholder="Notes additionnelles..."
+                            value={newAudience.notes}
+                            onChange={(e) => handleUpdateAudienceField("notes", e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                        <Button
+                          className="w-full"
+                          onClick={handleCreateAudience}
+                          disabled={audienceOperation.state.loading}
+                        >
+                          {audienceOperation.state.loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          {audienceOperation.state.loading ? "Enregistrement..." : "Programmer l'audience"}
+                        </Button>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -687,22 +1222,25 @@ const PrivateCabinetDirectorSpace = () => {
                     <h2 className="text-2xl font-bold">Messagerie Cryptée</h2>
                     <p className="text-muted-foreground">Communications sécurisées end-to-end</p>
                   </div>
-                  <Dialog>
+                  <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
                     <DialogTrigger asChild>
                       <Button className="neu-raised hover:shadow-neo-md transition-all">
                         <Plus className="h-4 w-4 mr-2" />
                         Nouveau message
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Nouveau message crypté</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                          <Label>Destinataire</Label>
-                          <Select>
-                            <SelectTrigger>
+                          <Label htmlFor="recipient_id">Destinataire *</Label>
+                          <Select
+                            value={newMessage.recipient_id}
+                            onValueChange={(value) => handleUpdateMessageField("recipient_id", value)}
+                          >
+                            <SelectTrigger id="recipient_id">
                               <SelectValue placeholder="Sélectionner un contact" />
                             </SelectTrigger>
                             <SelectContent>
@@ -713,31 +1251,79 @@ const PrivateCabinetDirectorSpace = () => {
                               ))}
                             </SelectContent>
                           </Select>
+                          {messageErrors.recipient_id && (
+                            <p className="text-sm text-red-500">{messageErrors.recipient_id}</p>
+                          )}
                         </div>
                         <div className="space-y-2">
-                          <Label>Sujet</Label>
-                          <Input placeholder="Sujet du message" />
+                          <Label htmlFor="msg_subject">Sujet *</Label>
+                          <Input
+                            id="msg_subject"
+                            placeholder="Sujet du message"
+                            value={newMessage.subject}
+                            onChange={(e) => handleUpdateMessageField("subject", e.target.value)}
+                          />
+                          {messageErrors.subject && (
+                            <p className="text-sm text-red-500">{messageErrors.subject}</p>
+                          )}
                         </div>
                         <div className="space-y-2">
-                          <Label>Message</Label>
-                          <Textarea placeholder="Votre message..." rows={5} />
+                          <Label htmlFor="msg_content">Message *</Label>
+                          <Textarea
+                            id="msg_content"
+                            placeholder="Votre message..."
+                            rows={5}
+                            value={newMessage.content}
+                            onChange={(e) => handleUpdateMessageField("content", e.target.value)}
+                          />
+                          {messageErrors.content && (
+                            <p className="text-sm text-red-500">{messageErrors.content}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Minimum 10 caractères
+                          </p>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Priorité</Label>
-                          <Select>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="normal">Normale</SelectItem>
-                              <SelectItem value="high">Haute</SelectItem>
-                              <SelectItem value="critical">Critique</SelectItem>
-                            </SelectContent>
-                          </Select>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="priority">Priorité</Label>
+                            <Select
+                              value={newMessage.priority}
+                              onValueChange={(value) => handleUpdateMessageField("priority", value as MessagePriority)}
+                            >
+                              <SelectTrigger id="priority">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="normal">Normale</SelectItem>
+                                <SelectItem value="high">Haute</SelectItem>
+                                <SelectItem value="critical">Critique</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="security_level">Sécurité</Label>
+                            <Select
+                              value={newMessage.security_level}
+                              onValueChange={(value) => handleUpdateMessageField("security_level", value as SecurityLevel)}
+                            >
+                              <SelectTrigger id="security_level">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="enhanced">Renforcée</SelectItem>
+                                <SelectItem value="maximum">Maximum</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
-                        <Button className="w-full">
-                          <Shield className="h-4 w-4 mr-2" />
-                          Envoyer (Crypté)
+                        <Button
+                          className="w-full"
+                          onClick={handleSendMessage}
+                          disabled={messageOperation.state.loading}
+                        >
+                          {messageOperation.state.loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          {!messageOperation.state.loading && <Shield className="h-4 w-4 mr-2" />}
+                          {messageOperation.state.loading ? "Envoi..." : "Envoyer (Crypté)"}
                         </Button>
                       </div>
                     </DialogContent>
@@ -797,8 +1383,19 @@ const PrivateCabinetDirectorSpace = () => {
                       </div>
 
                       <div className="mt-4 flex justify-end gap-2">
-                        <Button variant="outline" size="sm">Archiver</Button>
-                        <Button size="sm">Traiter</Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleArchiveCorrespondence(item.id)}
+                        >
+                          Archiver
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleUpdateCorrespondenceStatus(item.id, "en_traitement")}
+                        >
+                          Traiter
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -814,24 +1411,153 @@ const PrivateCabinetDirectorSpace = () => {
                     <h2 className="text-2xl font-bold">Carnet d'Adresses VIP</h2>
                     <p className="text-muted-foreground">Contacts privilégiés et confidentiels</p>
                   </div>
-                  <Button className="neu-raised hover:shadow-neo-md transition-all">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nouveau contact
-                  </Button>
+                  <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="neu-raised hover:shadow-neo-md transition-all">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nouveau contact
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Nouveau contact VIP</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="contact_name">Nom complet *</Label>
+                          <Input
+                            id="contact_name"
+                            placeholder="Nom du contact"
+                            value={newContact.name}
+                            onChange={(e) => handleUpdateContactField("name", e.target.value)}
+                          />
+                          {contactErrors.name && (
+                            <p className="text-sm text-red-500">{contactErrors.name}</p>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="contact_title">Titre/Fonction</Label>
+                            <Input
+                              id="contact_title"
+                              placeholder="Ex: Président"
+                              value={newContact.title}
+                              onChange={(e) => handleUpdateContactField("title", e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="contact_org">Organisation</Label>
+                            <Input
+                              id="contact_org"
+                              placeholder="Ex: Union Africaine"
+                              value={newContact.organization}
+                              onChange={(e) => handleUpdateContactField("organization", e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="contact_country">Pays</Label>
+                            <Input
+                              id="contact_country"
+                              placeholder="Pays"
+                              value={newContact.country}
+                              onChange={(e) => handleUpdateContactField("country", e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="contact_category">Catégorie</Label>
+                            <Select
+                              value={newContact.category}
+                              onValueChange={(value) => handleUpdateContactField("category", value as ContactCategory)}
+                            >
+                              <SelectTrigger id="contact_category">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="chef_etat">Chef d'État</SelectItem>
+                                <SelectItem value="diplomate">Diplomate</SelectItem>
+                                <SelectItem value="famille">Famille</SelectItem>
+                                <SelectItem value="business">Business</SelectItem>
+                                <SelectItem value="autre">Autre</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="contact_email">Email</Label>
+                          <Input
+                            id="contact_email"
+                            type="email"
+                            placeholder="email@exemple.com"
+                            value={newContact.email}
+                            onChange={(e) => handleUpdateContactField("email", e.target.value)}
+                          />
+                          {contactErrors.email && (
+                            <p className="text-sm text-red-500">{contactErrors.email}</p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="contact_phone">Téléphone</Label>
+                          <Input
+                            id="contact_phone"
+                            type="tel"
+                            placeholder="+241 ..."
+                            value={newContact.phone}
+                            onChange={(e) => handleUpdateContactField("phone", e.target.value)}
+                          />
+                          {contactErrors.phone && (
+                            <p className="text-sm text-red-500">{contactErrors.phone}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2 pt-2">
+                          <input
+                            type="checkbox"
+                            id="is_favorite"
+                            className="h-4 w-4 rounded border-gray-300"
+                            checked={newContact.is_favorite}
+                            onChange={(e) => handleUpdateContactField("is_favorite", e.target.checked)}
+                          />
+                          <Label htmlFor="is_favorite">Ajouter aux favoris</Label>
+                        </div>
+                        <Button
+                          className="w-full mt-4"
+                          onClick={handleCreateContact}
+                          disabled={contactOperation.state.loading}
+                        >
+                          {contactOperation.state.loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          {contactOperation.state.loading ? "Création..." : "Créer le contact"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {vipContacts.map(contact => (
                     <div key={contact.id} className="neu-card p-6 relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute top-0 right-0 p-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50"
+                          onClick={() => handleToggleFavorite(contact.id)}
+                        >
+                          <Badge className={contact.is_favorite ? "bg-yellow-500" : "bg-gray-300"}>
+                            ★
+                          </Badge>
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <Settings className="h-4 w-4" />
                         </Button>
                       </div>
 
                       <div className="flex items-center gap-4 mb-4">
-                        <div className="neu-raised w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-primary">
+                        <div className="neu-raised w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-primary relative">
                           {contact.name.charAt(0)}
+                          {contact.is_favorite && (
+                            <span className="absolute -top-1 -right-1 text-yellow-500 text-xs">★</span>
+                          )}
                         </div>
                         <div>
                           <h4 className="font-bold text-lg">{contact.name}</h4>
@@ -841,18 +1567,24 @@ const PrivateCabinetDirectorSpace = () => {
                       </div>
 
                       <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/5 transition-colors">
-                          <Globe className="h-4 w-4 text-muted-foreground" />
-                          <span>{contact.country}</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/5 transition-colors">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span>{contact.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/5 transition-colors">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span>{contact.phone}</span>
-                        </div>
+                        {contact.country && (
+                          <div className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/5 transition-colors">
+                            <Globe className="h-4 w-4 text-muted-foreground" />
+                            <span>{contact.country}</span>
+                          </div>
+                        )}
+                        {contact.email && (
+                          <div className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/5 transition-colors">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span>{contact.email}</span>
+                          </div>
+                        )}
+                        {contact.phone && (
+                          <div className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/5 transition-colors">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span>{contact.phone}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -868,10 +1600,134 @@ const PrivateCabinetDirectorSpace = () => {
                     <h2 className="text-2xl font-bold">Déplacements Privés</h2>
                     <p className="text-muted-foreground">Agenda des voyages personnels</p>
                   </div>
-                  <Button className="neu-raised hover:shadow-neo-md transition-all">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Planifier
-                  </Button>
+                  <Dialog open={tripDialogOpen} onOpenChange={setTripDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="neu-raised hover:shadow-neo-md transition-all">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Planifier
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Planifier un déplacement</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="trip_destination">Destination *</Label>
+                          <Input
+                            id="trip_destination"
+                            placeholder="Ville, Pays"
+                            value={newTrip.destination}
+                            onChange={(e) => handleUpdateTripField("destination", e.target.value)}
+                          />
+                          {tripErrors.destination && (
+                            <p className="text-sm text-red-500">{tripErrors.destination}</p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="trip_purpose">Objet du déplacement *</Label>
+                          <Input
+                            id="trip_purpose"
+                            placeholder="Raison du voyage"
+                            value={newTrip.purpose}
+                            onChange={(e) => handleUpdateTripField("purpose", e.target.value)}
+                          />
+                          {tripErrors.purpose && (
+                            <p className="text-sm text-red-500">{tripErrors.purpose}</p>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="start_date">Date de début *</Label>
+                            <Input
+                              id="start_date"
+                              type="date"
+                              value={newTrip.start_date}
+                              onChange={(e) => handleUpdateTripField("start_date", e.target.value)}
+                            />
+                            {tripErrors.start_date && (
+                              <p className="text-sm text-red-500">{tripErrors.start_date}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="end_date">Date de fin *</Label>
+                            <Input
+                              id="end_date"
+                              type="date"
+                              value={newTrip.end_date}
+                              onChange={(e) => handleUpdateTripField("end_date", e.target.value)}
+                            />
+                            {tripErrors.end_date && (
+                              <p className="text-sm text-red-500">{tripErrors.end_date}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="trip_type">Type</Label>
+                            <Select
+                              value={newTrip.type}
+                              onValueChange={(value) => handleUpdateTripField("type", value as TripType)}
+                            >
+                              <SelectTrigger id="trip_type">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="prive">Privé</SelectItem>
+                                <SelectItem value="officiel">Officiel</SelectItem>
+                                <SelectItem value="medical">Médical</SelectItem>
+                                <SelectItem value="vacances">Vacances</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="trip_status">Statut</Label>
+                            <Select
+                              value={newTrip.status}
+                              onValueChange={(value) => handleUpdateTripField("status", value as TripStatus)}
+                            >
+                              <SelectTrigger id="trip_status">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="planned">Planifié</SelectItem>
+                                <SelectItem value="confirmed">Confirmé</SelectItem>
+                                <SelectItem value="completed">Terminé</SelectItem>
+                                <SelectItem value="cancelled">Annulé</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="participants">Participants</Label>
+                          <Input
+                            id="participants"
+                            placeholder="Noms séparés par des virgules"
+                            value={newTrip.participants.join(", ")}
+                            onChange={(e) => handleUpdateTripField("participants", e.target.value.split(",").map(s => s.trim()))}
+                          />
+                          <p className="text-xs text-muted-foreground">Séparez les noms par des virgules</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="trip_notes">Notes</Label>
+                          <Textarea
+                            id="trip_notes"
+                            placeholder="Notes additionnelles..."
+                            value={newTrip.notes}
+                            onChange={(e) => handleUpdateTripField("notes", e.target.value)}
+                          />
+                        </div>
+                        <Button
+                          className="w-full mt-4"
+                          onClick={handleCreateTrip}
+                          disabled={tripOperation.state.loading}
+                        >
+                          {tripOperation.state.loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          {tripOperation.state.loading ? "Planification..." : "Planifier le déplacement"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
 
                 <div className="space-y-4">
@@ -918,19 +1774,19 @@ const PrivateCabinetDirectorSpace = () => {
             )}
           </div>
         </main>
-      </div>
+      </div >
 
       {/* IAsted Button */}
-      <IAstedButtonFull 
+      < IAstedButtonFull
         onSingleClick={() => setIastedOpen(true)}
         onDoubleClick={() => setIastedOpen(true)}
       />
-      <IAstedInterface
+      < IAstedInterface
         isOpen={iastedOpen}
         onClose={() => setIastedOpen(false)}
         userRole="default"
       />
-    </div>
+    </div >
   );
 };
 

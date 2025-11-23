@@ -45,6 +45,7 @@ import { AIConfigSection } from '@/components/admin/AIConfigSection';
 import { KnowledgeBaseSection } from '@/components/admin/KnowledgeBaseSection';
 import { UserManagementSection } from '@/components/admin/UserManagementSection';
 import { AuditLogSection } from '@/components/admin/AuditLogSection';
+import { ConfigSection } from '@/components/admin/ConfigSection';
 
 interface Feedback {
     id: string;
@@ -73,6 +74,14 @@ const AdminSpace = () => {
 
     const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
     const [showDocuments, setShowDocuments] = useState(false);
+
+    // Statistics State
+    const [stats, setStats] = useState({
+        activeUsers: 0,
+        systemHealth: 'Opérationnel' as const,
+        securityAlerts: 0,
+        iastedRequests: 0
+    });
 
     // Feedback Data
     const { data: feedbacks = [], isLoading: loadingFeedbacks, error: feedbackError } = useFeedbacks();
@@ -172,6 +181,47 @@ const AdminSpace = () => {
 
     useEffect(() => {
         setMounted(true);
+    }, []);
+
+    // Fetch real statistics
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                // Count total users with roles
+                const { count: userCount } = await supabase
+                    .from('user_roles')
+                    .select('*', { count: 'exact', head: true });
+
+                // Count security alerts (last 7 days)
+                const { count: alertsCount } = await (supabase as any)
+                    .from('audit_logs')
+                    .select('*', { count: 'exact', head: true })
+                    .ilike('action', '%SECURITY%')
+                    .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+                // Count iAsted requests (this week)
+                const { count: requestsCount } = await (supabase as any)
+                    .from('audit_logs')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('resource', 'iasted')
+                    .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+                setStats({
+                    activeUsers: userCount || 0,
+                    systemHealth: 'Opérationnel',
+                    securityAlerts: alertsCount || 0,
+                    iastedRequests: requestsCount || 0
+                });
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+                // Keep default values on error
+            }
+        };
+
+        fetchStats();
+        // Refresh stats every 30 seconds
+        const interval = setInterval(fetchStats, 30000);
+        return () => clearInterval(interval);
     }, []);
 
     if (feedbackError) {
@@ -449,12 +499,12 @@ const AdminSpace = () => {
                                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                                         <Card className="neu-raised border-none">
                                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                <CardTitle className="text-sm font-medium">Utilisateurs Actifs</CardTitle>
+                                                <CardTitle className="text-sm font-medium">Utilisateurs Totaux</CardTitle>
                                                 <Users className="h-4 w-4 text-muted-foreground" />
                                             </CardHeader>
                                             <CardContent>
-                                                <div className="text-2xl font-bold">128</div>
-                                                <p className="text-xs text-muted-foreground">+4 depuis hier</p>
+                                                <div className="text-2xl font-bold">{stats.activeUsers}</div>
+                                                <p className="text-xs text-muted-foreground">Comptes enregistrés</p>
                                             </CardContent>
                                         </Card>
                                         <Card className="neu-raised border-none">
@@ -463,8 +513,8 @@ const AdminSpace = () => {
                                                 <Server className="h-4 w-4 text-green-500" />
                                             </CardHeader>
                                             <CardContent>
-                                                <div className="text-2xl font-bold text-green-600">Opérationnel</div>
-                                                <p className="text-xs text-muted-foreground">Uptime 99.9%</p>
+                                                <div className="text-2xl font-bold text-green-600">{stats.systemHealth}</div>
+                                                <p className="text-xs text-muted-foreground">Tous les services actifs</p>
                                             </CardContent>
                                         </Card>
                                         <Card className="neu-raised border-none">
@@ -473,8 +523,8 @@ const AdminSpace = () => {
                                                 <ShieldAlert className="h-4 w-4 text-yellow-500" />
                                             </CardHeader>
                                             <CardContent>
-                                                <div className="text-2xl font-bold">0</div>
-                                                <p className="text-xs text-muted-foreground">Aucune menace détectée</p>
+                                                <div className="text-2xl font-bold">{stats.securityAlerts}</div>
+                                                <p className="text-xs text-muted-foreground">7 derniers jours</p>
                                             </CardContent>
                                         </Card>
                                         <Card className="neu-raised border-none">
@@ -483,8 +533,8 @@ const AdminSpace = () => {
                                                 <Activity className="h-4 w-4 text-blue-500" />
                                             </CardHeader>
                                             <CardContent>
-                                                <div className="text-2xl font-bold">1,429</div>
-                                                <p className="text-xs text-muted-foreground">+12% cette semaine</p>
+                                                <div className="text-2xl font-bold">{stats.iastedRequests.toLocaleString()}</div>
+                                                <p className="text-xs text-muted-foreground">Cette semaine</p>
                                             </CardContent>
                                         </Card>
                                     </div>
@@ -634,14 +684,7 @@ const AdminSpace = () => {
 
                             {activeSection === 'config' && (
                                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <Card className="neu-raised border-none">
-                                        <CardHeader>
-                                            <CardTitle>Configuration Système</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <p className="text-muted-foreground">Paramètres globaux de l'application (Maintenance, Variables, etc.)</p>
-                                        </CardContent>
-                                    </Card>
+                                    <ConfigSection />
                                 </div>
                             )}
                         </div>

@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Calendar,
-  BookOpen
+  BookOpen,
+  FolderOpen
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ import IAstedInterface from "@/components/iasted/IAstedInterface";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { OfficialDecree, LegalReview, AdministrativeArchive } from "@/types/secretariat-general";
+import { secretariatService } from "@/services/secretariatService";
 
 const SecretariatGeneralSpace = () => {
   const navigate = useNavigate();
@@ -42,13 +44,17 @@ const SecretariatGeneralSpace = () => {
   const queryClient = useQueryClient();
 
   const [mounted, setMounted] = useState(false);
-  const [iastedOpen, setIastedOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [expandedSections, setExpandedSections] = useState({
     navigation: true,
     legal: true,
     archives: false,
   });
+
+  // Dialog states
+  const [isDecreeDialogOpen, setIsDecreeDialogOpen] = useState(false);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
 
   // Access Control
   useEffect(() => {
@@ -78,49 +84,56 @@ const SecretariatGeneralSpace = () => {
     checkAccess();
   }, [navigate, toast]);
 
-  // Data Fetching - TEMPORAIRE: Tables non créées
+  // Data Fetching
   const { data: decrees = [], isLoading: decreesLoading } = useQuery({
     queryKey: ["official_decrees"],
-    queryFn: async () => {
-      // TODO: Créer la table official_decrees
-      return [] as OfficialDecree[];
-    },
+    queryFn: secretariatService.getOfficialDecrees,
   });
 
   const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
     queryKey: ["legal_reviews"],
-    queryFn: async () => {
-      // TODO: Créer la table legal_reviews
-      return [] as LegalReview[];
-    },
+    queryFn: secretariatService.getLegalReviews,
   });
 
-  // Mutations - Désactivées temporairement
+  const { data: archives = [], isLoading: archivesLoading } = useQuery({
+    queryKey: ["administrative_archives"],
+    queryFn: secretariatService.getAdministrativeArchives,
+  });
+
+  // Mutations
   const createDecreeMutation = useMutation({
-    mutationFn: async (newDecree: Omit<OfficialDecree, "id" | "created_at">) => {
-      console.log("Table official_decrees non créée");
-      throw new Error("Table non créée");
-    },
+    mutationFn: secretariatService.createOfficialDecree,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["official_decrees"] });
       toast({ title: "Succès", description: "Décret créé avec succès" });
+      setIsDecreeDialogOpen(false);
     },
-    onError: () => {
-      toast({ title: "Erreur", description: "Table non créée dans la base de données", variant: "destructive" });
+    onError: (error) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     },
   });
 
   const createReviewMutation = useMutation({
-    mutationFn: async (newReview: Omit<LegalReview, "id" | "created_at">) => {
-      console.log("Table legal_reviews non créée");
-      throw new Error("Table non créée");
-    },
+    mutationFn: secretariatService.createLegalReview,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["legal_reviews"] });
       toast({ title: "Succès", description: "Demande d'avis créée avec succès" });
+      setIsReviewDialogOpen(false);
     },
-    onError: () => {
-      toast({ title: "Erreur", description: "Impossible de créer la demande", variant: "destructive" });
+    onError: (error) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const createArchiveMutation = useMutation({
+    mutationFn: secretariatService.createAdministrativeArchive,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["administrative_archives"] });
+      toast({ title: "Succès", description: "Archive créée avec succès" });
+      setIsArchiveDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
     },
   });
 
@@ -150,6 +163,11 @@ const SecretariatGeneralSpace = () => {
       pending: { label: "En attente", variant: "outline" },
       in_review: { label: "En examen", variant: "default", className: "bg-blue-500" },
       completed: { label: "Terminé", variant: "secondary", className: "bg-green-100 text-green-700" },
+      // Archives access levels
+      public: { label: "Public", variant: "secondary", className: "bg-green-100 text-green-700" },
+      restricted: { label: "Restreint", variant: "outline", className: "border-orange-500 text-orange-500" },
+      confidential: { label: "Confidentiel", variant: "default", className: "bg-orange-500" },
+      secret: { label: "Secret", variant: "destructive", className: "bg-red-600" },
     };
 
     const config = variants[status] || { label: status, variant: "outline" };
@@ -161,9 +179,10 @@ const SecretariatGeneralSpace = () => {
     decreesPending: decrees.filter(d => d.status === "pending_signature").length,
     reviewsUrgent: reviews.filter(r => r.priority === "high" && r.status !== "completed").length,
     decreesPublished: decrees.filter(d => d.status === "published").length,
+    archivesTotal: archives.length,
   };
 
-  if (decreesLoading || reviewsLoading) {
+  if (decreesLoading || reviewsLoading || archivesLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center space-y-4">
@@ -333,7 +352,7 @@ const SecretariatGeneralSpace = () => {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* KPIs */}
                 <div className="neu-card p-6 mb-8">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-0 lg:divide-x lg:divide-border">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 lg:gap-0 lg:divide-x lg:divide-border">
                     <div className="px-6 first:pl-0">
                       <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4 rounded-xl">
                         <FileText className="w-6 h-6 text-orange-500" />
@@ -357,6 +376,14 @@ const SecretariatGeneralSpace = () => {
                       <div className="text-4xl font-bold mb-2">{stats.decreesPublished}</div>
                       <div className="text-sm font-medium">Textes Publiés</div>
                       <div className="text-xs text-muted-foreground">Journal Officiel</div>
+                    </div>
+                    <div className="px-6">
+                      <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4 rounded-xl">
+                        <FolderOpen className="w-6 h-6 text-blue-500" />
+                      </div>
+                      <div className="text-4xl font-bold mb-2">{stats.archivesTotal}</div>
+                      <div className="text-sm font-medium">Archives</div>
+                      <div className="text-xs text-muted-foreground">Total documents</div>
                     </div>
                   </div>
                 </div>
@@ -388,6 +415,9 @@ const SecretariatGeneralSpace = () => {
                           </div>
                         </div>
                       ))}
+                      {decrees.length === 0 && (
+                        <div className="text-center py-4 text-muted-foreground text-sm">Aucun texte récent</div>
+                      )}
                     </div>
                   </div>
 
@@ -414,6 +444,9 @@ const SecretariatGeneralSpace = () => {
                           </div>
                         </div>
                       ))}
+                      {reviews.length === 0 && (
+                        <div className="text-center py-4 text-muted-foreground text-sm">Aucune demande récente</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -428,7 +461,7 @@ const SecretariatGeneralSpace = () => {
                     <h2 className="text-2xl font-bold">Décrets & Arrêtés</h2>
                     <p className="text-muted-foreground">Gestion des textes officiels</p>
                   </div>
-                  <Dialog>
+                  <Dialog open={isDecreeDialogOpen} onOpenChange={setIsDecreeDialogOpen}>
                     <DialogTrigger asChild>
                       <Button className="neu-raised hover:shadow-neo-md transition-all">
                         <Plus className="h-4 w-4 mr-2" />
@@ -474,7 +507,9 @@ const SecretariatGeneralSpace = () => {
                           <Label htmlFor="title">Titre / Objet</Label>
                           <Input id="title" name="title" placeholder="Objet du texte..." required />
                         </div>
-                        <Button type="submit" className="w-full">Créer le brouillon</Button>
+                        <Button type="submit" className="w-full" disabled={createDecreeMutation.isPending}>
+                          {createDecreeMutation.isPending ? "Création..." : "Créer le brouillon"}
+                        </Button>
                       </form>
                     </DialogContent>
                   </Dialog>
@@ -502,6 +537,12 @@ const SecretariatGeneralSpace = () => {
                       </div>
                     </div>
                   ))}
+                  {decrees.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                      <p>Aucun texte enregistré pour le moment</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -514,7 +555,7 @@ const SecretariatGeneralSpace = () => {
                     <h2 className="text-2xl font-bold">Veille Juridique</h2>
                     <p className="text-muted-foreground">Examen de conformité et avis juridiques</p>
                   </div>
-                  <Dialog>
+                  <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
                     <DialogTrigger asChild>
                       <Button className="neu-raised hover:shadow-neo-md transition-all">
                         <Plus className="h-4 w-4 mr-2" />
@@ -564,7 +605,9 @@ const SecretariatGeneralSpace = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        <Button type="submit" className="w-full">Soumettre la demande</Button>
+                        <Button type="submit" className="w-full" disabled={createReviewMutation.isPending}>
+                          {createReviewMutation.isPending ? "Envoi..." : "Soumettre la demande"}
+                        </Button>
                       </form>
                     </DialogContent>
                   </Dialog>
@@ -591,6 +634,110 @@ const SecretariatGeneralSpace = () => {
                       </div>
                     </div>
                   ))}
+                  {reviews.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Scale className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                      <p>Aucune demande d'avis en cours</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Archives Section */}
+            {activeSection === "archives_list" && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Archives Administratives</h2>
+                    <p className="text-muted-foreground">Consultation et archivage des documents</p>
+                  </div>
+                  <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="neu-raised hover:shadow-neo-md transition-all">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nouvelle archive
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Archiver un document</DialogTitle>
+                      </DialogHeader>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+                          createArchiveMutation.mutate({
+                            title: formData.get("title") as string,
+                            category: formData.get("category") as string,
+                            reference_code: formData.get("reference_code") as string,
+                            access_level: formData.get("access_level") as any,
+                            archiving_date: new Date().toISOString(),
+                          });
+                        }}
+                        className="space-y-4 py-4"
+                      >
+                        <div className="space-y-2">
+                          <Label htmlFor="title">Titre du document</Label>
+                          <Input id="title" name="title" placeholder="Titre..." required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="reference_code">Code de référence</Label>
+                          <Input id="reference_code" name="reference_code" placeholder="ex: ARCH-2025-001" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="category">Catégorie</Label>
+                          <Input id="category" name="category" placeholder="ex: Correspondance, Rapport..." required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="access_level">Niveau d'accès</Label>
+                          <Select name="access_level" required>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner le niveau" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="public">Public</SelectItem>
+                              <SelectItem value="restricted">Restreint</SelectItem>
+                              <SelectItem value="confidential">Confidentiel</SelectItem>
+                              <SelectItem value="secret">Secret</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={createArchiveMutation.isPending}>
+                          {createArchiveMutation.isPending ? "Archivage..." : "Archiver"}
+                        </Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <div className="grid gap-4">
+                  {archives.map((archive) => (
+                    <div key={archive.id} className="neu-card p-6 hover:translate-y-[-2px] transition-all duration-300">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="bg-background/50">{archive.category}</Badge>
+                            <span className="font-mono text-sm text-muted-foreground">{archive.reference_code}</span>
+                          </div>
+                          <h3 className="font-semibold text-lg">{archive.title}</h3>
+                        </div>
+                        {getStatusBadge(archive.access_level)}
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground pt-4 border-t border-border">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          Archivé le: {new Date(archive.archiving_date).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {archives.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Archive className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                      <p>Aucune archive trouvée</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -598,17 +745,7 @@ const SecretariatGeneralSpace = () => {
         </main>
 
         {/* iAsted Integration */}
-        <IAstedButtonFull
-          onSingleClick={() => setIastedOpen(true)}
-          onDoubleClick={() => setIastedOpen(true)}
-        />
-
-        {iastedOpen && (
-          <IAstedInterface
-            isOpen={iastedOpen}
-            onClose={() => setIastedOpen(false)}
-          />
-        )}
+        <IAstedInterface />
       </div>
     </div>
   );

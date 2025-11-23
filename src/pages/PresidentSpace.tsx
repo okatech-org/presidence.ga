@@ -49,6 +49,7 @@ import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import { MailInbox } from '@/components/iasted/MailInbox';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import { DocumentsSection } from '@/components/documents/DocumentsSection';
+import { SettingsModal } from '@/components/president/SettingsModal';
 import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import { useRealtimePresidentDashboard } from '@/hooks/useRealtimeSync';
 import { cn } from "@/lib/utils";
@@ -137,6 +138,7 @@ export default function PresidentSpace() {
   });
   const [activeSection, setActiveSection] = useState("dashboard");
   const [iastedOpen, setIastedOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingDocument, setPendingDocument] = useState<any>(null);
   const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>(() => {
     return (localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai') || 'elevenlabs';
@@ -648,7 +650,10 @@ export default function PresidentSpace() {
                 </>
               )}
             </button>
-            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm neu-raised hover:shadow-neo-md transition-all mb-1">
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm neu-raised hover:shadow-neo-md transition-all mb-1"
+            >
               <Settings className="w-4 h-4" />
               Paramètres
             </button>
@@ -924,6 +929,13 @@ export default function PresidentSpace() {
         pendingDocument={pendingDocument}
         onClearPendingDocument={() => setPendingDocument(null)}
         currentVoice={selectedVoice}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        userRole="president"
       />
     </div>
   );

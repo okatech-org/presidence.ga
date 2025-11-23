@@ -35,6 +35,7 @@ import IAstedInterface from "@/components/iasted/IAstedInterface";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { OfficialEvent, Guest, ProtocolProcedure } from "@/types/protocol";
+import { protocolService } from "@/services/protocolService";
 
 const ProtocolDirectorSpace = () => {
     const navigate = useNavigate();
@@ -79,49 +80,53 @@ const ProtocolDirectorSpace = () => {
         checkAccess();
     }, [navigate, toast]);
 
-    // Data Fetching - TEMPORAIRE: Tables non créées
+    // Data Fetching
     const { data: events = [], isLoading: eventsLoading } = useQuery({
         queryKey: ["official_events"],
-        queryFn: async () => {
-            // TODO: Créer la table official_events
-            return [] as OfficialEvent[];
-        },
+        queryFn: protocolService.getEvents,
     });
 
     const { data: guests = [], isLoading: guestsLoading } = useQuery({
         queryKey: ["guest_lists"],
-        queryFn: async () => {
-            // TODO: Créer la table guest_lists
-            return [] as Guest[];
-        },
+        queryFn: () => protocolService.getGuests(),
     });
 
-    // Mutations - Désactivées temporairement
+    const { data: procedures = [], isLoading: proceduresLoading } = useQuery({
+        queryKey: ["protocol_procedures"],
+        queryFn: protocolService.getProcedures,
+    });
+
+    // Mutations
     const createEventMutation = useMutation({
-        mutationFn: async (newEvent: Omit<OfficialEvent, "id" | "created_at">) => {
-            console.log("Table official_events non créée");
-            throw new Error("Table non créée");
-        },
+        mutationFn: protocolService.createEvent,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["official_events"] });
             toast({ title: "Succès", description: "Événement créé avec succès" });
         },
-        onError: () => {
-            toast({ title: "Erreur", description: "Table non créée dans la base de données", variant: "destructive" });
+        onError: (error) => {
+            toast({ title: "Erreur", description: "Impossible de créer l'événement: " + error.message, variant: "destructive" });
         },
     });
 
     const addGuestMutation = useMutation({
-        mutationFn: async (newGuest: Omit<Guest, "id" | "created_at">) => {
-            console.log("Table guest_lists non créée");
-            throw new Error("Table non créée");
-        },
+        mutationFn: protocolService.addGuest,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["guest_lists"] });
             toast({ title: "Succès", description: "Invité ajouté avec succès" });
         },
-        onError: () => {
-            toast({ title: "Erreur", description: "Impossible d'ajouter l'invité", variant: "destructive" });
+        onError: (error) => {
+            toast({ title: "Erreur", description: "Impossible d'ajouter l'invité: " + error.message, variant: "destructive" });
+        },
+    });
+
+    const createProcedureMutation = useMutation({
+        mutationFn: protocolService.createProcedure,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["protocol_procedures"] });
+            toast({ title: "Succès", description: "Procédure créée avec succès" });
+        },
+        onError: (error) => {
+            toast({ title: "Erreur", description: "Impossible de créer la procédure: " + error.message, variant: "destructive" });
         },
     });
 
@@ -163,9 +168,10 @@ const ProtocolDirectorSpace = () => {
         upcomingEvents: events.filter(e => e.status === "upcoming").length,
         pendingRSVPs: guests.filter(g => g.status === "invited").length,
         confirmedGuests: guests.filter(g => g.status === "confirmed").length,
+        totalProcedures: procedures.length,
     };
 
-    if (eventsLoading || guestsLoading) {
+    if (eventsLoading || guestsLoading || proceduresLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-background">
                 <div className="text-center space-y-4">
@@ -631,6 +637,88 @@ const ProtocolDirectorSpace = () => {
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Procedures Section */}
+                        {activeSection === "procedures" && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-2xl font-bold">Procédures Protocolaires</h2>
+                                        <p className="text-muted-foreground">Référentiel des procédures et usages</p>
+                                    </div>
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button className="neu-raised hover:shadow-neo-md transition-all">
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Nouvelle procédure
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Créer une procédure</DialogTitle>
+                                            </DialogHeader>
+                                            <form
+                                                onSubmit={(e) => {
+                                                    e.preventDefault();
+                                                    const formData = new FormData(e.currentTarget);
+                                                    createProcedureMutation.mutate({
+                                                        title: formData.get("title") as string,
+                                                        description: formData.get("description") as string,
+                                                        category: formData.get("category") as any,
+                                                    });
+                                                }}
+                                                className="space-y-4 py-4"
+                                            >
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="title">Titre</Label>
+                                                    <Input id="title" name="title" placeholder="Ex: Accueil Chef d'État" required />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="category">Catégorie</Label>
+                                                    <Select name="category" required>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Sélectionner la catégorie" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="ceremonial">Cérémonial</SelectItem>
+                                                            <SelectItem value="diplomatic">Diplomatique</SelectItem>
+                                                            <SelectItem value="security">Sécurité</SelectItem>
+                                                            <SelectItem value="logistics">Logistique</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="description">Description</Label>
+                                                    <Input id="description" name="description" placeholder="Détails de la procédure..." required />
+                                                </div>
+                                                <Button type="submit" className="w-full">Créer la procédure</Button>
+                                            </form>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+
+                                <div className="grid gap-4">
+                                    {procedures.map((procedure) => (
+                                        <div key={procedure.id} className="neu-card p-6 hover:translate-y-[-2px] transition-all duration-300">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Badge variant="outline" className="bg-background/50 uppercase">{procedure.category}</Badge>
+                                                    </div>
+                                                    <h3 className="font-semibold text-lg">{procedure.title}</h3>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">{procedure.description}</p>
+                                        </div>
+                                    ))}
+                                    {procedures.length === 0 && (
+                                        <div className="text-center py-8 text-muted-foreground text-sm">
+                                            Aucune procédure enregistrée
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

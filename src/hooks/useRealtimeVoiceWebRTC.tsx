@@ -600,6 +600,16 @@ Lorsque vous analysez des données, soyez proactif : "Je vois 12 actes en attent
                             },
                             {
                                 type: 'function',
+                                name: 'logout_user',
+                                description: 'Déconnecte l\'utilisateur de sa session actuelle.',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {},
+                                    required: []
+                                }
+                            },
+                            {
+                                type: 'function',
                                 name: 'global_navigate',
                                 description: '[SUPER ADMIN ONLY] Navigue vers n\'importe quelle route. L\'utilisateur peut demander en langage naturel (ex: "va à l\'accueil", "espace président"). Tu DOIS traduire vers le chemin exact en utilisant la cartographie fournie.',
                                 parameters: {

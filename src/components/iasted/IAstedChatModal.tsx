@@ -51,6 +51,7 @@ interface IAstedChatModalProps {
   pendingDocument?: any;
   onClearPendingDocument?: () => void;
   currentVoice?: 'echo' | 'ash' | 'shimmer';
+  systemPrompt?: string;
 }
 
 const MessageBubble: React.FC<{
@@ -430,7 +431,8 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
   openaiRTC,
   pendingDocument,
   onClearPendingDocument,
-  currentVoice
+  currentVoice,
+  systemPrompt
 }) => {
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -949,7 +951,13 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
     };
   }, [openaiRTC.isConnected]);
 
-
+  const handleConnect = async () => {
+    if (openaiRTC.isConnected) {
+      openaiRTC.disconnect();
+    } else {
+      await openaiRTC.connect(selectedVoice, systemPrompt);
+    }
+  };
 
   if (!isOpen) return null;
 

@@ -18,29 +18,23 @@ import { useTheme } from "next-themes";
 import { IncomingMail, MailStats as MailStatsType } from "@/types/service-courriers-types";
 import { MailCard } from "@/components/courrier/MailCard";
 import { MailStats } from "@/components/courrier/MailStats";
-import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { IAstedChatModal } from "@/components/iasted/IAstedChatModal";
-import { useRealtimeVoiceWebRTC } from "@/hooks/useRealtimeVoiceWebRTC";
-
+import IAstedInterface from "@/components/iasted/IAstedInterface";
 import { MailSplitViewer } from "@/components/courrier/MailSplitViewer";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { courrierService } from "@/services/courrierService";
 
 const ServiceCourriersSpace = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [iastedOpen, setIastedOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
-
-  // Voice Hook
-  const openaiRTC = useRealtimeVoiceWebRTC();
+  const queryClient = useQueryClient();
 
   // Selection state for Split View
   const [selectedMail, setSelectedMail] = useState<IncomingMail | null>(null);
 
   // Data state
-  const [mails, setMails] = useState<IncomingMail[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -60,7 +54,6 @@ const ServiceCourriersSpace = () => {
   useEffect(() => {
     setMounted(true);
     checkAccess();
-    fetchMails();
   }, []);
 
   const checkAccess = async () => {
@@ -72,6 +65,7 @@ const ServiceCourriersSpace = () => {
         return;
       }
 
+      // Check for courrier role
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
@@ -90,65 +84,64 @@ const ServiceCourriersSpace = () => {
     } catch (error) {
       console.error("Error checking access:", error);
       navigate("/auth");
-    } finally {
-      setLoading(false);
     }
   };
 
-  const fetchMails = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('mails')
-        .select('*')
-        .order('created_at', { ascending: false });
+  // React Query Data Fetching
+  const { data: mails = [], isLoading: loading } = useQuery({
+    queryKey: ["incoming_mails"],
+    queryFn: courrierService.getIncomingMails,
+  });
 
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setMails(data as unknown as IncomingMail[]);
-      } else {
-        // Fallback to mock data if no real data exists
-        const mockMails: IncomingMail[] = [
-          {
-            id: "1",
-            reference_number: "COUR-2025-001",
-            sender: "Ministère de l'Intérieur",
-            subject: "Rapport mensuel de sécurité",
-            received_date: new Date().toISOString(),
-            type: "lettre",
-            urgency: "haute",
-            status: "en_traitement",
-            assigned_to: "cabinet_private",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            digital_copy_url: "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?q=80&w=2070&auto=format&fit=crop"
-          },
-          {
-            id: "2",
-            reference_number: "COUR-2025-002",
-            sender: "Ambassade de France",
-            subject: "Invitation réception officielle",
-            received_date: new Date().toISOString(),
-            type: "invitation",
-            urgency: "normale",
-            status: "recu",
-            assigned_to: "protocol",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            digital_copy_url: "https://images.unsplash.com/photo-1555421689-491a97ff2040?q=80&w=2070&auto=format&fit=crop"
-          }
-        ];
-        setMails(mockMails);
-      }
-    } catch (error) {
-      console.error("Error fetching mails:", error);
+  // Mutations
+  const createMailMutation = useMutation({
+    mutationFn: courrierService.createIncomingMail,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["incoming_mails"] });
+      setIsDialogOpen(false);
+      toast({
+        title: "Courrier enregistré",
+        description: `Référence: ${newMail.reference_number}`,
+      });
+      setNewMail({
+        reference_number: "",
+        sender: "",
+        subject: "",
+        type: "lettre",
+        urgency: "normale",
+        assigned_to: "",
+        notes: "",
+        digital_copy_url: ""
+      });
+    },
+    onError: (error) => {
       toast({
         title: "Erreur",
-        description: "Impossible de charger les courriers.",
+        description: error.message,
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      courrierService.updateMailStatus(id, status),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["incoming_mails"] });
+      setSelectedMail(null);
+      toast({
+        title: "Statut mis à jour",
+        description: `Le courrier ${data.reference_number} est maintenant ${data.status.replace('_', ' ')}.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -160,42 +153,35 @@ const ServiceCourriersSpace = () => {
   };
 
   const handleCreateMail = async () => {
-    const createdMail: IncomingMail = {
-      id: Math.random().toString(36).substr(2, 9),
+    if (!newMail.reference_number || !newMail.sender || !newMail.subject) {
+      toast({
+        title: "Champs manquants",
+        description: "Veuillez remplir les champs obligatoires (Référence, Expéditeur, Objet).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createMailMutation.mutate({
       ...newMail,
       received_date: new Date().toISOString(),
       status: "recu",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    } as IncomingMail;
-
-    setMails([createdMail, ...mails]);
-    setIsDialogOpen(false);
-    toast({
-      title: "Courrier enregistré",
-      description: `Référence: ${newMail.reference_number}`,
-    });
-
-    setNewMail({
-      reference_number: "",
-      sender: "",
-      subject: "",
-      type: "lettre",
-      urgency: "normale",
-      assigned_to: "",
-      notes: "",
-      digital_copy_url: ""
-    });
+    } as any);
   };
 
   const handleMailValidation = (updatedMail: IncomingMail) => {
-    setMails(prev => prev.map(m => m.id === updatedMail.id ? updatedMail : m));
-    setSelectedMail(null);
-    toast({
-      title: "Courrier validé et transmis",
-      description: `Le courrier ${updatedMail.reference_number} a été envoyé au destinataire.`,
-      variant: "default",
-    });
+    // Determine next status based on current status or action
+    // For simplicity, let's assume validation moves it to 'en_traitement' or 'distribue'
+    // But the MailSplitViewer might pass a specific status update.
+    // If updatedMail has a different status than selectedMail, use that.
+
+    // In a real app, MailSplitViewer would likely trigger the mutation directly or pass the new status.
+    // Here we'll assume 'distribue' if it was 'recu' or 'en_traitement'
+
+    let nextStatus = "en_traitement";
+    if (updatedMail.status === "en_traitement") nextStatus = "distribue";
+
+    updateStatusMutation.mutate({ id: updatedMail.id, status: nextStatus });
   };
 
   const getFilteredMails = () => {
@@ -223,20 +209,14 @@ const ServiceCourriersSpace = () => {
   };
 
   const filteredMails = getFilteredMails();
-
-  const stats: MailStatsType = {
-    totalToday: mails.filter(m => new Date(m.received_date).toDateString() === new Date().toDateString()).length,
-    urgentPending: mails.filter(m => (m.urgency === 'haute' || m.urgency === 'urgente') && m.status !== 'archive').length,
-    toProcess: mails.filter(m => m.status === 'recu' || m.status === 'en_traitement').length,
-    processedToday: mails.filter(m => m.status === 'distribue' && new Date(m.updated_at).toDateString() === new Date().toDateString()).length
-  };
+  const stats = courrierService.getMailStats(mails);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-          <p className="text-muted-foreground">Chargement...</p>
+          <p className="text-muted-foreground">Chargement des courriers...</p>
         </div>
       </div>
     );
@@ -350,7 +330,7 @@ const ServiceCourriersSpace = () => {
                 <div className="grid gap-6 py-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Référence</Label>
+                      <Label>Référence <span className="text-red-500">*</span></Label>
                       <div className="flex gap-2">
                         <Input
                           placeholder="REF-2025-XXX"
@@ -383,7 +363,7 @@ const ServiceCourriersSpace = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Expéditeur</Label>
+                    <Label>Expéditeur <span className="text-red-500">*</span></Label>
                     <Input
                       placeholder="Nom de l'expéditeur / Organisme"
                       value={newMail.sender}
@@ -392,7 +372,7 @@ const ServiceCourriersSpace = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Objet</Label>
+                    <Label>Objet <span className="text-red-500">*</span></Label>
                     <Input
                       placeholder="Objet du courrier"
                       value={newMail.subject}
@@ -491,8 +471,8 @@ const ServiceCourriersSpace = () => {
                     />
                   </div>
 
-                  <Button onClick={handleCreateMail} className="w-full">
-                    Enregistrer le courrier
+                  <Button onClick={handleCreateMail} className="w-full" disabled={createMailMutation.isPending}>
+                    {createMailMutation.isPending ? "Enregistrement..." : "Enregistrer le courrier"}
                   </Button>
                 </div>
               </DialogContent>
@@ -501,7 +481,7 @@ const ServiceCourriersSpace = () => {
 
           {/* Dashboard View */}
           {activeSection === 'dashboard' && (
-            <div className="space-y-8">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <MailStats stats={stats} />
 
               <div>
@@ -519,6 +499,11 @@ const ServiceCourriersSpace = () => {
                       onView={(m) => setSelectedMail(m)}
                     />
                   ))}
+                  {mails.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground neu-inset rounded-xl">
+                      Aucun courrier récent
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -526,7 +511,7 @@ const ServiceCourriersSpace = () => {
 
           {/* List Views */}
           {activeSection !== 'dashboard' && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
                 <div className="relative flex-1 w-full md:max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -572,26 +557,7 @@ const ServiceCourriersSpace = () => {
       </div>
 
       {/* IAsted Integration */}
-      <IAstedButtonFull
-        voiceListening={openaiRTC.voiceState === 'listening'}
-        voiceSpeaking={openaiRTC.voiceState === 'speaking'}
-        voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
-        audioLevel={openaiRTC.audioLevel}
-        onClick={async () => {
-          if (openaiRTC.isConnected) {
-            openaiRTC.disconnect();
-          } else {
-            const systemPrompt = "Vous êtes iAsted, l'assistant intelligent du Service Courrier. Vous aidez à la gestion, au tri et à la validation des courriers entrants.";
-            await openaiRTC.connect('ash', systemPrompt);
-          }
-        }}
-        onDoubleClick={() => setIastedOpen(true)}
-      />
-      <IAstedChatModal
-        isOpen={iastedOpen}
-        onClose={() => setIastedOpen(false)}
-        openaiRTC={openaiRTC}
-      />
+      <IAstedInterface userRole="courrier" />
     </div>
   );
 };

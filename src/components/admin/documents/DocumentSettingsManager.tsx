@@ -75,7 +75,7 @@ export const DocumentSettingsManager = () => {
                 </TabsContent>
 
                 <TabsContent value="templates">
-                    <DocumentTemplatesManager />
+                    <DocumentTemplatesManager serviceRole={selectedService.id} />
                 </TabsContent>
             </Tabs>
         </div>

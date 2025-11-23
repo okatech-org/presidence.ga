@@ -32,11 +32,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "next-themes";
-import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import IAstedInterface from "@/components/iasted/IAstedInterface";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { VisitorLog, AccreditationRequest } from "@/types/reception";
+import { receptionService } from "@/services/receptionService";
 
 const ServiceReceptionSpace = () => {
   const navigate = useNavigate();
@@ -45,7 +45,6 @@ const ServiceReceptionSpace = () => {
   const queryClient = useQueryClient();
 
   const [mounted, setMounted] = useState(false);
-  const [iastedOpen, setIastedOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [expandedSections, setExpandedSections] = useState({
     navigation: true,
@@ -82,49 +81,48 @@ const ServiceReceptionSpace = () => {
     checkAccess();
   }, [navigate, toast]);
 
-  // Data Fetching - TEMPORAIRE: Tables non créées
+  // Data Fetching
   const { data: visitors = [], isLoading: visitorsLoading } = useQuery({
     queryKey: ["visitor_logs"],
-    queryFn: async () => {
-      // TODO: Créer la table visitor_logs
-      return [] as VisitorLog[];
-    },
+    queryFn: receptionService.getVisitors,
   });
 
   const { data: accreditations = [], isLoading: accreditationsLoading } = useQuery({
     queryKey: ["accreditation_requests"],
-    queryFn: async () => {
-      // TODO: Créer la table accreditation_requests
-      return [] as AccreditationRequest[];
-    },
+    queryFn: receptionService.getAccreditations,
   });
 
-  // Mutations - Désactivées temporairement
+  // Mutations
   const checkInVisitorMutation = useMutation({
-    mutationFn: async (newVisitor: Omit<VisitorLog, "id" | "created_at" | "check_out_time">) => {
-      console.log("Table visitor_logs non créée");
-      throw new Error("Table non créée");
-    },
+    mutationFn: receptionService.checkInVisitor,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["visitor_logs"] });
       toast({ title: "Succès", description: "Visiteur enregistré avec succès" });
     },
-    onError: () => {
-      toast({ title: "Erreur", description: "Table non créée dans la base de données", variant: "destructive" });
+    onError: (error) => {
+      toast({ title: "Erreur", description: "Impossible d'enregistrer le visiteur: " + error.message, variant: "destructive" });
+    },
+  });
+
+  const checkOutVisitorMutation = useMutation({
+    mutationFn: receptionService.checkOutVisitor,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["visitor_logs"] });
+      toast({ title: "Succès", description: "Sortie enregistrée" });
+    },
+    onError: (error) => {
+      toast({ title: "Erreur", description: "Impossible d'enregistrer la sortie: " + error.message, variant: "destructive" });
     },
   });
 
   const createAccreditationMutation = useMutation({
-    mutationFn: async (newRequest: Omit<AccreditationRequest, "id" | "created_at">) => {
-      console.log("Table accreditation_requests non créée");
-      throw new Error("Table non créée");
-    },
+    mutationFn: receptionService.createAccreditation,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accreditation_requests"] });
       toast({ title: "Succès", description: "Demande d'accréditation créée" });
     },
-    onError: () => {
-      toast({ title: "Erreur", description: "Impossible de créer la demande", variant: "destructive" });
+    onError: (error) => {
+      toast({ title: "Erreur", description: "Impossible de créer la demande: " + error.message, variant: "destructive" });
     },
   });
 
@@ -492,6 +490,16 @@ const ServiceReceptionSpace = () => {
                               <Badge variant={visitor.status === 'checked_in' ? 'default' : 'secondary'}>
                                 {visitor.status === 'checked_in' ? 'SUR SITE' : visitor.status === 'checked_out' ? 'PARTI' : 'ATTENDU'}
                               </Badge>
+                              {visitor.status === 'checked_in' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-2 h-6 text-xs"
+                                  onClick={() => checkOutVisitorMutation.mutate(visitor.id)}
+                                >
+                                  Sortie
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -613,20 +621,7 @@ const ServiceReceptionSpace = () => {
         </main>
 
         {/* iAsted Integration */}
-        <IAstedButtonFull
-          voiceListening={false}
-          voiceSpeaking={false}
-          voiceProcessing={false}
-          onClick={() => setIastedOpen(true)}
-          onDoubleClick={() => setIastedOpen(true)}
-        />
-
-        {iastedOpen && (
-          <IAstedInterface
-            isOpen={iastedOpen}
-            onClose={() => setIastedOpen(false)}
-          />
-        )}
+        <IAstedInterface userRole="reception" />
       </div>
     </div>
   );
