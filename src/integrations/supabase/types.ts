@@ -126,6 +126,167 @@ export type Database = {
         }
         Relationships: []
       }
+      document_folder_items: {
+        Row: {
+          added_at: string | null
+          document_id: string
+          folder_id: string
+          id: string
+        }
+        Insert: {
+          added_at?: string | null
+          document_id: string
+          folder_id: string
+          id?: string
+        }
+        Update: {
+          added_at?: string | null
+          document_id?: string
+          folder_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_folder_items_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_folder_items_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_folders: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          folder_type: Database["public"]["Enums"]["folder_type"] | null
+          id: string
+          name: string
+          service_role: string | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          folder_type?: Database["public"]["Enums"]["folder_type"] | null
+          id?: string
+          name: string
+          service_role?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          folder_type?: Database["public"]["Enums"]["folder_type"] | null
+          id?: string
+          name?: string
+          service_role?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      document_history: {
+        Row: {
+          action: Database["public"]["Enums"]["document_action"]
+          created_at: string | null
+          document_id: string
+          id: string
+          notes: string | null
+          performed_by: string | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["document_action"]
+          created_at?: string | null
+          document_id: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["document_action"]
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_history_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          created_at: string | null
+          current_holder_service: string | null
+          document_number: string
+          document_type: Database["public"]["Enums"]["document_type"] | null
+          file_path: string | null
+          file_size: number | null
+          file_type: string | null
+          filename: string | null
+          id: string
+          is_confidential: boolean | null
+          sender_name: string | null
+          sender_organization: string | null
+          status: Database["public"]["Enums"]["document_status"] | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_holder_service?: string | null
+          document_number?: string
+          document_type?: Database["public"]["Enums"]["document_type"] | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          filename?: string | null
+          id?: string
+          is_confidential?: boolean | null
+          sender_name?: string | null
+          sender_organization?: string | null
+          status?: Database["public"]["Enums"]["document_status"] | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_holder_service?: string | null
+          document_number?: string
+          document_type?: Database["public"]["Enums"]["document_type"] | null
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          filename?: string | null
+          id?: string
+          is_confidential?: boolean | null
+          sender_name?: string | null
+          sender_organization?: string | null
+          status?: Database["public"]["Enums"]["document_status"] | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       iasted_config: {
         Row: {
           agent_id: string | null
@@ -192,6 +353,45 @@ export type Database = {
           periode_fin?: string | null
           score_performance?: number | null
           taux_resolution?: number | null
+        }
+        Relationships: []
+      }
+      mails: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          reception_date: string | null
+          sender_name: string | null
+          sender_organization: string | null
+          status: Database["public"]["Enums"]["mail_status"] | null
+          subject: string | null
+          tracking_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          reception_date?: string | null
+          sender_name?: string | null
+          sender_organization?: string | null
+          status?: Database["public"]["Enums"]["mail_status"] | null
+          subject?: string | null
+          tracking_number?: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          reception_date?: string | null
+          sender_name?: string | null
+          sender_organization?: string | null
+          status?: Database["public"]["Enums"]["mail_status"] | null
+          subject?: string | null
+          tracking_number?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -557,6 +757,33 @@ export type Database = {
         | "courrier"
         | "reception"
         | "protocol"
+      document_action:
+        | "deposited"
+        | "scanned"
+        | "opened"
+        | "transferred"
+        | "read"
+        | "classified"
+        | "archived"
+        | "confidential_marked"
+      document_status:
+        | "deposited"
+        | "scanned_envelope"
+        | "opened"
+        | "confidential_routed"
+        | "read"
+        | "archived"
+      document_type: "courrier" | "file" | "note"
+      folder_type: "system" | "custom"
+      mail_status:
+        | "received"
+        | "scanning"
+        | "analyzing"
+        | "pending_validation"
+        | "validated"
+        | "distributed"
+        | "processed"
+        | "archived"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -696,6 +923,36 @@ export const Constants = {
         "courrier",
         "reception",
         "protocol",
+      ],
+      document_action: [
+        "deposited",
+        "scanned",
+        "opened",
+        "transferred",
+        "read",
+        "classified",
+        "archived",
+        "confidential_marked",
+      ],
+      document_status: [
+        "deposited",
+        "scanned_envelope",
+        "opened",
+        "confidential_routed",
+        "read",
+        "archived",
+      ],
+      document_type: ["courrier", "file", "note"],
+      folder_type: ["system", "custom"],
+      mail_status: [
+        "received",
+        "scanning",
+        "analyzing",
+        "pending_validation",
+        "validated",
+        "distributed",
+        "processed",
+        "archived",
       ],
     },
   },
