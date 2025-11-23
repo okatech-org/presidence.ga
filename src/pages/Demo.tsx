@@ -332,22 +332,44 @@ const Demo = () => {
     }, 2000);
   };
 
-  const handleAdminCodeChange = (value: string) => {
+  const handleAdminCodeChange = async (value: string) => {
     setAdminCode(value);
 
     if (value.length === 6) {
-      if (value === "011282") {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+          toast({
+            title: "Authentification requise",
+            description: "Veuillez d'abord vous connecter avec un compte de démonstration",
+            variant: "destructive",
+          });
+          setAdminCode("");
+          return;
+        }
+
+        const { data, error } = await supabase.functions.invoke('secure-admin-access', {
+          body: { password: value },
+        });
+
+        if (error) {
+          throw error;
+        }
+
         toast({
           title: "Accès autorisé",
-          description: "Bienvenue Administrateur Système",
+          description: (data as any)?.message ?? "Bienvenue Administrateur Système",
         });
+
         setShowAdminDialog(false);
         setAdminCode("");
         navigate("/admin-space");
-      } else {
+      } catch (err: any) {
+        console.error('Admin code error:', err);
         toast({
           title: "Code incorrect",
-          description: "Le code saisi est invalide",
+          description: err.message || "Le code saisi est invalide",
           variant: "destructive",
         });
         setAdminCode("");
