@@ -277,13 +277,12 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                             // Execute tool and get result (synchronous for now, but structured for future async)
                             const executionResult = onToolCall(functionName, args);
 
-                            // If the result is explicitly false, mark as failed
-                            if (executionResult === false) {
-                                toolResult = { success: false, message: "Échec de l'exécution" };
-                            }
                             // If result is an object with success property, use it
-                            else if (executionResult !== null && executionResult !== undefined && typeof executionResult === 'object' && 'success' in executionResult) {
-                                toolResult = executionResult as { success: boolean; message: string };
+                            if (executionResult !== undefined && typeof executionResult === 'object' && executionResult !== null) {
+                                const result = executionResult as Record<string, any>;
+                                if ('success' in result && 'message' in result) {
+                                    toolResult = result as { success: boolean; message: string };
+                                }
                             }
                             // Otherwise assume success (void or no return means it executed)
                         } catch (error: any) {
