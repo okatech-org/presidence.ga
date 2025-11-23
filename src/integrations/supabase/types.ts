@@ -422,6 +422,48 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_documents: {
+        Row: {
+          created_at: string | null
+          document_name: string
+          document_type: string
+          file_path: string
+          file_size: number | null
+          id: string
+          metadata: Json | null
+          storage_url: string | null
+          template_used: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          document_name: string
+          document_type: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          metadata?: Json | null
+          storage_url?: string | null
+          template_used?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          document_name?: string
+          document_type?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          metadata?: Json | null
+          storage_url?: string | null
+          template_used?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       iasted_config: {
         Row: {
           agent_id: string | null
