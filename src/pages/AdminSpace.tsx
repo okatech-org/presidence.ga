@@ -34,6 +34,10 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "next-themes";
 import emblemGabon from "@/assets/emblem_gabon.png";
+import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
+import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
+import { generateSystemPrompt } from '@/utils/generateSystemPrompt';
+import { resolveRoute } from '@/utils/route-mapping';
 
 // Admin Components
 import { AIConfigSection } from '@/components/admin/AIConfigSection';
@@ -72,6 +76,80 @@ const AdminSpace = () => {
     // Feedback Data
     const { data: feedbacks = [], isLoading: loadingFeedbacks, error: feedbackError } = useFeedbacks();
     useRealtimeFeedbacks();
+
+    // Voice & Super Admin Tools
+    const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('echo');
+    const [securityOverrideActive, setSecurityOverrideActive] = useState(false);
+    const [originRoute, setOriginRoute] = useState<string | null>(null); // Track where we came from
+
+    const handleToolCall = useCallback((toolName: string, args: any) => {
+        switch (toolName) {
+            case 'global_navigate':
+                // Intelligent route resolution
+                const query = args.query || args.route; // Support both old and new format
+                console.log('🦭 [Super Admin] Navigation request:', query);
+
+                const resolvedRoute = resolveRoute(query);
+                if (resolvedRoute) {
+                    // Store current location before navigating
+                    setOriginRoute(window.location.pathname);
+                    console.log('✅ [Super Admin] Resolved to:', resolvedRoute);
+                    navigate(resolvedRoute);
+                } else {
+                    console.error('❌ [Super Admin] Route not found for:', query);
+                    toast({
+                        title: 'Route inconnue',
+                        description: `Impossible de trouver la route pour "${query}"`,
+                        variant: 'destructive'
+                    });
+                }
+                break;
+            case 'return_to_base':
+                console.log('🏠 [Super Admin] Returning to base (AdminSpace)');
+                setOriginRoute(window.location.pathname);
+                navigate('/admin-space');
+                toast({
+                    title: 'Retour à la base',
+                    description: 'Navigation vers l\'AdminSpace',
+                });
+                break;
+            case 'return_to_origin':
+                if (originRoute) {
+                    console.log('⏮️ [Super Admin] Returning to origin:', originRoute);
+                    navigate(originRoute);
+                    toast({
+                        title: 'Retour à l\'origine',
+                        description: `Navigation vers ${originRoute}`,
+                    });
+                    setOriginRoute(null); // Clear after use
+                } else {
+                    console.log('⚠️ [Super Admin] No origin route stored');
+                    toast({
+                        title: 'Pas d\'origine',
+                        description: 'Aucune page d\'origine enregistrée',
+                        variant: 'destructive'
+                    });
+                }
+                break;
+            case 'security_override':
+                if (args.action === 'unlock_admin_access') {
+                    console.log('🔓 [Super Admin] Security override activated');
+                    setSecurityOverrideActive(true);
+                    toast({
+                        title: '🔐 Accès déverrouillé',
+                        description: 'Mode God: Tous les accès sont autorisés',
+                        duration: 3000,
+                    });
+                    // Visual effect: reset after 3 seconds
+                    setTimeout(() => setSecurityOverrideActive(false), 3000);
+                }
+                break;
+            default:
+                console.log('Tool call forwardé:', toolName, args);
+        }
+    }, [navigate, toast, originRoute]);
+
+    const openaiRTC = useRealtimeVoiceWebRTC(handleToolCall);
 
     useEffect(() => {
         setMounted(true);

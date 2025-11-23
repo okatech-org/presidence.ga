@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import React, { Suspense, lazy } from "react";
 import { ThemeProvider } from "next-themes";
 import { LoadingScreen } from "@/components/ErrorBoundary";
+import { SuperAdminFloatingButton } from "@/components/admin/SuperAdminFloatingButton";
 
 // Lazy load all routes for better performance
 const IndexFallback = lazy(() => import("./pages/IndexFallback"));
@@ -75,6 +76,8 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          {/* Omnipresent Super Admin Button (Portal) */}
+          <SuperAdminFloatingButton />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

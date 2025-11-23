@@ -6,6 +6,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { mergeRoleContexts } from '@/utils/contextMerger';
+import { ROLE_CONTEXTS, type AppRole } from '@/config/role-contexts';
+import { getRouteKnowledgePrompt } from '@/utils/route-mapping';
 
 type VoiceState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
 
@@ -248,6 +251,24 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                         setPendingVoiceChange(args.voice_id);
                     }
 
+                    // Gérer le changement de contexte (Chameleon Mode) pour le Super Admin
+                    if (functionName === 'global_navigate' && args.target_role) {
+                        console.log('🦎 [WebRTC] Chameleon Mode: Switching context to', args.target_role);
+                        const adminContext = ROLE_CONTEXTS['admin'];
+                        if (adminContext) {
+                            const newContext = mergeRoleContexts(adminContext, args.target_role as AppRole);
+
+                            // Mettre à jour la session avec le nouveau prompt
+                            const updateEvent = {
+                                type: 'session.update',
+                                session: {
+                                    instructions: newContext.contextDescription + "\n\n" + (systemPromptRef.current || "")
+                                }
+                            };
+                            dcRef.current?.send(JSON.stringify(updateEvent));
+                        }
+                    }
+
                     // Exécuter l'outil côté client si nécessaire
                     if (onToolCall) {
                         onToolCall(functionName, args);
@@ -429,7 +450,9 @@ IMPORTANT : Au démarrage, saluez IMMÉDIATEMENT l'utilisateur.
 Lorsque vous analysez des données, soyez proactif : "Je vois 12 actes en attente, voulez-vous les passer en revue ?".
 `;
 
-                const finalInstructions = `${baseInstructions} ${appKnowledge} ${controlInstructions}`;
+                const routeKnowledge = getRouteKnowledgePrompt();
+
+                const finalInstructions = `${baseInstructions} ${appKnowledge} ${routeKnowledge} ${controlInstructions}`;
 
                 const event = {
                     type: 'session.update',
@@ -552,6 +575,31 @@ Lorsque vous analysez des données, soyez proactif : "Je vois 12 actes en attent
                                             enum: ['delete_all', 'delete_last'],
                                             description: 'Action à effectuer sur l\'historique.'
                                         }
+                                    },
+                                    required: ['action']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'global_navigate',
+                                description: '[SUPER ADMIN ONLY] Navigue vers n\'importe quelle route. L\'utilisateur peut demander en langage naturel (ex: "va à l\'accueil", "espace président"). Tu DOIS traduire vers le chemin exact en utilisant la cartographie fournie.',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        query: { type: 'string', description: 'Demande de l\'utilisateur en langage naturel (ex: "page d\'accueil", "espace président")' },
+                                        target_role: { type: 'string', description: 'Rôle associé (optionnel, pour le mode Caméléon)' }
+                                    },
+                                    required: ['query']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'security_override',
+                                description: '[SUPER ADMIN ONLY] Outrepasse les sécurités (PIN, Cadenas) pour accéder aux zones restreintes.',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        action: { type: 'string', enum: ['unlock_admin_access'], description: 'Action de sécurité à effectuer' }
                                     },
                                     required: ['action']
                                 }
