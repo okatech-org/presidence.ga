@@ -21,6 +21,7 @@ const ServiceReceptionSpace = lazy(() => import("./pages/ServiceReceptionSpace")
 const ProtocolDirectorSpace = lazy(() => import("./pages/ProtocolDirectorSpace"));
 const DgssSpace = lazy(() => import("./pages/DgssSpace"));
 const AdminSpace = lazy(() => import("./pages/AdminSpace"));
+const AdminSystemSettings = lazy(() => import("./pages/AdminSystemSettings"));
 const IAstedPage = lazy(() => import("./pages/IAstedPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="/protocol-director-space" element={<ProtocolDirectorSpace />} />
                 <Route path="/dgss-space" element={<DgssSpace />} />
                 <Route path="/admin-space" element={<AdminSpace />} />
+                <Route path="/admin-system-settings" element={<AdminSystemSettings />} />
                 <Route path="/iasted" element={<IAstedPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
