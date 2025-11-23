@@ -337,50 +337,33 @@ const Demo = () => {
 
     if (value.length === 6) {
       try {
-        console.log('🔐 Validating admin code...');
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (!session) {
-          console.error('❌ No session found');
-          toast({
-            title: "Session expirée",
-            description: "Reconnectez-vous et réessayez",
-            variant: "destructive",
-          });
-          setAdminCode("");
-          setShowAdminDialog(false);
-          return;
-        }
-
-        console.log('📡 Calling secure-admin-access function...');
-        const { data, error } = await supabase.functions.invoke('secure-admin-access', {
-          body: { password: value },
+        // Connexion automatique avec le compte Admin Système
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: 'admin@presidence.ga',
+          password: value,
         });
 
-        if (error) {
-          console.error('❌ Function error:', error);
-          throw error;
+        if (authError) {
+          throw new Error("Code maître incorrect");
         }
 
-        console.log('✅ Admin access granted:', data);
         toast({
-          title: "✅ Accès autorisé",
-          description: (data as any)?.message ?? "Bienvenue Administrateur Système",
-          duration: 3000,
+          title: "✅ Accès Admin Système",
+          description: "Bienvenue Administrateur",
+          duration: 2000,
         });
 
         setShowAdminDialog(false);
         setAdminCode("");
-        
-        // Small delay to let the toast show before navigation
+
+        // Attendre que la session soit établie puis rediriger
         setTimeout(() => {
           navigate("/admin-space");
         }, 500);
       } catch (err: any) {
-        console.error('❌ Admin code error:', err);
         toast({
           title: "Code incorrect",
-          description: err.message || "Le code saisi est invalide",
+          description: "Le code maître est invalide",
           variant: "destructive",
         });
         setAdminCode("");
