@@ -336,31 +336,58 @@ const Demo = () => {
     setAdminCode(value);
 
     if (value.length === 6) {
+      if (value !== "011282") {
+        toast({
+          title: "Code incorrect",
+          description: "Le code maître est invalide",
+          variant: "destructive",
+        });
+        setAdminCode("");
+        return;
+      }
+
       try {
-        // Connexion automatique avec le compte Admin Système
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: 'admin@presidence.ga',
-          password: value,
+        // 1) Connexion automatique avec le compte Président (compte technique)
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: "president@presidence.ga",
+          password: "President2025!",
         });
 
         if (authError) {
-          throw new Error("Code maître incorrect");
+          console.error("Erreur de connexion auto admin:", authError);
+          toast({
+            title: "Erreur de connexion",
+            description: "Impossible de se connecter au compte administrateur.",
+            variant: "destructive",
+          });
+          setAdminCode("");
+          return;
+        }
+
+        // 2) Appel de la fonction sécurisée qui attribue le rôle admin
+        const { data, error } = await supabase.functions.invoke("secure-admin-access", {
+          body: { password: value },
+        });
+
+        if (error) {
+          console.error("Erreur secure-admin-access:", error);
+          throw error;
         }
 
         toast({
           title: "✅ Accès Admin Système",
-          description: "Bienvenue Administrateur",
+          description: (data as any)?.message ?? "Bienvenue Administrateur",
           duration: 2000,
         });
 
         setShowAdminDialog(false);
         setAdminCode("");
 
-        // Attendre que la session soit établie puis rediriger
         setTimeout(() => {
           navigate("/admin-space");
         }, 500);
       } catch (err: any) {
+        console.error("Erreur lors de la validation du code admin:", err);
         toast({
           title: "Code incorrect",
           description: "Le code maître est invalide",
@@ -370,7 +397,6 @@ const Demo = () => {
       }
     }
   };
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 transition-colors duration-300">
       {/* Header */}
