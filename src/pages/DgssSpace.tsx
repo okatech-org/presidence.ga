@@ -36,6 +36,8 @@ import IAstedInterface from "@/components/iasted/IAstedInterface";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { IntelligenceReport, SurveillanceTarget, ThreatIndicator } from "@/types/dgss";
+import { ThreatHeatmap } from "@/components/dgss/ThreatHeatmap";
+import { ThreatTrends } from "@/components/dgss/ThreatTrends";
 
 const DgssSpace = () => {
     const navigate = useNavigate();
@@ -410,6 +412,15 @@ const DgssSpace = () => {
                                             <div className="text-xs text-muted-foreground">À valider</div>
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Visualisations */}
+                                <div className="mb-8">
+                                    <ThreatTrends threats={threats} targets={targets} />
+                                </div>
+
+                                <div className="mb-8">
+                                    <ThreatHeatmap threats={threats} />
                                 </div>
 
                                 {/* Recent Reports */}
