@@ -43,7 +43,6 @@ import { AIConfigSection } from '@/components/admin/AIConfigSection';
 import { KnowledgeBaseSection } from '@/components/admin/KnowledgeBaseSection';
 import { UserManagementSection } from '@/components/admin/UserManagementSection';
 import { AuditLogSection } from '@/components/admin/AuditLogSection';
-import { AdminUnlock } from '@/components/admin/AdminUnlock';
 
 interface Feedback {
     id: string;
@@ -278,13 +277,7 @@ const AdminSpace = () => {
 
     // Allow both admin and president (who has admin rights)
     if (role !== 'admin' && role !== 'president') {
-        return (
-            <div className="flex flex-col items-center justify-center h-screen">
-                <div className="text-red-500 text-xl mb-4">Accès refusé. Réservé aux administrateurs.</div>
-                <p className="text-muted-foreground mb-8">Double-cliquez sur le cadenas en bas à gauche pour débloquer</p>
-                <AdminUnlock onUnlocked={() => window.location.reload()} />
-            </div>
-        );
+        return <div className="flex items-center justify-center h-screen text-red-500">Accès refusé. Réservé aux administrateurs.</div>;
     }
 
     return (
