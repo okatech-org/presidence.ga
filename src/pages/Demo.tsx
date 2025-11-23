@@ -48,6 +48,31 @@ const Demo = () => {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Auto-initialize demo accounts on page load
+    const initializeAccounts = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin');
+
+        if (roles && roles.length > 0) {
+          await supabase.functions.invoke('initialize-demo-accounts', {
+            body: {},
+          });
+          console.log('Demo accounts auto-initialized');
+        }
+      } catch (error) {
+        console.error('Auto-initialization failed:', error);
+      }
+    };
+    
+    initializeAccounts();
   }, []);
 
   const toggleTheme = () => {
@@ -393,14 +418,6 @@ const Demo = () => {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={handleInitializeDemoAccounts}
-              disabled={initializingAccounts}
-              className="neu-raised hover:shadow-neo-md transition-all gap-2"
-            >
-              <Shield className="h-4 w-4" />
-              {initializingAccounts ? "Initialisation..." : "Initialiser les comptes démo"}
-            </Button>
           </div>
         </div>
 
