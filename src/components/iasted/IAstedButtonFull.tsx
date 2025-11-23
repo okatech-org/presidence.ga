@@ -10,6 +10,7 @@ interface IAstedButtonProps {
   onDoubleClick: () => void;
   className?: string;
   audioLevel?: number; // 0 to 1
+  size?: 'sm' | 'md' | 'lg'; // Button size variant
 }
 
 interface Shockwave {
@@ -1142,9 +1143,9 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   voiceSpeaking = false,
   voiceProcessing = false,
   pulsing = false,
-  audioLevel = 0
+  audioLevel = 0,
+  size = 'md' // Default size
 }) => {
-  const size = 'md'; // Default size
   const [shockwaves, setShockwaves] = useState<Shockwave[]>([]);
   const [isClicked, setIsClicked] = useState(false);
   const [isActive, setIsActive] = useState(false);
