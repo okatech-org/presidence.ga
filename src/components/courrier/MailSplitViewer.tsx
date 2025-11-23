@@ -101,7 +101,7 @@ export const MailSplitViewer = ({ mail, onClose, onValidate }: MailSplitViewerPr
                 .from('mails')
                 .update({
                     ...formData,
-                    status: 'distribue',
+                    status: 'distributed',
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', mail.id);

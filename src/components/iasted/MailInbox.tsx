@@ -10,12 +10,16 @@ import { useToast } from '@/hooks/use-toast';
 interface MailItem {
     id: string;
     tracking_number: string;
-    sender_name: string;
-    sender_organization: string;
+    sender_name: string | null;
+    sender_organization: string | null;
     reception_date: string;
-    confidentiality_level: 'public' | 'restricted' | 'secret';
-    urgency: 'normal' | 'high' | 'critical';
+    confidentiality_level?: 'public' | 'restricted' | 'secret';
+    urgency?: 'normal' | 'high' | 'critical';
     status: string;
+    content?: string | null;
+    subject?: string | null;
+    created_at?: string;
+    updated_at?: string;
     ai_analysis?: {
         summary: string;
         suggested_folder: string;
@@ -36,47 +40,39 @@ export function MailInbox({ role = 'president' }: { role?: string }) {
     const fetchMails = async () => {
         setIsLoading(true);
 
-        // Fetch mails assigned to this role (or validated and routed to this role)
-        // For MVP, we filter by current_owner_role
-        const { data: mailsData, error } = await supabase
-            .from('mails')
-            .select(`
-        *,
-        mail_ai_analysis (
-          summary,
-          suggested_folder,
-          sentiment
-        )
-      `)
-            .eq('current_owner_role', role)
-            .order('reception_date', { ascending: false });
+        try {
+            // Fetch mails assigned to this role
+            // @ts-expect-error - Type instantiation depth issue with Supabase types
+            const { data: mailsData, error } = await supabase
+                .from('mails')
+                .select('*')
+                .eq('current_owner_role', role)
+                .order('reception_date', { ascending: false });
 
-        if (error) {
-            console.error('Error fetching inbox:', error);
-        } else {
-            // Process data to extract folders and counts
-            const processedMails = mailsData.map((mail: any) => ({
-                ...mail,
-                ai_analysis: mail.mail_ai_analysis?.[0]
-            }));
+            if (error) {
+                console.error('Error fetching inbox:', error);
+            } else {
+                const processedMails = (mailsData || []) as MailItem[];
+                setMails(processedMails);
 
-            setMails(processedMails);
+                // Calculate folder counts
+                const folderCounts: Record<string, number> = { 'Tous': processedMails.length };
+                processedMails.forEach((mail: MailItem) => {
+                    const folder = mail.ai_analysis?.suggested_folder || 'Non classé';
+                    folderCounts[folder] = (folderCounts[folder] || 0) + 1;
 
-            // Calculate folder counts
-            const folderCounts: Record<string, number> = { 'Tous': processedMails.length };
-            processedMails.forEach((mail: MailItem) => {
-                const folder = mail.ai_analysis?.suggested_folder || 'Non classé';
-                folderCounts[folder] = (folderCounts[folder] || 0) + 1;
-
-                // Special folders
-                if (mail.confidentiality_level === 'secret') {
-                    folderCounts['Affaires Réservées'] = (folderCounts['Affaires Réservées'] || 0) + 1;
-                }
-                if (mail.urgency === 'critical') {
-                    folderCounts['Urgences'] = (folderCounts['Urgences'] || 0) + 1;
-                }
-            });
-            setFolders(folderCounts);
+                    // Special folders
+                    if (mail.confidentiality_level === 'secret') {
+                        folderCounts['Affaires Réservées'] = (folderCounts['Affaires Réservées'] || 0) + 1;
+                    }
+                    if (mail.urgency === 'critical') {
+                        folderCounts['Urgences'] = (folderCounts['Urgences'] || 0) + 1;
+                    }
+                });
+                setFolders(folderCounts);
+            }
+        } catch (err) {
+            console.error('Unexpected error:', err);
         }
         setIsLoading(false);
     };

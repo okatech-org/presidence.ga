@@ -12,22 +12,28 @@ import { DocumentUploadZone } from '@/components/iasted/DocumentUploadZone';
 interface MailItem {
     id: string;
     tracking_number: string;
-    sender_name: string;
-    sender_organization: string;
+    sender_name: string | null;
+    sender_organization: string | null;
     reception_date: string;
-    confidentiality_level: 'public' | 'restricted' | 'secret';
+    confidentiality_level?: 'public' | 'restricted' | 'secret';
     status: string;
-    urgency: 'normal' | 'high' | 'critical';
-    envelope_ocr_text: string;
+    urgency?: 'normal' | 'high' | 'critical';
+    envelope_ocr_text?: string;
+    content?: string | null;
+    subject?: string | null;
+    created_at?: string;
+    updated_at?: string;
 }
 
 interface MailAnalysis {
-    summary: string;
-    sentiment: string;
-    urgency_score: number;
-    suggested_destination_role: string;
-    suggested_folder: string;
-    confidence_score: number;
+    id?: string;
+    mail_id?: string;
+    summary?: string | null;
+    urgency?: string | null;
+    confidentiality_level?: string | null;
+    suggested_routing?: string | null;
+    key_points?: any;
+    created_at?: string;
 }
 
 export default function ServiceCourrier() {
@@ -49,7 +55,7 @@ export default function ServiceCourrier() {
         const { data, error } = await supabase
             .from('mails')
             .select('*')
-            .in('status', ['received', 'scanning', 'processing', 'pending_validation'])
+            .in('status', ['received', 'scanning', 'analyzing', 'pending_validation'])
             .order('reception_date', { ascending: false });
 
         if (error) {
@@ -132,7 +138,7 @@ export default function ServiceCourrier() {
                 .from('mails')
                 .update({
                     status: 'validated',
-                    current_owner_role: analysis?.suggested_destination_role || 'president' // Default fallback
+                    current_owner_role: analysis?.suggested_routing || 'president' // Default fallback
                 })
                 .eq('id', selectedMail.id);
 
@@ -141,9 +147,8 @@ export default function ServiceCourrier() {
             // Log routing
             await supabase.from('mail_routing').insert({
                 mail_id: selectedMail.id,
-                from_role: 'service_courrier',
-                to_role: analysis?.suggested_destination_role || 'president',
-                action: 'validated',
+                from_service: 'service_courrier',
+                to_service: analysis?.suggested_routing || 'president',
                 comments: 'Validé par le service courrier'
             });
 
@@ -280,7 +285,7 @@ export default function ServiceCourrier() {
                                         </span>
                                         {analysis && (
                                             <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
-                                                Confiance: {Math.round(analysis.confidence_score * 100)}%
+                                                Analyse complète
                                             </span>
                                         )}
                                     </div>
@@ -297,26 +302,18 @@ export default function ServiceCourrier() {
 
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
-                                                        <label className="text-xs font-medium text-muted-foreground uppercase">Sentiment</label>
+                                                        <label className="text-xs font-medium text-muted-foreground uppercase">Confidentialité</label>
                                                         <div className="flex items-center gap-2">
-                                                            <div className={`w-2 h-2 rounded-full ${analysis.sentiment === 'negative' || analysis.sentiment === 'complaint' ? 'bg-red-500' :
-                                                                    analysis.sentiment === 'positive' ? 'bg-green-500' : 'bg-blue-500'
+                                                            <div className={`w-2 h-2 rounded-full ${analysis.confidentiality_level === 'secret' ? 'bg-red-500' :
+                                                                    analysis.confidentiality_level === 'restricted' ? 'bg-yellow-500' : 'bg-green-500'
                                                                 }`} />
-                                                            <span className="text-sm capitalize">{analysis.sentiment}</span>
+                                                            <span className="text-sm capitalize">{analysis.confidentiality_level || 'public'}</span>
                                                         </div>
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-xs font-medium text-muted-foreground uppercase">Urgence</label>
                                                         <div className="flex items-center gap-2">
-                                                            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                                                                <div
-                                                                    className={`h-full rounded-full ${analysis.urgency_score > 7 ? 'bg-red-500' :
-                                                                            analysis.urgency_score > 4 ? 'bg-yellow-500' : 'bg-green-500'
-                                                                        }`}
-                                                                    style={{ width: `${analysis.urgency_score * 10}%` }}
-                                                                />
-                                                            </div>
-                                                            <span className="text-xs font-mono">{analysis.urgency_score}/10</span>
+                                                            <span className="text-sm capitalize">{analysis.urgency || 'normal'}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -331,7 +328,7 @@ export default function ServiceCourrier() {
                                                             <label className="text-xs text-muted-foreground">Destinataire</label>
                                                             <select
                                                                 className="w-full p-2 rounded-md border border-border bg-background text-sm"
-                                                                defaultValue={analysis.suggested_destination_role}
+                                                                defaultValue={analysis.suggested_routing}
                                                             >
                                                                 <option value="president">Président de la République</option>
                                                                 <option value="dir_cabinet">Directeur de Cabinet</option>
@@ -346,7 +343,7 @@ export default function ServiceCourrier() {
                                                             <input
                                                                 type="text"
                                                                 className="w-full p-2 rounded-md border border-border bg-background text-sm"
-                                                                defaultValue={analysis.suggested_folder}
+                                                                placeholder="Classement suggéré"
                                                             />
                                                         </div>
                                                     </div>

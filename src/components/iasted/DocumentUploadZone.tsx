@@ -19,6 +19,9 @@ interface UploadedFile {
 
 interface DocumentUploadZoneProps {
     onDocumentAnalyzed?: (documentId: string, analysis: any) => void;
+    onFileSelect?: (file: File) => Promise<void>;
+    isProcessing?: boolean;
+    label?: string;
 }
 
 export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onDocumentAnalyzed }) => {
@@ -102,8 +105,6 @@ export const DocumentUploadZone: React.FC<DocumentUploadZoneProps> = ({ onDocume
                     file_path: filePath,
                     file_type: uploadedFile.file.type,
                     file_size: uploadedFile.file.size,
-                    upload_source: 'manual',
-                    status: 'uploaded',
                 })
                 .select()
                 .single();
