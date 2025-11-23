@@ -54,27 +54,39 @@ export type Database = {
           action: string
           created_at: string | null
           details: Json | null
+          duration_ms: number | null
           id: string
           ip_address: string | null
           resource: string
+          severity: string | null
+          success: boolean | null
+          user_agent: string | null
           user_id: string
         }
         Insert: {
           action: string
           created_at?: string | null
           details?: Json | null
+          duration_ms?: number | null
           id?: string
           ip_address?: string | null
           resource: string
+          severity?: string | null
+          success?: boolean | null
+          user_agent?: string | null
           user_id: string
         }
         Update: {
           action?: string
           created_at?: string | null
           details?: Json | null
+          duration_ms?: number | null
           id?: string
           ip_address?: string | null
           resource?: string
+          severity?: string | null
+          success?: boolean | null
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1319,6 +1331,18 @@ export type Database = {
         Returns: boolean
       }
       is_president: { Args: { user_id: string }; Returns: boolean }
+      log_audit_event: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_ip_address?: string
+          p_resource: string
+          p_severity?: string
+          p_success?: boolean
+          p_user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
