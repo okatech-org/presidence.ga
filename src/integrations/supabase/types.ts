@@ -263,6 +263,33 @@ export type Database = {
           },
         ]
       }
+      document_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          structure: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          structure?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          structure?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           content_scan_urls: string[] | null
@@ -739,6 +766,48 @@ export type Database = {
           status?: string | null
           user_email?: string
           work_description?: string
+        }
+        Relationships: []
+      }
+      service_document_settings: {
+        Row: {
+          created_at: string
+          footer_text: string | null
+          header_text: string | null
+          id: string
+          logo_url: string | null
+          margins: Json | null
+          primary_color: string | null
+          secondary_color: string | null
+          service_role: string
+          sub_header_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          footer_text?: string | null
+          header_text?: string | null
+          id?: string
+          logo_url?: string | null
+          margins?: Json | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          service_role: string
+          sub_header_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          footer_text?: string | null
+          header_text?: string | null
+          id?: string
+          logo_url?: string | null
+          margins?: Json | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          service_role?: string
+          sub_header_text?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
