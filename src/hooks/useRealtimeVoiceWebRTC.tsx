@@ -269,18 +269,38 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                         }
                     }
 
-                    // Exécuter l'outil côté client si nécessaire
+                    // Exécuter l'outil côté client et attendre le résultat
+                    let toolResult = { success: true, message: "Action exécutée" };
+
                     if (onToolCall) {
-                        onToolCall(functionName, args);
+                        try {
+                            // Execute tool and get result (synchronous for now, but structured for future async)
+                            const executionResult = onToolCall(functionName, args);
+
+                            // If the result is explicitly false, mark as failed
+                            if (executionResult === false) {
+                                toolResult = { success: false, message: "Échec de l'exécution" };
+                            }
+                            // If result is an object with success property, use it
+                            else if (executionResult !== null && executionResult !== undefined && typeof executionResult === 'object' && 'success' in executionResult) {
+                                toolResult = executionResult as { success: boolean; message: string };
+                            }
+                            // Otherwise assume success (void or no return means it executed)
+                        } catch (error: any) {
+                            console.error('❌ [WebRTC] Tool execution error:', error);
+                            toolResult = { success: false, message: error.message || "Erreur d'exécution" };
+                        }
                     }
 
-                    // Envoyer la confirmation (nécessaire pour que le modèle continue)
+                    console.log('📤 [WebRTC] Sending tool result to AI:', toolResult);
+
+                    // Envoyer le résultat réel (success/failure) au modèle
                     const toolOutput = {
                         type: 'conversation.item.create',
                         item: {
                             type: 'function_call_output',
                             call_id: data.call_id,
-                            output: JSON.stringify({ success: true })
+                            output: JSON.stringify(toolResult)
                         }
                     };
                     dcRef.current?.send(JSON.stringify(toolOutput));

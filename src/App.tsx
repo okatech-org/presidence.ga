@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import React, { Suspense, lazy } from "react";
 import { ThemeProvider } from "next-themes";
 import { LoadingScreen } from "@/components/ErrorBoundary";
-import { SuperAdminFloatingButton } from "@/components/admin/SuperAdminFloatingButton";
+import { SuperAdminProvider } from "@/contexts/SuperAdminContext";
 
 // Lazy load all routes for better performance
 const IndexFallback = lazy(() => import("./pages/IndexFallback"));
@@ -55,32 +55,32 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter future={{ 
+        <BrowserRouter future={{
           v7_startTransition: true,
-          v7_relativeSplatPath: true 
+          v7_relativeSplatPath: true
         }}>
-          <Suspense fallback={<LoadingScreen />}>
-            <Routes>
-              <Route path="/" element={<IndexFallback />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/demo" element={<Demo />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/president-space" element={<PresidentSpace />} />
-              <Route path="/cabinet-director-space" element={<CabinetDirectorSpace />} />
-              <Route path="/private-cabinet-director-space" element={<PrivateCabinetDirectorSpace />} />
-              <Route path="/secretariat-general-space" element={<SecretariatGeneralSpace />} />
-              <Route path="/service-courriers-space" element={<ServiceCourriersSpace />} />
-              <Route path="/service-reception-space" element={<ServiceReceptionSpace />} />
-              <Route path="/protocol-director-space" element={<ProtocolDirectorSpace />} />
-              <Route path="/dgss-space" element={<DgssSpace />} />
-              <Route path="/admin-space" element={<AdminSpace />} />
-              <Route path="/iasted" element={<IAstedPage />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-          {/* Omnipresent Super Admin Button (Portal) */}
-          <SuperAdminFloatingButton />
+          <SuperAdminProvider>
+            <Suspense fallback={<LoadingScreen />}>
+              <Routes>
+                <Route path="/" element={<IndexFallback />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/demo" element={<Demo />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/president-space" element={<PresidentSpace />} />
+                <Route path="/cabinet-director-space" element={<CabinetDirectorSpace />} />
+                <Route path="/private-cabinet-director-space" element={<PrivateCabinetDirectorSpace />} />
+                <Route path="/secretariat-general-space" element={<SecretariatGeneralSpace />} />
+                <Route path="/service-courriers-space" element={<ServiceCourriersSpace />} />
+                <Route path="/service-reception-space" element={<ServiceReceptionSpace />} />
+                <Route path="/protocol-director-space" element={<ProtocolDirectorSpace />} />
+                <Route path="/dgss-space" element={<DgssSpace />} />
+                <Route path="/admin-space" element={<AdminSpace />} />
+                <Route path="/iasted" element={<IAstedPage />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </SuperAdminProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

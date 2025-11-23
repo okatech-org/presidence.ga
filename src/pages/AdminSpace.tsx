@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserContext } from '@/hooks/useUserContext';
-import IAstedInterface from '@/components/iasted/IAstedInterface';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Users,
@@ -144,8 +143,26 @@ const AdminSpace = () => {
                     setTimeout(() => setSecurityOverrideActive(false), 3000);
                 }
                 break;
+
+            // UI Tools (like PresidentSpace)
+            case 'open_chat':
+                console.log('💬 [AdminSpace] Opening chat');
+                setIsIAstedOpen(true);
+                break;
+
+            case 'close_chat':
+                console.log('❌ [AdminSpace] Closing chat');
+                setIsIAstedOpen(false);
+                break;
+
+            case 'stop_conversation':
+                console.log('🛑 [AdminSpace] Stopping conversation');
+                openaiRTC.disconnect();
+                setIsIAstedOpen(false);
+                break;
+
             default:
-                console.log('Tool call forwardé:', toolName, args);
+                console.log('[AdminSpace] Tool call not handled:', toolName, args);
         }
     }, [navigate, toast, originRoute]);
 
@@ -616,13 +633,6 @@ const AdminSpace = () => {
                     </div>
                 </main>
             </div>
-
-            {/* iAsted Interface */}
-            <IAstedInterface
-                isOpen={isIAstedOpen}
-                onClose={() => setIsIAstedOpen(false)}
-                userRole={role || 'admin'}
-            />
 
             {/* Documents Viewer Modal */}
             {selectedFeedback && (
