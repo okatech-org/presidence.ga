@@ -327,16 +327,19 @@ const Demo = () => {
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('🔐 Admin click - Session check:', session ? 'Connected' : 'Not connected');
 
         if (!session) {
           toast({
-            title: "Authentification requise",
-            description: "Veuillez d'abord vous connecter avec un compte de démonstration",
+            title: "⚠️ Étape 1 requise",
+            description: "Connectez-vous d'abord avec un compte démo (ex: president@presidence.ga), puis revenez double-cliquer sur le cadenas",
             variant: "destructive",
+            duration: 5000,
           });
           return;
         }
 
+        console.log('✅ Opening admin dialog for user:', session.user.email);
         setShowAdminDialog(true);
       } catch (error) {
         console.error("Erreur lors de la vérification de l'authentification :", error);
@@ -358,36 +361,47 @@ const Demo = () => {
 
     if (value.length === 6) {
       try {
+        console.log('🔐 Validating admin code...');
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session) {
+          console.error('❌ No session found');
           toast({
-            title: "Authentification requise",
-            description: "Veuillez d'abord vous connecter avec un compte de démonstration",
+            title: "Session expirée",
+            description: "Reconnectez-vous et réessayez",
             variant: "destructive",
           });
           setAdminCode("");
+          setShowAdminDialog(false);
           return;
         }
 
+        console.log('📡 Calling secure-admin-access function...');
         const { data, error } = await supabase.functions.invoke('secure-admin-access', {
           body: { password: value },
         });
 
         if (error) {
+          console.error('❌ Function error:', error);
           throw error;
         }
 
+        console.log('✅ Admin access granted:', data);
         toast({
-          title: "Accès autorisé",
+          title: "✅ Accès autorisé",
           description: (data as any)?.message ?? "Bienvenue Administrateur Système",
+          duration: 3000,
         });
 
         setShowAdminDialog(false);
         setAdminCode("");
-        navigate("/admin-space");
+        
+        // Small delay to let the toast show before navigation
+        setTimeout(() => {
+          navigate("/admin-space");
+        }, 500);
       } catch (err: any) {
-        console.error('Admin code error:', err);
+        console.error('❌ Admin code error:', err);
         toast({
           title: "Code incorrect",
           description: err.message || "Le code saisi est invalide",
