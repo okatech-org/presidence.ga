@@ -1,14 +1,56 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import { supabase } from '@/integrations/supabase/client';
+import emblemGabon from '@/assets/emblem_gabon.png';
 
 // Flag pour s'assurer qu'on initialise qu'une seule fois
 let fontsInitialized = false;
+
+// Helper pour convertir une image URL en Base64
+async function getBase64ImageFromURL(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.setAttribute('crossOrigin', 'anonymous');
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(img, 0, 0);
+                const dataURL = canvas.toDataURL('image/png');
+                resolve(dataURL);
+            } else {
+                reject(new Error('Canvas context is null'));
+            }
+        };
+        img.onerror = error => reject(error);
+        img.src = url;
+    });
+}
 
 // Fonction pour initialiser les fonts de manière lazy
 function initializeFonts() {
     if (!fontsInitialized && pdfFonts && (pdfFonts as any).pdfMake) {
         (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
+
+        // Configuration des polices (si disponibles, sinon fallback)
+        (pdfMake as any).fonts = {
+            Roboto: {
+                normal: 'Roboto-Regular.ttf',
+                bold: 'Roboto-Medium.ttf',
+                italics: 'Roboto-Italic.ttf',
+                bolditalics: 'Roboto-MediumItalic.ttf'
+            },
+            // On utilise Roboto comme fallback pour Times si non dispo dans le vfs standard
+            Times: {
+                normal: 'Roboto-Regular.ttf',
+                bold: 'Roboto-Medium.ttf',
+                italics: 'Roboto-Italic.ttf',
+                bolditalics: 'Roboto-MediumItalic.ttf'
+            }
+        };
+
         fontsInitialized = true;
     }
 }
@@ -22,6 +64,7 @@ interface DocumentData {
     reference?: string;
     date?: string;
     serviceContext?: string; // e.g., 'president', 'admin', 'courrier'
+    templateStyle?: 'standard_modern' | 'executive_dynamic' | 'solemn_prestige'; // New parameter
 }
 
 interface ServiceSettings {
@@ -77,7 +120,7 @@ async function fetchServiceSettings(serviceRole: string): Promise<ServiceSetting
 
 /**
  * Génère un document officiel PDF pour la Présidence Gabonaise
- * Utilise les paramètres de personnalisation du service
+ * Utilise les paramètres de personnalisation du service et les styles améliorés
  */
 export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
     // Initialiser les fonts au premier appel
@@ -85,6 +128,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
 
     const serviceRole = data.serviceContext || 'president';
     const settings = await fetchServiceSettings(serviceRole);
+    const templateStyle = data.templateStyle || 'standard_modern'; // Default to modern
 
     const currentDate = data.date || new Date().toLocaleDateString('fr-FR', {
         day: 'numeric',
@@ -92,23 +136,84 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
         year: 'numeric'
     });
 
-    // En-tête officiel dynamique
+    // --- CONFIGURATION DES STYLES SELON LE TEMPLATE ---
+    let docStyles: any = {};
+    let watermark: any = null;
+    let background: any = null;
+
+    // 1. Le Républicain Moderne (Standard Amélioré)
+    if (templateStyle === 'standard_modern') {
+        docStyles = {
+            header: { fontSize: 14, bold: true, color: settings.primary_color, font: 'Roboto' },
+            subheader: { fontSize: 10, italics: true, color: settings.secondary_color, font: 'Roboto' },
+            documentType: { fontSize: 18, bold: true, alignment: 'center', margin: [0, 20, 0, 20], decoration: 'underline', color: settings.primary_color, font: 'Roboto' },
+            bodyText: { fontSize: 12, lineHeight: 1.5, alignment: 'justify', margin: [0, 10, 0, 10], font: 'Times' },
+            listItem: { fontSize: 12, lineHeight: 1.5, margin: [0, 5, 0, 5], font: 'Times' },
+            signature: { fontSize: 12, bold: true, margin: [0, 40, 0, 5], font: 'Roboto' }
+        };
+    }
+    // 2. L'Exécutif Dynamique (Style Note)
+    else if (templateStyle === 'executive_dynamic') {
+        docStyles = {
+            header: { fontSize: 12, bold: true, color: '#009E60', font: 'Roboto' }, // Vert Gabon
+            subheader: { fontSize: 9, italics: true, color: '#333333', font: 'Roboto' },
+            documentType: { fontSize: 16, bold: true, alignment: 'left', margin: [0, 10, 0, 10], color: '#009E60', font: 'Roboto' },
+            bodyText: { fontSize: 11, lineHeight: 1.3, alignment: 'left', margin: [0, 8, 0, 8], font: 'Roboto' },
+            listItem: { fontSize: 11, margin: [0, 4, 0, 4], font: 'Roboto' },
+            signature: { fontSize: 11, bold: true, margin: [0, 30, 0, 5], font: 'Roboto' }
+        };
+        // Bandeau latéral couleur drapeau (simulé par background ou marge)
+        // Pour simplifier, on mettra une ligne colorée dans le header
+    }
+    // 3. Le Solennel Prestige (Décrets)
+    else if (templateStyle === 'solemn_prestige') {
+        docStyles = {
+            header: { fontSize: 16, bold: true, color: '#000000', alignment: 'center', font: 'Times' },
+            subheader: { fontSize: 11, italics: true, color: '#444444', alignment: 'center', font: 'Times' },
+            documentType: { fontSize: 22, bold: true, alignment: 'center', margin: [0, 30, 0, 30], font: 'Times' },
+            bodyText: { fontSize: 13, lineHeight: 1.6, alignment: 'justify', margin: [0, 12, 0, 12], font: 'Times' },
+            listItem: { fontSize: 13, lineHeight: 1.6, margin: [0, 6, 0, 6], font: 'Times' },
+            signature: { fontSize: 13, bold: true, margin: [0, 50, 0, 10], alignment: 'center', font: 'Times' }
+        };
+        // Filigrane (Watermark)
+        watermark = { text: 'RÉPUBLIQUE GABONAISE', color: 'gray', opacity: 0.1, bold: true, italics: false };
+    }
+
+    // Préparer le logo (convertir en base64)
+    let logoBase64 = null;
+    try {
+        // Utiliser le logo personnalisé s'il existe, sinon l'emblème par défaut
+        const logoUrl = settings.logo_url || emblemGabon;
+        logoBase64 = await getBase64ImageFromURL(logoUrl);
+    } catch (e) {
+        console.warn('Impossible de charger le logo', e);
+    }
+
+    // --- CONSTRUCTION DU HEADER ---
     const header = {
         columns: [
             {
                 width: '*',
                 stack: [
-                    { text: settings.header_text, style: 'header', alignment: 'center' },
-                    { text: settings.sub_header_text, style: 'subheader', alignment: 'center', margin: [0, 2, 0, 10] },
-                    { text: '________', alignment: 'center', margin: [0, 0, 0, 5] },
-                    // Si logo_url existe, on pourrait l'ajouter ici (nécessite conversion base64 ou support URL)
+                    // Logo centré
+                    logoBase64 ? {
+                        image: logoBase64,
+                        width: 60,
+                        alignment: 'center',
+                        margin: [0, 0, 0, 5]
+                    } : {},
+                    { text: settings.header_text, style: 'header', alignment: templateStyle === 'executive_dynamic' ? 'left' : 'center' },
+                    { text: settings.sub_header_text, style: 'subheader', alignment: templateStyle === 'executive_dynamic' ? 'left' : 'center', margin: [0, 2, 0, 10] },
+                    templateStyle === 'executive_dynamic'
+                        ? { canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 3, lineColor: '#FCD116' }] } // Jaune
+                        : { text: '________', alignment: 'center', margin: [0, 0, 0, 5], color: settings.primary_color },
                 ]
             }
         ],
         margin: [0, 20, 0, 30]
     };
 
-    // Pied de page dynamique
+    // --- CONSTRUCTION DU FOOTER ---
     const footer = (currentPage: number, pageCount: number) => {
         return {
             columns: [
@@ -128,31 +233,10 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
         ],
         header: header,
         footer: footer,
+        watermark: watermark,
         content: [],
         styles: {
-            header: {
-                fontSize: 14,
-                bold: true,
-                color: settings.primary_color
-            },
-            subheader: {
-                fontSize: 10,
-                italics: true,
-                color: settings.secondary_color
-            },
-            institution: {
-                fontSize: 12,
-                bold: true,
-                color: '#0f172a'
-            },
-            documentType: {
-                fontSize: 16,
-                bold: true,
-                alignment: 'center',
-                margin: [0, 20, 0, 20],
-                decoration: 'underline',
-                color: settings.primary_color
-            },
+            ...docStyles,
             reference: {
                 fontSize: 10,
                 italics: true,
@@ -163,21 +247,6 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 fontSize: 11,
                 margin: [0, 5, 0, 5]
             },
-            bodyText: {
-                fontSize: 11,
-                lineHeight: 1.5,
-                alignment: 'justify',
-                margin: [0, 10, 0, 10]
-            },
-            listItem: {
-                fontSize: 11,
-                margin: [0, 5, 0, 5]
-            },
-            signature: {
-                fontSize: 11,
-                bold: true,
-                margin: [0, 30, 0, 5]
-            },
             footer: {
                 fontSize: 8,
                 color: '#94a3b8'
@@ -185,12 +254,13 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
         }
     };
 
-    // Construction selon le type de document
+    // Construction selon le type de document (Contenu)
+    // Le contenu reste le même, seul le style change
     switch (data.type) {
         case 'lettre':
             documentDefinition.content = [
                 { text: 'LETTRE D\'INSTRUCTION', style: 'documentType' },
-                { text: data.reference || `Réf: ${serviceRole.toUpperCase().substring(0, 3)}/${new Date().getFullYear()}/${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`, style: 'reference' },
+                { text: data.reference || `Réf: ${serviceRole.toUpperCase().substring(0, 3)}/${new Date().getFullYear()}/${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`, style: 'reference', alignment: templateStyle === 'executive_dynamic' ? 'left' : 'right' },
                 { text: `Libreville, le ${currentDate}`, style: 'metaInfo', alignment: 'right' },
                 { text: '\n' },
                 { text: settings.sub_header_text || 'L\'Expéditeur', style: 'metaInfo', bold: true },
@@ -213,7 +283,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 { text: '\n' },
                 { text: `Je vous prie d'agréer, ${data.recipient}, l'expression de ma haute considération.`, style: 'bodyText' },
                 { text: '\n\n' },
-                { text: data.signature_authority || settings.sub_header_text, style: 'signature', alignment: 'right' },
+                { text: data.signature_authority || settings.sub_header_text, style: 'signature', alignment: templateStyle === 'executive_dynamic' ? 'left' : 'right' },
             ];
             break;
 
@@ -225,7 +295,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 { text: '\n' },
                 { text: data.subject.toUpperCase(), style: 'metaInfo', bold: true, alignment: 'center' },
                 { text: '\n' },
-                { text: 'LE PRÉSIDENT DE LA RÉPUBLIQUE,', style: 'bodyText', bold: true },
+                { text: 'LE PRÉSIDENT DE LA RÉPUBLIQUE,', style: 'bodyText', bold: true, alignment: 'center' },
                 { text: '\n' },
                 { text: 'Vu la Constitution ;', style: 'listItem', margin: [20, 0, 0, 5] },
                 { text: 'Vu les textes en vigueur ;', style: 'listItem', margin: [20, 0, 0, 5] },
@@ -239,7 +309,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                     bold: true
                 })),
                 { text: '\n\n' },
-                { text: 'Fait à Libreville, le ' + currentDate, style: 'metaInfo' },
+                { text: 'Fait à Libreville, le ' + currentDate, style: 'metaInfo', alignment: 'center' },
                 { text: '\n' },
                 { text: data.signature_authority || 'Le Président de la République', style: 'signature', alignment: 'center' },
             ];
@@ -265,7 +335,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 { text: '\n' },
                 { text: `Ce rapport a été établi pour l'information de ${data.recipient}.`, style: 'bodyText' },
                 { text: '\n\n' },
-                { text: data.signature_authority || settings.sub_header_text, style: 'signature' },
+                { text: data.signature_authority || settings.sub_header_text, style: 'signature', alignment: 'right' },
             ];
             break;
 
@@ -310,7 +380,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                     style: 'bodyText'
                 })),
                 { text: '\n\n' },
-                { text: data.signature_authority || settings.sub_header_text, style: 'signature' },
+                { text: data.signature_authority || settings.sub_header_text, style: 'signature', alignment: 'right' },
             ];
             break;
 
@@ -320,7 +390,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 { text: data.reference || `N° ${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}/PR/NOM/${new Date().getFullYear()}`, style: 'reference', alignment: 'center' },
                 { text: currentDate, style: 'metaInfo', alignment: 'center' },
                 { text: '\n' },
-                { text: 'LE PRÉSIDENT DE LA RÉPUBLIQUE,', style: 'bodyText', bold: true },
+                { text: 'LE PRÉSIDENT DE LA RÉPUBLIQUE,', style: 'bodyText', bold: true, alignment: 'center' },
                 { text: '\n' },
                 { text: 'Vu la Constitution ;', style: 'listItem', margin: [20, 0, 0, 5] },
                 { text: '\n' },
@@ -334,7 +404,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                     margin: [0, 8, 0, 8]
                 })),
                 { text: '\n\n' },
-                { text: 'Fait à Libreville, le ' + currentDate, style: 'metaInfo' },
+                { text: 'Fait à Libreville, le ' + currentDate, style: 'metaInfo', alignment: 'center' },
                 { text: '\n' },
                 { text: data.signature_authority || 'Le Président de la République', style: 'signature', alignment: 'center' },
             ];

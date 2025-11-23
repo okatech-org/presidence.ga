@@ -364,6 +364,13 @@ const AdminSpace = () => {
                                     Connaissances
                                 </button>
                                 <button
+                                    onClick={() => setActiveSection('documents')}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'documents' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                                >
+                                    <FileCog className="w-4 h-4" />
+                                    Gestion Documents
+                                </button>
+                                <button
                                     onClick={() => setActiveSection('audit')}
                                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'audit' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
                                 >

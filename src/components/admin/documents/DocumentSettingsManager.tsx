@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ServiceBrandingEditor } from './ServiceBrandingEditor';
+import { DocumentTemplatesManager } from './DocumentTemplatesManager';
 import { FileText, Settings, LayoutTemplate } from "lucide-react";
 
 const SERVICES = [
@@ -74,21 +75,7 @@ export const DocumentSettingsManager = () => {
                 </TabsContent>
 
                 <TabsContent value="templates">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Modèles de Documents</CardTitle>
-                            <CardDescription>
-                                Gestion des structures de documents (Lettres, Décrets, Notes...)
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="p-8 text-center text-muted-foreground border-2 border-dashed rounded-lg">
-                                <LayoutTemplate className="mx-auto h-12 w-12 opacity-50 mb-4" />
-                                <h3 className="text-lg font-medium">Module de gestion des modèles</h3>
-                                <p>Cette fonctionnalité sera disponible prochainement.</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <DocumentTemplatesManager />
                 </TabsContent>
             </Tabs>
         </div>
