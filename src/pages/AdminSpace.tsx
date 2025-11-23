@@ -27,7 +27,9 @@ import { useRealtimeFeedbacks } from "@/hooks/useRealtimeSync";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { FeedbackDocumentsViewer } from "@/components/FeedbackDocumentsViewer";
-import { FileText, Download, Eye, Paperclip, FileSpreadsheet, MessageSquare } from "lucide-react";
+import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
+import { DocumentSettingsManager } from '@/components/admin/documents/DocumentSettingsManager';
+import { FileText, Download, Eye, Paperclip, FileSpreadsheet, MessageSquare, FileCog } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -611,6 +613,12 @@ const AdminSpace = () => {
                                 </div>
                             )}
 
+                            {activeSection === 'documents' && (
+                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <DocumentSettingsManager />
+                                </div>
+                            )}
+
                             {activeSection === 'audit' && (
                                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <AuditLogSection />
@@ -646,6 +654,7 @@ const AdminSpace = () => {
                     feedbackId={selectedFeedback.id}
                 />
             )}
+
         </div>
     );
 };

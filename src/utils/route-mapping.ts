@@ -59,16 +59,38 @@ export const ROUTE_MAP: RouteInfo[] = [
         description: 'Espace Directeur du Protocole'
     },
     {
-        path: '/service-reception',
-        aliases: ['réception', 'reception', 'accueil courrier', 'service reception'],
-        role: 'reception',
-        description: 'Service Réception des Courriers'
+        path: '/service-reception-space',
+        aliases: [
+            'service reception',
+            'réception',
+            'reception',
+            'accueil',
+            'espace réception',
+            'espace reception',
+            'service accueil',
+            'espace accueil',
+            'réceptionniste',
+            'receptionniste'
+        ],
+        role: 'receptionniste',
+        description: 'Service Réception et Accueil'
     },
     {
-        path: '/service-courriers',
-        aliases: ['courriers', 'courrier', 'service courrier', 'triage'],
-        role: 'courrier',
-        description: 'Service Courriers (Hub de validation)'
+        path: '/service-courriers-space',
+        aliases: [
+            'service courriers',
+            'courriers',
+            'courrier',
+            'espace courriers',
+            'espace courrier',
+            'gestion courrier',
+            'gestion courriers',
+            'service du courrier',
+            'messagerie',
+            'correspondance'
+        ],
+        role: 'service_courriers',
+        description: 'Service Courriers et Correspondance'
     },
     {
         path: '/auth',

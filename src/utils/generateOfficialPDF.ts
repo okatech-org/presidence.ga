@@ -1,5 +1,6 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+import { supabase } from '@/integrations/supabase/client';
 
 // Flag pour s'assurer qu'on initialise qu'une seule fois
 let fontsInitialized = false;
@@ -20,14 +21,70 @@ interface DocumentData {
     signature_authority?: string;
     reference?: string;
     date?: string;
+    serviceContext?: string; // e.g., 'president', 'admin', 'courrier'
+}
+
+interface ServiceSettings {
+    header_text: string;
+    sub_header_text: string;
+    footer_text: string;
+    logo_url: string;
+    margins: { top: number; bottom: number; left: number; right: number };
+    primary_color: string;
+    secondary_color: string;
+}
+
+const DEFAULT_SETTINGS: ServiceSettings = {
+    header_text: 'RÉPUBLIQUE GABONAISE',
+    sub_header_text: 'Unité - Travail - Justice',
+    footer_text: 'Avenue Président Omar Bongo Ondimba - BP 546 - Libreville - Gabon',
+    logo_url: '',
+    margins: { top: 60, bottom: 60, left: 60, right: 60 },
+    primary_color: '#1e3a8a',
+    secondary_color: '#64748b'
+};
+
+async function fetchServiceSettings(serviceRole: string): Promise<ServiceSettings> {
+    try {
+        const { data, error } = await supabase
+            .from('service_document_settings' as any)
+            .select('*')
+            .eq('service_role', serviceRole)
+            .single();
+
+        if (data) {
+            const settings = data as any;
+            return {
+                header_text: settings.header_text || DEFAULT_SETTINGS.header_text,
+                sub_header_text: settings.sub_header_text || DEFAULT_SETTINGS.sub_header_text,
+                footer_text: settings.footer_text || DEFAULT_SETTINGS.footer_text,
+                logo_url: settings.logo_url || '',
+                margins: settings.margins ? {
+                    top: Number(settings.margins.top) * 2.83, // Convert mm to points (approx)
+                    bottom: Number(settings.margins.bottom) * 2.83,
+                    left: Number(settings.margins.left) * 2.83,
+                    right: Number(settings.margins.right) * 2.83
+                } : DEFAULT_SETTINGS.margins,
+                primary_color: settings.primary_color || DEFAULT_SETTINGS.primary_color,
+                secondary_color: settings.secondary_color || DEFAULT_SETTINGS.secondary_color
+            };
+        }
+    } catch (e) {
+        console.warn('Failed to fetch service settings, using defaults', e);
+    }
+    return DEFAULT_SETTINGS;
 }
 
 /**
- * Génère un document officiel PDF  pour la Présidence Gabonaise
+ * Génère un document officiel PDF pour la Présidence Gabonaise
+ * Utilise les paramètres de personnalisation du service
  */
 export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
     // Initialiser les fonts au premier appel
     initializeFonts();
+
+    const serviceRole = data.serviceContext || 'president';
+    const settings = await fetchServiceSettings(serviceRole);
 
     const currentDate = data.date || new Date().toLocaleDateString('fr-FR', {
         day: 'numeric',
@@ -35,27 +92,27 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
         year: 'numeric'
     });
 
-    // En-tête officiel
+    // En-tête officiel dynamique
     const header = {
         columns: [
             {
                 width: '*',
                 stack: [
-                    { text: 'RÉPUBLIQUE GABONAISE', style: 'header', alignment: 'center' },
-                    { text: 'Unité - Travail - Justice', style: 'subheader', alignment: 'center', margin: [0, 2, 0, 10] },
+                    { text: settings.header_text, style: 'header', alignment: 'center' },
+                    { text: settings.sub_header_text, style: 'subheader', alignment: 'center', margin: [0, 2, 0, 10] },
                     { text: '________', alignment: 'center', margin: [0, 0, 0, 5] },
-                    { text: 'PRÉSIDENCE DE LA RÉPUBLIQUE', style: 'institution', alignment: 'center' },
+                    // Si logo_url existe, on pourrait l'ajouter ici (nécessite conversion base64 ou support URL)
                 ]
             }
         ],
         margin: [0, 20, 0, 30]
     };
 
-    // Pied de page
+    // Pied de page dynamique
     const footer = (currentPage: number, pageCount: number) => {
         return {
             columns: [
-                { text: `Avenue Président Omar Bongo Ondimba - BP 546 - Libreville - Gabon`, style: 'footer', alignment: 'center' },
+                { text: settings.footer_text, style: 'footer', alignment: 'center' },
             ],
             margin: [40, 10, 40, 20]
         };
@@ -63,7 +120,12 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
 
     let documentDefinition: any = {
         pageSize: 'A4',
-        pageMargins: [60, 140, 60, 60],
+        pageMargins: [
+            settings.margins.left,
+            settings.margins.top,
+            settings.margins.right,
+            settings.margins.bottom
+        ],
         header: header,
         footer: footer,
         content: [],
@@ -71,12 +133,12 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
             header: {
                 fontSize: 14,
                 bold: true,
-                color: '#1e3a8a'
+                color: settings.primary_color
             },
             subheader: {
                 fontSize: 10,
                 italics: true,
-                color: '#64748b'
+                color: settings.secondary_color
             },
             institution: {
                 fontSize: 12,
@@ -88,12 +150,13 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 bold: true,
                 alignment: 'center',
                 margin: [0, 20, 0, 20],
-                decoration: 'underline'
+                decoration: 'underline',
+                color: settings.primary_color
             },
             reference: {
                 fontSize: 10,
                 italics: true,
-                color: '#64748b',
+                color: settings.secondary_color,
                 margin: [0, 0, 0, 15]
             },
             metaInfo: {
@@ -127,10 +190,10 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
         case 'lettre':
             documentDefinition.content = [
                 { text: 'LETTRE D\'INSTRUCTION', style: 'documentType' },
-                { text: data.reference || `Réf: PR/CAB/${new Date().getFullYear()}/${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`, style: 'reference' },
+                { text: data.reference || `Réf: ${serviceRole.toUpperCase().substring(0, 3)}/${new Date().getFullYear()}/${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`, style: 'reference' },
                 { text: `Libreville, le ${currentDate}`, style: 'metaInfo', alignment: 'right' },
                 { text: '\n' },
-                { text: `Le Président de la République`, style: 'metaInfo', bold: true },
+                { text: settings.sub_header_text || 'L\'Expéditeur', style: 'metaInfo', bold: true },
                 { text: `à`, style: 'metaInfo', margin: [0, 5, 0, 5] },
                 { text: data.recipient, style: 'metaInfo', bold: true },
                 { text: '\n' },
@@ -150,7 +213,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 { text: '\n' },
                 { text: `Je vous prie d'agréer, ${data.recipient}, l'expression de ma haute considération.`, style: 'bodyText' },
                 { text: '\n\n' },
-                { text: data.signature_authority || 'Le Président de la République', style: 'signature', alignment: 'right' },
+                { text: data.signature_authority || settings.sub_header_text, style: 'signature', alignment: 'right' },
             ];
             break;
 
@@ -202,7 +265,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 { text: '\n' },
                 { text: `Ce rapport a été établi pour l'information de ${data.recipient}.`, style: 'bodyText' },
                 { text: '\n\n' },
-                { text: data.signature_authority || 'La Présidence de la République', style: 'signature' },
+                { text: data.signature_authority || settings.sub_header_text, style: 'signature' },
             ];
             break;
 
@@ -230,7 +293,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                 { text: '\n\n' },
                 { text: `Ces dispositions entrent en vigueur à compter de la date de signature de la présente circulaire.`, style: 'bodyText' },
                 { text: '\n\n' },
-                { text: data.signature_authority || 'Le Président de la République', style: 'signature', alignment: 'right' },
+                { text: data.signature_authority || settings.sub_header_text, style: 'signature', alignment: 'right' },
             ];
             break;
 
@@ -247,7 +310,7 @@ export async function generateOfficialPDF(data: DocumentData): Promise<Blob> {
                     style: 'bodyText'
                 })),
                 { text: '\n\n' },
-                { text: data.signature_authority || 'Cabinet de la Présidence', style: 'signature' },
+                { text: data.signature_authority || settings.sub_header_text, style: 'signature' },
             ];
             break;
 

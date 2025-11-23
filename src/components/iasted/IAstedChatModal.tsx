@@ -616,7 +616,8 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
             recipient: pendingDocument.recipient,
             subject: pendingDocument.subject,
             content_points: pendingDocument.contentPoints,
-            format: pendingDocument.format || 'pdf'
+            format: pendingDocument.format || 'pdf',
+            service_context: pendingDocument.serviceContext
           })
         }
       };
@@ -755,6 +756,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
               subject: args.subject,
               content_points: args.content_points || [],
               signature_authority: args.signature_authority,
+              serviceContext: args.service_context
             });
 
             console.log('✅ [generatePDF] Document généré:', filename);

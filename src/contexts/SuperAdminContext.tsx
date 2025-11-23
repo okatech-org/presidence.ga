@@ -39,6 +39,7 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
     const [originRoute, setOriginRoute] = useState<string | null>(null);
     const [securityOverrideActive, setSecurityOverrideActive] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false); // For UI tools
+    const [pendingDocument, setPendingDocument] = useState<any>(null); // For document generation
 
     const isAdmin = useMemo(() => {
         return !isLoading && (role === 'admin' || role === 'president');
@@ -55,7 +56,7 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                     setOriginRoute(window.location.pathname);
                     console.log('✅ [Super Admin Context] Resolved to:', resolvedRoute);
                     navigate(resolvedRoute);
-                    return { success: true, message: `Navigation vers ${resolvedRoute} réussie` };
+                    return { success: true, message: `Navigation vers ${resolvedRoute}` };
                 } else {
                     console.error('❌ [Super Admin Context] Route not found for:', query);
                     toast({
@@ -63,7 +64,7 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                         description: `Impossible de trouver la route pour "${query}"`,
                         variant: 'destructive'
                     });
-                    return { success: false, message: `Route non trouvée pour "${query}"` };
+                    return { success: false, message: "Route inconnue" };
                 }
             case 'return_to_base':
                 console.log('🏠 [Super Admin Context] Returning to base');
@@ -73,28 +74,29 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                     title: 'Retour à la base',
                     description: 'Navigation vers l\'AdminSpace',
                 });
-                return { success: true, message: 'Retour à AdminSpace réussi' };
+                return { success: true, message: "Retour à la base" };
             case 'return_to_origin':
                 if (originRoute) {
                     console.log('⏮️ [Super Admin Context] Returning to origin:', originRoute);
                     navigate(originRoute);
+                    const route = originRoute;
                     toast({
                         title: 'Retour à l\'origine',
                         description: `Navigation vers ${originRoute}`,
                     });
                     setOriginRoute(null);
-                    return { success: true, message: `Retour à ${originRoute} réussi` };
+                    return { success: true, message: `Retour à ${route}` };
                 } else {
                     toast({
                         title: 'Pas d\'origine',
                         description: 'Aucune page d\'origine enregistrée',
                         variant: 'destructive'
                     });
-                    return { success: false, message: 'Aucune page d\'origine stockée' };
+                    return { success: false, message: "Pas d'origine enregistrée" };
                 }
             case 'security_override':
                 if (args.action === 'unlock_admin_access') {
-                    console.log('🔓 [Super Admin Context] Security override activated');
+                    console.log('🔓 [Super Admin Context] Security override');
                     setSecurityOverrideActive(true);
                     toast({
                         title: '🔐 Accès déverrouillé',
@@ -105,6 +107,28 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                     return { success: true, message: 'Sécurité outrepassée' };
                 }
                 return { success: false, message: 'Action de sécurité inconnue' };
+
+            // Document Generation
+            case 'generate_document':
+                console.log('📝 [Super Admin Context] Génération document:', args);
+                // Determine service context based on role or args
+                // Default to 'president' if not specified, or 'admin' if in admin space
+                const serviceContext = args.service_context || (isAdmin ? 'admin' : 'president');
+
+                setPendingDocument({
+                    type: args.type,
+                    recipient: args.recipient,
+                    subject: args.subject,
+                    contentPoints: args.content_points || [],
+                    format: args.format || 'pdf',
+                    serviceContext: serviceContext
+                });
+                setIsChatOpen(true);
+                toast({
+                    title: "Génération",
+                    description: `Création de ${args.type} pour ${args.recipient}...`
+                });
+                return { success: true, message: 'Document généré' };
 
             // UI Tools
             case 'open_chat':
@@ -201,6 +225,8 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                     onClose={() => setIsChatOpen(false)}
                     openaiRTC={openaiRTC}
                     currentVoice={selectedVoice}
+                    pendingDocument={pendingDocument}
+                    onClearPendingDocument={() => setPendingDocument(null)}
                 />
             )}
         </SuperAdminContext.Provider>
