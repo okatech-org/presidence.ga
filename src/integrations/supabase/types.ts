@@ -97,6 +97,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_deleted: boolean | null
           latency_ms: number | null
           role: string
           session_id: string
@@ -107,6 +108,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_deleted?: boolean | null
           latency_ms?: number | null
           role: string
           session_id: string
@@ -117,6 +119,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_deleted?: boolean | null
           latency_ms?: number | null
           role?: string
           session_id?: string
@@ -138,7 +141,11 @@ export type Database = {
           ended_at: string | null
           focus_mode: string | null
           id: string
+          is_archived: boolean | null
+          last_message_at: string | null
           memory_summary: string | null
+          message_count: number | null
+          session_name: string | null
           settings: Json | null
           started_at: string
           updated_at: string
@@ -149,7 +156,11 @@ export type Database = {
           ended_at?: string | null
           focus_mode?: string | null
           id?: string
+          is_archived?: boolean | null
+          last_message_at?: string | null
           memory_summary?: string | null
+          message_count?: number | null
+          session_name?: string | null
           settings?: Json | null
           started_at?: string
           updated_at?: string
@@ -160,7 +171,11 @@ export type Database = {
           ended_at?: string | null
           focus_mode?: string | null
           id?: string
+          is_archived?: boolean | null
+          last_message_at?: string | null
           memory_summary?: string | null
+          message_count?: number | null
+          session_name?: string | null
           settings?: Json | null
           started_at?: string
           updated_at?: string
@@ -1323,6 +1338,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_messages: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
