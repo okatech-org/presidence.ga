@@ -318,37 +318,13 @@ const Demo = () => {
     }
   };
 
-  const handleAdminClick = async () => {
+  const handleAdminClick = () => {
     const newClicks = adminClicks + 1;
     setAdminClicks(newClicks);
 
     if (newClicks === 2) {
+      setShowAdminDialog(true);
       setAdminClicks(0);
-
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('🔐 Admin click - Session check:', session ? 'Connected' : 'Not connected');
-
-        if (!session) {
-          toast({
-            title: "⚠️ Étape 1 requise",
-            description: "Connectez-vous d'abord avec un compte démo (ex: president@presidence.ga), puis revenez double-cliquer sur le cadenas",
-            variant: "destructive",
-            duration: 5000,
-          });
-          return;
-        }
-
-        console.log('✅ Opening admin dialog for user:', session.user.email);
-        setShowAdminDialog(true);
-      } catch (error) {
-        console.error("Erreur lors de la vérification de l'authentification :", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de vérifier votre authentification",
-          variant: "destructive",
-        });
-      }
     }
 
     setTimeout(() => {
