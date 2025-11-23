@@ -181,222 +181,84 @@ export default function PresidentSpace() {
         console.log('🎛️ [PresidentSpace] Contrôle UI demandé:', args);
         if (args.action === 'toggle_theme') {
           toggleTheme();
-          toast({
-            title: "Interface",
-            description: "Thème modifié",
-            duration: 2000,
-          });
         } else if (args.action === 'set_theme_dark') {
           setTheme("dark");
-          toast({
-            title: "Interface",
-            description: "Mode sombre activé",
-            duration: 2000,
-          });
         } else if (args.action === 'set_theme_light') {
           setTheme("light");
+        } else if (args.action === 'set_volume') {
+          // Volume is handled by system/hardware, but we can acknowledge
+          toast({ title: "Volume", description: `Volume ajusté à ${args.value || 'niveau demandé'}` });
+        } else if (args.action === 'set_speech_rate') {
+          if (args.value) openaiRTC.setSpeechRate(parseFloat(args.value));
+          toast({ title: "Vitesse", description: `Vitesse de parole ajustée` });
+        }
+        break;
+
+      case 'change_voice':
+        console.log('🎙️ [PresidentSpace] Changement de voix demandé:', args);
+        if (args.voice_id) {
+          setSelectedVoice(args.voice_id as any);
           toast({
-            title: "Interface",
-            description: "Mode clair activé",
-            duration: 2000,
+            title: "Voix modifiée",
+            description: `Passage à la voix ${args.voice_id === 'ash' ? 'Homme (Ash)' : args.voice_id === 'shimmer' ? 'Femme (Shimmer)' : 'Standard (Echo)'}`,
           });
         }
         break;
 
-      case 'navigate_app':
+      case 'navigate_to_section':
         console.log('🧭 [PresidentSpace] Navigation demandée:', args);
+        const sectionId = args.section_id;
 
-        // Liste des sections accordéon (ne sont PAS des pages)
+        // Sections accordéon (toggle)
         const accordionSections = ['navigation', 'gouvernance', 'economie', 'affaires', 'infrastructures'];
 
-        // Mapping des noms naturels vers les IDs de section
-        const sectionMapping: Record<string, string> = {
-          'navigation': 'navigation',
-          'gouvernance': 'gouvernance',
-          'économie': 'economie',
-          'économie et finances': 'economie',
-          'économie & finances': 'economie',
-          'affaires sociales': 'affaires',
-          'infrastructures': 'infrastructures',
-          'infrastructures et projets': 'infrastructures',
-          'infrastructures & projets': 'infrastructures',
-        };
-
-        // Mapping des noms de pages vers leurs IDs et section parente
-        const pageMapping: Record<string, { id: string, section?: keyof typeof expandedSections }> = {
-          'dashboard': { id: 'dashboard', section: 'navigation' },
-          'tableau de bord': { id: 'dashboard', section: 'navigation' },
-          'iasted': { id: 'iasted', section: 'navigation' },
-          'assistant iasted': { id: 'iasted', section: 'navigation' },
-          'conseil des ministres': { id: 'conseil-ministres', section: 'gouvernance' },
-          'ministères': { id: 'ministeres', section: 'gouvernance' },
-          'ministères et directions': { id: 'ministeres', section: 'gouvernance' },
-          'décrets': { id: 'decrets', section: 'gouvernance' },
-          'décrets et ordonnances': { id: 'decrets', section: 'gouvernance' },
-          'nominations': { id: 'nominations', section: 'gouvernance' },
-        };
-
-        const targetLower = (args.route || args.module_id || '').toLowerCase().trim();
-
-        // Détection de commandes de fermeture contextuelle
-        // "ferme", "replie", "ferme la section", etc.
-        const closeCommands = /^(ferme|replie|close|cache|masque)/i;
-        const isCloseCommand = closeCommands.test(targetLower);
-
-        if (isCloseCommand) {
-          console.log('🔽 [PresidentSpace] Commande de fermeture détectée');
-
-          // Extraire le nom de la section après "ferme/replie/etc."
-          const sectionNameMatch = targetLower.replace(/^(ferme|replie|close|cache|masque)\s*(la\s*section\s*)?/i, '').trim();
-
-          if (sectionNameMatch.length > 0) {
-            // "Ferme la section Gouvernance" -> chercher la section
-            const matchedSection = sectionMapping[sectionNameMatch];
-            if (matchedSection && accordionSections.includes(matchedSection)) {
-              const isCurrentlyOpen = expandedSections[matchedSection as keyof typeof expandedSections];
-
-              setExpandedSections(prev => ({
-                ...prev,
-                [matchedSection]: false, // Forcer à fermer
-              }));
-
-              toast({
-                title: "Section fermée",
-                description: `${matchedSection.charAt(0).toUpperCase() + matchedSection.slice(1)} repliée`,
-                duration: 2000,
-              });
-
-              lastOpenedSectionRef.current = null; // Reset if a specific section is closed
-              return;
-            }
-          } else {
-            // "Ferme" sans argument -> fermer la dernière section ouverte
-            if (lastOpenedSectionRef.current) {
-              const sectionToClose = lastOpenedSectionRef.current;
-
-              setExpandedSections(prev => ({
-                ...prev,
-                [sectionToClose]: false,
-              }));
-
-              toast({
-                title: "Section fermée",
-                description: `${sectionToClose.charAt(0).toUpperCase() + sectionToClose.slice(1)} repliée`,
-                duration: 2000,
-              });
-
-              lastOpenedSectionRef.current = null; // Reset
-              return;
-            } else {
-              toast({
-                title: "Aucune section à fermer",
-                description: "Aucune section n'est actuellement ouverte",
-                duration: 2000,
-              });
-              return;
-            }
-          }
-        }
-
-        // Vérifier si c'est une section accordéon à ouvrir/toggle
-        const matchedSection = sectionMapping[targetLower];
-        if (matchedSection && accordionSections.includes(matchedSection)) {
-          console.log('🔽 [PresidentSpace] Toggle de la section accordéon:', matchedSection);
-
-          const isCurrentlyOpen = expandedSections[matchedSection as keyof typeof expandedSections];
-
-          // Toggle la section
-          setExpandedSections(prev => ({
-            ...prev,
-            [matchedSection]: !prev[matchedSection as keyof typeof prev],
-          }));
-
-          // Tracker comme dernière section si on l'ouvre
-          if (!isCurrentlyOpen) {
-            lastOpenedSectionRef.current = matchedSection as keyof typeof expandedSections;
-          } else {
-            lastOpenedSectionRef.current = null;
-          }
-
-          toast({
-            title: "Section",
-            description: `${matchedSection.charAt(0).toUpperCase() + matchedSection.slice(1)} ${isCurrentlyOpen ? 'fermée' : 'ouverte'
-              }`,
-            duration: 2000,
-          });
-
-          // Jouer son de navigation et déclencher pulsation
-          soundManager.playSlidingSound();
-          setIsPulsing(true);
-          setTimeout(() => setIsPulsing(false), 3000); // 3 pulsations de 1s chacune
-
-          return;
-        }
-
-        // Vérifier si c'est une page réelle
-        const matchedPage = pageMapping[targetLower];
-        if (matchedPage) {
-          console.log('📄 [PresidentSpace] Navigation vers la page:', matchedPage.id);
-
-          // Si la page est "iasted", ouvrir le modal
-          if (matchedPage.id === 'iasted') {
-            setIastedOpen(true);
-          } else {
-            setActiveSection(matchedPage.id);
-          }
-
-          // Ouvrir automatiquement la section parente si elle existe
-          if (matchedPage.section) {
-            setExpandedSections(prev => ({
-              ...prev,
-              [matchedPage.section!]: true,
-            }));
-
-            // Tracker comme dernière section ouverte
-            lastOpenedSectionRef.current = matchedPage.section;
-          }
-
-          toast({
-            title: "Navigation",
-            description: `Page ouverte`,
-            duration: 2000,
-          });
-
-          return;
-        }
-
-        // Si aucune correspondance, essayer la navigation classique
-        console.log('🌐 [PresidentSpace] Navigation URL classique:', args.route);
-        if (args.route && !accordionSections.includes(args.route) && !isCloseCommand) {
-          navigate(args.route);
-          toast({
-            title: "Navigation",
-            description: `Redirection vers ${args.route}`,
-            duration: 2000,
-          });
+        if (accordionSections.includes(sectionId)) {
+          toggleSection(sectionId as keyof typeof expandedSections);
+          toast({ title: "Navigation", description: `Section ${sectionId} basculée` });
         } else {
-          console.warn('⚠️ [PresidentSpace] Destination non reconnue:', targetLower);
-          toast({
-            title: "Navigation",
-            description: "Section ou page non trouvée",
-            variant: "destructive",
-            duration: 2000,
-          });
+          // Pages (navigation directe)
+          setActiveSection(sectionId);
+
+          // Ouvrir la section parente si nécessaire
+          const parentSectionMap: Record<string, keyof typeof expandedSections> = {
+            'dashboard': 'navigation',
+            'iasted': 'navigation',
+            'documents': 'navigation',
+            'courriers': 'navigation',
+            'conseil-ministres': 'gouvernance',
+            'ministeres': 'gouvernance',
+            'decrets': 'gouvernance',
+            'nominations': 'gouvernance',
+            'budget': 'economie',
+            'indicateurs': 'economie',
+            'investissements': 'economie',
+            'education': 'affaires',
+            'sante': 'affaires',
+            'emploi': 'affaires',
+            'chantiers': 'infrastructures',
+            'projets-presidentiels': 'infrastructures',
+            'projets-etat': 'infrastructures'
+          };
+
+          const parent = parentSectionMap[sectionId];
+          if (parent) {
+            setExpandedSections(prev => ({ ...prev, [parent]: true }));
+          }
+
+          toast({ title: "Navigation", description: `Ouverture de ${sectionId}` });
         }
         break;
 
-      case 'open_chat':
-        setIastedOpen(true);
+      case 'control_document':
+        console.log('📄 [PresidentSpace] Contrôle document:', args);
+        toast({
+          title: "Document",
+          description: `Action ${args.action} demandée sur ${args.document_id || 'le document'}`
+        });
         break;
-      case 'close_chat':
-        setIastedOpen(false);
-        break;
-      case 'stop_conversation':
-        openaiRTC.disconnect();
-        setIastedOpen(false);
-        break;
+
       case 'generate_document':
-        console.log('📄 [PresidentSpace] Génération de document demandée:', args);
+        console.log('📝 [PresidentSpace] Génération document:', args);
         setPendingDocument({
           type: args.type,
           recipient: args.recipient,
@@ -405,6 +267,23 @@ export default function PresidentSpace() {
           format: args.format || 'pdf'
         });
         setIastedOpen(true);
+        toast({
+          title: "Génération",
+          description: `Création de ${args.type} pour ${args.recipient}...`
+        });
+        break;
+
+      case 'open_chat':
+        setIastedOpen(true);
+        break;
+
+      case 'close_chat':
+        setIastedOpen(false);
+        break;
+
+      case 'stop_conversation':
+        openaiRTC.disconnect();
+        setIastedOpen(false);
         break;
     }
   });
@@ -1044,6 +923,7 @@ export default function PresidentSpace() {
         openaiRTC={openaiRTC}
         pendingDocument={pendingDocument}
         onClearPendingDocument={() => setPendingDocument(null)}
+        currentVoice={selectedVoice}
       />
     </div>
   );

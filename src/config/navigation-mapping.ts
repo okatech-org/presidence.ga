@@ -1,179 +1,134 @@
-// Navigation and UI sections mapping for iAsted voice commands
-// Maps French labels to technical IDs and provides context for AI understanding
 
-export interface NavigationSection {
+export type SectionDefinition = {
     id: string;
-    labelFr: string;
-    labelEn: string;
-    description: string;
-    aliases: string[]; // Alternative ways to refer to this section
-    availableFor: string[]; // Roles that have access
-}
+    label: string; // French label displayed in UI
+    keywords: string[]; // Keywords that might be used in voice commands
+    description: string; // Description for the AI context
+};
 
-export const NAVIGATION_SECTIONS: NavigationSection[] = [
-    {
-        id: 'dashboard',
-        labelFr: 'Tableau de Bord',
-        labelEn: 'Dashboard',
-        description: 'Vue d\'ensemble avec statistiques nationales, indicateurs clés et graphiques',
-        aliases: ['accueil', 'home', 'dashboard', 'tableau de bord', 'vue d\'ensemble'],
-        availableFor: ['president', 'dgr', 'sec_gen', 'minister', 'dgss', 'protocol', 'cabinet_private']
-    },
-    {
-        id: 'documents',
-        labelFr: 'Documents',
-        labelEn: 'Documents',
-        description: 'Gestion électronique des documents avec courriers, dossiers thématiques et classification IA',
-        aliases: ['documents', 'ged', 'gestion documentaire', 'mes documents'],
-        availableFor: ['president', 'dgr', 'sec_gen', 'minister', 'dgss', 'protocol', 'cabinet_private']
-    },
-    {
-        id: 'courriers',
-        labelFr: 'Courriers',
-        labelEn: 'Mail',
-        description: 'Boîte de réception avec courriers entrants, sortants et archivés',
-        aliases: ['courriers', 'mail', 'inbox', 'boîte de réception', 'messages'],
-        availableFor: ['president', 'dgr', 'sec_gen', 'minister', 'dgss', 'protocol', 'cabinet_private']
-    },
-    {
-        id: 'conseil-ministres',
-        labelFr: 'Conseil des Ministres',
-        labelEn: 'Council of Ministers',
-        description: 'Gestion des conseils des ministres avec ordres du jour et décisions',
-        aliases: ['conseil des ministres', 'conseil', 'ministres'],
-        availableFor: ['president', 'dgr', 'sec_gen']
-    },
-    {
-        id: 'ministeres',
-        labelFr: 'Ministères',
-        labelEn: 'Ministries',
-        description: 'Vue d\'ensemble et coordination des différents ministères',
-        aliases: ['ministères', 'ministries', 'gouvernement'],
-        availableFor: ['president', 'dgr', 'sec_gen']
-    },
-    {
-        id: 'decrets',
-        labelFr: 'Décrets',
-        labelEn: 'Decrees',
-        description: 'Gestion des décrets présidentiels et textes réglementaires',
-        aliases: ['décrets', 'textes', 'réglementation'],
-        availableFor: ['president', 'dgr', 'sec_gen']
-    },
-    {
-        id: 'nominations',
-        labelFr: 'Nominations',
-        labelEn: 'Appointments',
-        description: 'Suivi des nominations et mouvements dans l\'administration',
-        aliases: ['nominations', 'appointments', 'mouvements'],
-        availableFor: ['president', 'dgr', 'sec_gen']
-    },
-    {
-        id: 'budget',
-        labelFr: 'Budget',
-        labelEn: 'Budget',
-        description: 'Suivi budgétaire et dépenses publiques',
-        aliases: ['budget', 'finances', 'dépenses'],
-        availableFor: ['president', 'dgr', 'sec_gen', 'minister']
-    },
-    {
-        id: 'indicateurs',
-        labelFr: 'Indicateurs',
-        labelEn: 'Indicators',
-        description: 'Indicateurs économiques et sociaux du pays',
-        aliases: ['indicateurs', 'kpi', 'statistiques', 'chiffres'],
-        availableFor: ['president', 'dgr', 'sec_gen', 'minister']
-    },
-    {
-        id: 'investissements',
-        labelFr: 'Investissements',
-        labelEn: 'Investments',
-        description: 'Projets d\'investissement et développement économique',
-        aliases: ['investissements', 'projets économiques', 'développement'],
-        availableFor: ['president', 'dgr', 'minister']
-    },
-    {
-        id: 'education',
-        labelFr: 'Éducation',
-        labelEn: 'Education',
-        description: 'Suivi du secteur éducatif',
-        aliases: ['éducation', 'école', 'enseignement'],
-        availableFor: ['president', 'dgr', 'minister']
-    },
-    {
-        id: 'sante',
-        labelFr: 'Santé',
-        labelEn: 'Health',
-        description: 'Suivi du secteur sanitaire',
-        aliases: ['santé', 'hôpitaux', 'médical'],
-        availableFor: ['president', 'dgr', 'minister']
-    },
-    {
-        id: 'emploi',
-        labelFr: 'Emploi',
-        labelEn: 'Employment',
-        description: 'Statistiques et politiques de l\'emploi',
-        aliases: ['emploi', 'travail', 'chômage'],
-        availableFor: ['president', 'dgr', 'minister']
-    },
-    {
-        id: 'chantiers',
-        labelFr: 'Grands Chantiers',
-        labelEn: 'Major Projects',
-        description: 'Suivi des grands chantiers présidentiels',
-        aliases: ['chantiers', 'grands travaux', 'infrastructures'],
-        availableFor: ['president', 'dgr']
-    },
-    {
-        id: 'projets-presidentiels',
-        labelFr: 'Projets Présidentiels',
-        labelEn: 'Presidential Projects',
-        description: 'Initiatives et programmes présidentiels',
-        aliases: ['projets présidentiels', 'initiatives', 'programmes'],
-        availableFor: ['president', 'dgr']
-    },
-    {
-        id: 'projets-etat',
-        labelFr: 'Projets d\'État',
-        labelEn: 'State Projects',
-        description: 'Grands projets stratégiques de l\'État',
-        aliases: ['projets d\'état', 'stratégie nationale'],
-        availableFor: ['president', 'dgr', 'sec_gen']
-    }
-];
-
-// Helper function to find section by French label or alias
-export function findSectionByLabel(label: string, userRole?: string): NavigationSection | null {
-    const normalizedLabel = label.toLowerCase().trim();
-
-    for (const section of NAVIGATION_SECTIONS) {
-        // Check if user has access
-        if (userRole && !section.availableFor.includes(userRole)) {
-            continue;
+export const NAVIGATION_SECTIONS: Record<string, SectionDefinition[]> = {
+    president: [
+        {
+            id: "dashboard",
+            label: "Tableau de Bord",
+            keywords: ["tableau de bord", "accueil", "résumé", "vue d'ensemble", "dashboard"],
+            description: "Vue principale avec les indicateurs clés, graphiques et résumé des activités."
+        },
+        {
+            id: "documents",
+            label: "Documents",
+            keywords: ["documents", "ged", "fichiers", "dossiers", "archives"],
+            description: "Gestion électronique des documents, courriers numérisés, et archives."
+        },
+        {
+            id: "courriers",
+            label: "Courriers",
+            keywords: ["courriers", "messages", "boîte de réception", "mails", "correspondance"],
+            description: "Boîte de réception des courriers et messages officiels."
+        },
+        {
+            id: "iasted",
+            label: "iAsted",
+            keywords: ["iasted", "assistant", "ia", "intelligence artificielle", "aide"],
+            description: "Interface de l'assistant intelligent iAsted."
+        },
+        {
+            id: "conseil-ministres",
+            label: "Conseil des Ministres",
+            keywords: ["conseil des ministres", "conseil", "ministres", "réunion"],
+            description: "Gestion des ordres du jour et comptes rendus des conseils des ministres."
+        },
+        {
+            id: "ministeres",
+            label: "Ministères",
+            keywords: ["ministères", "gouvernement", "départements"],
+            description: "Suivi des activités et performances des différents ministères."
+        },
+        {
+            id: "decrets",
+            label: "Décrets & Lois",
+            keywords: ["décrets", "lois", "législation", "juridique", "textes"],
+            description: "Consultation et signature des décrets et textes de loi."
+        },
+        {
+            id: "nominations",
+            label: "Nominations",
+            keywords: ["nominations", "nommer", "postes"],
+            description: "Gestion des nominations aux postes officiels."
+        },
+        {
+            id: "budget",
+            label: "Budget de l'État",
+            keywords: ["budget", "finances", "économie", "dépenses"],
+            description: "Suivi du budget de l'État et des indicateurs économiques."
+        },
+        {
+            id: "indicateurs",
+            label: "Indicateurs Nationaux",
+            keywords: ["indicateurs", "kpi", "statistiques", "données"],
+            description: "Tableau de bord des indicateurs de performance nationale."
+        },
+        {
+            id: "investissements",
+            label: "Investissements",
+            keywords: ["investissements", "projets d'investissement", "fonds"],
+            description: "Suivi des grands projets d'investissement."
+        },
+        {
+            id: "education",
+            label: "Éducation",
+            keywords: ["éducation", "enseignement", "écoles", "universités"],
+            description: "Indicateurs et projets liés à l'éducation nationale."
+        },
+        {
+            id: "sante",
+            label: "Santé",
+            keywords: ["santé", "hôpitaux", "médical", "soins"],
+            description: "Suivi du système de santé et des infrastructures médicales."
+        },
+        {
+            id: "emploi",
+            label: "Emploi",
+            keywords: ["emploi", "chômage", "travail", "formation"],
+            description: "Statistiques sur l'emploi et la formation professionnelle."
+        },
+        {
+            id: "chantiers",
+            label: "Chantiers",
+            keywords: ["chantiers", "travaux", "infrastructures", "construction"],
+            description: "Suivi des chantiers et infrastructures en cours."
+        },
+        {
+            id: "projets-presidentiels",
+            label: "Projets Présidentiels",
+            keywords: ["projets présidentiels", "projets du président", "initiatives"],
+            description: "Suivi des projets prioritaires du Président."
+        },
+        {
+            id: "projets-etat",
+            label: "Projets de l'État",
+            keywords: ["projets de l'état", "grands projets", "planification"],
+            description: "Vue d'ensemble des projets de l'État."
         }
+    ],
+    // Add mappings for other roles if needed, defaulting to a subset or similar structure
+    dgr: [
+        {
+            id: "dashboard",
+            label: "Tableau de Bord",
+            keywords: ["tableau de bord", "accueil", "résumé"],
+            description: "Vue principale."
+        },
+        {
+            id: "documents",
+            label: "Documents",
+            keywords: ["documents", "ged", "fichiers"],
+            description: "Gestion électronique des documents."
+        },
+        // ... add others as needed
+    ]
+};
 
-        // Check label or aliases
-        if (
-            section.labelFr.toLowerCase() === normalizedLabel ||
-            section.labelEn.toLowerCase() === normalizedLabel ||
-            section.aliases.some(alias => alias.toLowerCase() === normalizedLabel)
-        ) {
-            return section;
-        }
-    }
-
-    return null;
-}
-
-// Get all sections available for a user role
-export function getSectionsForRole(role: string): NavigationSection[] {
-    return NAVIGATION_SECTIONS.filter(section => section.availableFor.includes(role));
-}
-
-// Generate context string for AI prompt
-export function generateSectionsContext(userRole: string): string {
-    const sections = getSectionsForRole(userRole);
-
-    return sections.map(section =>
-        `- "${section.labelFr}" (ID: ${section.id}): ${section.description}`
-    ).join('\n');
-}
+export const getSectionsForRole = (role: string = 'president'): SectionDefinition[] => {
+    return NAVIGATION_SECTIONS[role] || NAVIGATION_SECTIONS['president']; // Fallback to president for now
+};

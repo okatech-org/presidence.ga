@@ -50,6 +50,7 @@ interface IAstedChatModalProps {
   openaiRTC: UseRealtimeVoiceWebRTC;
   pendingDocument?: any;
   onClearPendingDocument?: () => void;
+  currentVoice?: 'echo' | 'ash' | 'shimmer';
 }
 
 const MessageBubble: React.FC<{
@@ -389,10 +390,11 @@ const MessageBubble: React.FC<{
                       <Edit className="w-3.5 h-3.5" />
                     </button>
                   )}
+
                   {onCopy && (
                     <button
                       onClick={() => onCopy(message.content)}
-                      className="p-1.5 hover:bg-primary/10 rounded transition-colors"
+                      className="p-1.5 hover:bg-primary/10 text-primary rounded transition-colors"
                       title="Copier"
                     >
                       <Copy className="w-3.5 h-3.5" />
@@ -428,14 +430,22 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
   openaiRTC,
   pendingDocument,
   onClearPendingDocument,
+  currentVoice
 }) => {
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>(() => {
-    return (localStorage.getItem('iasted-voice-selection') as 'echo' | 'ash' | 'shimmer') || 'ash';
+    return currentVoice || (localStorage.getItem('iasted-voice-selection') as 'echo' | 'ash' | 'shimmer') || 'ash';
   });
+
+  // Sync internal state with prop if it changes (e.g. via voice command)
+  useEffect(() => {
+    if (currentVoice && currentVoice !== selectedVoice) {
+      setSelectedVoice(currentVoice);
+    }
+  }, [currentVoice]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -534,6 +544,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
   const handleClearConversation = async () => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer toute la conversation ?')) {
       setMessages([]);
+      openaiRTC.clearSession(); // Clear WebRTC session history
       if (sessionId) {
         // Supprimer tous les messages de la session
         const { error: deleteError } = await supabase
@@ -969,6 +980,14 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
                 title="Nouvelle conversation"
               > <RefreshCw className="w-4 h-4" />
                 <span className="hidden sm:inline">Nouvelle</span>
+              </button>
+
+              <button
+                onClick={handleClearConversation}
+                className="neu-button-sm flex items-center gap-2 px-3 py-2 text-sm hover:bg-destructive/10 text-destructive transition-colors"
+                title="Supprimer tout l'historique"
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
 
               {/* Voice Selector */}

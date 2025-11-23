@@ -28,7 +28,15 @@ const IAstedPage = () => {
   const [selectedVoiceId, setSelectedVoiceId] = useState<'echo' | 'ash' | 'shimmer'>('ash');
 
   // OpenAI Realtime Hook
-  const openaiRTC = useRealtimeVoiceWebRTC();
+  const openaiRTC = useRealtimeVoiceWebRTC((toolName, args) => {
+    console.log(`🔧 [IAstedPage] Tool call: ${toolName}`, args);
+
+    if (toolName === 'change_voice' && args.voice_id) {
+      console.log('🎙️ [IAstedPage] Changement de voix demandé:', args.voice_id);
+      setSelectedVoiceId(args.voice_id as any);
+      toast.success(`Voix modifiée : ${args.voice_id === 'ash' ? 'Homme (Ash)' : args.voice_id === 'shimmer' ? 'Femme (Shimmer)' : 'Standard (Echo)'}`);
+    }
+  });
 
   const userRole = isPresident ? 'president' : 'minister';
 
@@ -50,7 +58,13 @@ const IAstedPage = () => {
       if (data) {
         // Map legacy voice IDs to OpenAI voices if needed, or just use default 'ash'
         // For now we default to 'ash' as we are standardizing
-        setSelectedVoiceId('ash');
+        // But if we have a local preference, we respect it
+        const savedVoice = localStorage.getItem('iasted-voice-selection') as 'echo' | 'ash' | 'shimmer';
+        if (savedVoice) {
+          setSelectedVoiceId(savedVoice);
+        } else {
+          setSelectedVoiceId('ash');
+        }
       }
     } catch (error) {
       console.error('Erreur chargement config voix:', error);
@@ -176,10 +190,10 @@ const IAstedPage = () => {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <div className={`w-3 h-3 rounded-full ${isIdle ? 'bg-gray-400' :
-                          isListening ? 'bg-green-500 animate-pulse' :
-                            isThinking ? 'bg-yellow-500 animate-pulse' :
-                              isSpeaking ? 'bg-blue-500 animate-pulse' :
-                                'bg-gray-400'
+                        isListening ? 'bg-green-500 animate-pulse' :
+                          isThinking ? 'bg-yellow-500 animate-pulse' :
+                            isSpeaking ? 'bg-blue-500 animate-pulse' :
+                              'bg-gray-400'
                         }`} />
                       <span className="text-sm font-medium">
                         {isIdle ? 'Inactif' :

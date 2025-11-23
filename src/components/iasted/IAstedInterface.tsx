@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import { IASTED_SYSTEM_PROMPT } from '@/config/iasted-config';
+import { toast } from 'sonner';
 
 interface IAstedInterfaceProps {
     isOpen: boolean;
@@ -14,6 +15,14 @@ interface IAstedInterfaceProps {
  * Manages the OpenAI RTC connection and provides the chat modal.
  */
 export default function IAstedInterface({ isOpen, onClose, userRole = 'user' }: IAstedInterfaceProps) {
+    const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('ash');
+
+    // Initialize voice from localStorage
+    useEffect(() => {
+        const savedVoice = localStorage.getItem('iasted-voice-selection') as 'echo' | 'ash' | 'shimmer';
+        if (savedVoice) setSelectedVoice(savedVoice);
+    }, []);
+
     // Calculate time-based greeting
     const timeOfDay = useMemo(() => {
         const hour = new Date().getHours();
@@ -47,8 +56,12 @@ export default function IAstedInterface({ isOpen, onClose, userRole = 'user' }: 
     // Initialize OpenAI RTC with tool call handler
     const openaiRTC = useRealtimeVoiceWebRTC((toolName, args) => {
         console.log(`🔧 [IAstedInterface] Tool call: ${toolName}`, args);
-        // Tool calls are handled by the chat modal and individual pages
-        // This is just a logging point
+
+        if (toolName === 'change_voice' && args.voice_id) {
+            console.log('🎙️ [IAstedInterface] Changement de voix demandé:', args.voice_id);
+            setSelectedVoice(args.voice_id as any);
+            toast.success(`Voix modifiée : ${args.voice_id === 'ash' ? 'Homme (Ash)' : args.voice_id === 'shimmer' ? 'Femme (Shimmer)' : 'Standard (Echo)'}`);
+        }
     });
 
     return (
@@ -56,6 +69,7 @@ export default function IAstedInterface({ isOpen, onClose, userRole = 'user' }: 
             isOpen={isOpen}
             onClose={onClose}
             openaiRTC={openaiRTC}
+            currentVoice={selectedVoice}
         />
     );
 }

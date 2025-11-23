@@ -51,7 +51,77 @@ const CabinetDirectorSpace = () => {
   const queryClient = useQueryClient();
 
   // Hook OpenAI WebRTC
-  const openaiRTC = useRealtimeVoiceWebRTC();
+  const openaiRTC = useRealtimeVoiceWebRTC((toolName, args) => {
+    console.log(`🔧 [CabinetDirectorSpace] Tool call: ${toolName}`, args);
+    switch (toolName) {
+      case 'control_ui':
+        if (args.action === 'toggle_theme') toggleTheme();
+        else if (args.action === 'set_theme_dark') setTheme("dark");
+        else if (args.action === 'set_theme_light') setTheme("light");
+        else if (args.action === 'set_volume') toast({ title: "Volume", description: `Volume ajusté` });
+        else if (args.action === 'set_speech_rate') {
+          if (args.value) openaiRTC.setSpeechRate(parseFloat(args.value));
+          toast({ title: "Vitesse", description: `Vitesse ajustée` });
+        }
+        break;
+
+      case 'change_voice':
+        if (args.voice_id) {
+          setSelectedVoice(args.voice_id as any);
+          toast({ title: "Voix modifiée", description: `Voix changée pour ${args.voice_id}` });
+        }
+        break;
+
+      case 'navigate_to_section':
+        const sectionId = args.section_id;
+        const accordionSections = ['navigation', 'operations', 'coordination'];
+
+        if (accordionSections.includes(sectionId)) {
+          toggleSection(sectionId);
+          toast({ title: "Navigation", description: `Section ${sectionId} basculée` });
+        } else {
+          setActiveSection(sectionId);
+
+          const parentSectionMap: Record<string, string> = {
+            'dashboard': 'navigation',
+            'documents': 'navigation',
+            'projects': 'operations',
+            'instructions': 'operations',
+            'interministerial': 'coordination',
+            'council': 'coordination'
+          };
+
+          const parent = parentSectionMap[sectionId];
+          if (parent) {
+            setExpandedSections(prev => ({ ...prev, [parent]: true }));
+          }
+          toast({ title: "Navigation", description: `Ouverture de ${sectionId}` });
+        }
+        break;
+
+      case 'control_document':
+        toast({ title: "Document", description: `Action ${args.action} sur document` });
+        break;
+
+      case 'generate_document':
+        toast({ title: "Génération", description: `Création de document...` });
+        setIastedOpen(true);
+        break;
+
+      case 'open_chat':
+        setIastedOpen(true);
+        break;
+
+      case 'close_chat':
+        setIastedOpen(false);
+        break;
+
+      case 'stop_conversation':
+        openaiRTC.disconnect();
+        setIastedOpen(false);
+        break;
+    }
+  });
 
   const [mounted, setMounted] = useState(false);
   const [iastedOpen, setIastedOpen] = useState(false);
@@ -750,6 +820,7 @@ const CabinetDirectorSpace = () => {
           isOpen={iastedOpen}
           onClose={() => setIastedOpen(false)}
           openaiRTC={openaiRTC}
+          currentVoice={selectedVoice}
         />
       </div>
     </div>

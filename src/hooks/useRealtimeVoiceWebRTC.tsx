@@ -3,7 +3,7 @@
  * Plus robuste et direct que l'approche WebSocket
  */
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -87,6 +87,7 @@ export interface UseRealtimeVoiceWebRTC {
     connect: (voice?: 'echo' | 'ash' | 'alloy' | 'shimmer', systemPrompt?: string) => Promise<void>;
     disconnect: () => void;
     toggleConversation: (voice?: 'echo' | 'ash' | 'alloy' | 'shimmer') => Promise<void>;
+    clearSession: () => void;
 }
 
 export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) => void): UseRealtimeVoiceWebRTC => {
@@ -100,7 +101,10 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
     const audioElRef = useRef<HTMLAudioElement | null>(null);
     const recorderRef = useRef<AudioRecorder | null>(null);
     const [speechRate, setSpeechRate] = useState(1.0); // 0.5 to 2.0
-    const currentTranscriptRef = useRef('');
+    const currentTranscriptRef = useRef<string>('');
+    const systemPromptRef = useRef<string | undefined>(undefined);
+    const [pendingVoiceChange, setPendingVoiceChange] = useState<string | null>(null);
+    const isConnectingRef = useRef<boolean>(false);
     const analyserRef = useRef<AnalyserNode | null>(null);
     const animationFrameRef = useRef<number | null>(null);
 
@@ -165,6 +169,7 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
 
         return btoa(binary);
     }, []);
+
 
     const handleDataChannelMessage = useCallback((event: MessageEvent) => {
         try {
@@ -238,6 +243,11 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                     const args = JSON.parse(data.arguments);
                     console.log(`🛠️ [WebRTC] Appel d'outil: ${functionName}`, args);
 
+                    // Gérer le changement de voix en interne
+                    if (functionName === 'change_voice') {
+                        setPendingVoiceChange(args.voice_id);
+                    }
+
                     // Exécuter l'outil côté client si nécessaire
                     if (onToolCall) {
                         onToolCall(functionName, args);
@@ -272,11 +282,21 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
         }
     }, [voiceState, toast, onToolCall]);
 
-    const connect = useCallback(async (voice: 'echo' | 'ash' = 'echo', systemPrompt?: string) => {
-        if (pcRef.current) {
-            console.log('⚠️ [WebRTC] Déjà connecté');
+
+
+    const connect = useCallback(async (voice: 'echo' | 'ash' | 'shimmer' = 'echo', systemPrompt?: string) => {
+        // Preserve systemPrompt for reconnections
+        if (systemPrompt) {
+            systemPromptRef.current = systemPrompt;
+        }
+
+        // Prevent simultaneous connections
+        if (pcRef.current || isConnectingRef.current) {
+            console.log('⚠️ [WebRTC] Connexion déjà en cours ou active');
             return;
         }
+
+        isConnectingRef.current = true;
 
         try {
             console.log('🔌 [WebRTC] Connexion...');
@@ -393,15 +413,17 @@ Vous êtes l'expert absolu de cette application "ADMIN.GA - Espace Président". 
                 const controlInstructions = `
 # CONTRÔLE & OUTILS
 Vous avez le contrôle total sur l'interface utilisateur via des outils.
-- **Navigation** : Pour aller quelque part ou ouvrir une section, utilisez 'navigate_app'.
+- **Navigation** : Pour aller quelque part ou ouvrir une section, utilisez 'navigate_to_section' avec l'ID approprié.
+- **Changement de Voix** : Si l'utilisateur demande une autre voix (homme/femme), utilisez 'change_voice'.
 - **Interface (Thème)** : 
   - "Mets le mode sombre" -> 'control_ui' avec action='set_theme_dark'
   - "Mets le mode clair" -> 'control_ui' avec action='set_theme_light'
-  - NE JAMAIS utiliser 'toggle_theme' si l'utilisateur précise "clair" ou "sombre".
-- **Documents** : Pour créer/rédiger, utilisez 'generate_document'.
+- **Documents** : Pour créer/rédiger, utilisez 'generate_document'. Pour ouvrir/fermer, utilisez 'control_document'.
 - **Chat** : Pour ouvrir/fermer le chat, utilisez 'open_chat' / 'close_chat'.
+- **Historique** : Pour gérer la conversation :
+  - "Supprime toute la conversation" / "Efface tout" -> 'manage_history' avec action='delete_all'
+  - "Supprime le dernier message" / "Efface le dernier" -> 'manage_history' avec action='delete_last'
 - **Arrêt** : Pour "stop", "au revoir", "coupe", utilisez 'stop_conversation'.
-- **Fermeture Section** : "Ferme" ou "Ferme [section]" -> 'navigate_app' (voir logique contextuelle).
 
 IMPORTANT : Au démarrage, saluez IMMÉDIATEMENT l'utilisateur.
 Lorsque vous analysez des données, soyez proactif : "Je vois 12 actes en attente, voulez-vous les passer en revue ?".
@@ -433,36 +455,70 @@ Lorsque vous analysez des données, soyez proactif : "Je vois 12 actes en attent
                             },
                             {
                                 type: 'function',
-                                name: 'navigate_app',
-                                description: `Navigue vers une section accordéon (pour déplier/replier) ou une page de l'application.
-SECTIONS ACCORDÉON (toggle uniquement): navigation, gouvernance, économie, affaires sociales, infrastructures.
-PAGES RÉELLES (navigation): tableau de bord, assistant iasted, conseil des ministres, ministères, décrets, nominations.`,
+                                name: 'navigate_to_section',
+                                description: 'Navigue vers une section spécifique de l\'application.',
                                 parameters: {
                                     type: 'object',
                                     properties: {
-                                        route: {
+                                        section_id: {
                                             type: 'string',
-                                            description: 'Nom de la section ou page (ex: "navigation", "tableau de bord", "conseil des ministres")'
-                                        },
-                                        module_id: {
-                                            type: 'string',
-                                            description: 'Optionnel: ID du module (utilisé comme alias de route)'
+                                            description: 'ID technique de la section (ex: "dashboard", "documents", "ministeres")'
                                         }
                                     },
-                                    required: ['route']
+                                    required: ['section_id']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'change_voice',
+                                description: 'Change la voix et la personnalité de l\'assistant.',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        voice_id: {
+                                            type: 'string',
+                                            enum: ['ash', 'shimmer', 'echo'],
+                                            description: 'ID de la voix: ash (homme sérieux), shimmer (femme douce), echo (homme standard)'
+                                        }
+                                    },
+                                    required: ['voice_id']
                                 }
                             },
                             {
                                 type: 'function',
                                 name: 'control_ui',
-                                description: 'Contrôle les éléments de l\'interface utilisateur (thème, affichage, etc.) sans naviguer.',
+                                description: 'Contrôle les éléments de l\'interface utilisateur (thème, volume, etc.).',
                                 parameters: {
                                     type: 'object',
                                     properties: {
                                         action: {
                                             type: 'string',
-                                            enum: ['toggle_theme', 'set_theme_dark', 'set_theme_light', 'toggle_sidebar'],
-                                            description: 'Action à effectuer. Pour le thème, PRÉFÉREZ TOUJOURS "set_theme_dark" ou "set_theme_light" plutôt que toggle.'
+                                            enum: ['toggle_theme', 'set_theme_dark', 'set_theme_light', 'toggle_sidebar', 'set_volume', 'set_speech_rate'],
+                                            description: 'Action à effectuer.'
+                                        },
+                                        value: {
+                                            type: 'string',
+                                            description: 'Valeur optionnelle pour l\'action (ex: niveau de volume, vitesse)'
+                                        }
+                                    },
+                                    required: ['action']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'control_document',
+                                description: 'Actions sur les documents (ouvrir, fermer, archiver).',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        action: {
+                                            type: 'string',
+                                            enum: ['open_viewer', 'close_viewer', 'archive', 'validate'],
+                                            description: 'Action à effectuer sur le document.'
+                                        },
+                                        document_id: {
+                                            type: 'string',
+                                            description: 'ID du document concerné (optionnel si contexte évident)'
                                         }
                                     },
                                     required: ['action']
@@ -482,6 +538,22 @@ PAGES RÉELLES (navigation): tableau de bord, assistant iasted, conseil des mini
                                         content_points: { type: 'array', items: { type: 'string' } }
                                     },
                                     required: ['type', 'recipient', 'subject']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'manage_history',
+                                description: 'Gère l\'historique de la conversation (supprimer, modifier).',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        action: {
+                                            type: 'string',
+                                            enum: ['delete_all', 'delete_last'],
+                                            description: 'Action à effectuer sur l\'historique.'
+                                        }
+                                    },
+                                    required: ['action']
                                 }
                             }
                         ]
@@ -524,6 +596,7 @@ PAGES RÉELLES (navigation): tableau de bord, assistant iasted, conseil des mini
             console.log('✅ [WebRTC] Connexion établie');
 
             setIsConnected(true);
+            isConnectingRef.current = false;
 
             toast({
                 title: 'Connecté',
@@ -555,6 +628,8 @@ PAGES RÉELLES (navigation): tableau de bord, assistant iasted, conseil des mini
                 pcRef.current.close();
                 pcRef.current = null;
             }
+
+            isConnectingRef.current = false;
 
             toast({
                 title: 'Erreur de connexion',
@@ -595,6 +670,26 @@ PAGES RÉELLES (navigation): tableau de bord, assistant iasted, conseil des mini
         await new Promise(resolve => setTimeout(resolve, 300));
     }, [stopAudioAnalysis]);
 
+    // Effet pour gérer le changement de voix asynchrone
+    useEffect(() => {
+        if (pendingVoiceChange && !isConnectingRef.current) {
+            const voice = pendingVoiceChange as 'echo' | 'ash' | 'shimmer';
+            console.log('🔄 [WebRTC] Changement de voix demandé:', voice);
+            setPendingVoiceChange(null);
+
+            // Séquence de reconnexion avec préservation du systemPrompt
+            const performVoiceChange = async () => {
+                await disconnect();
+                // Petit délai pour assurer le nettoyage
+                setTimeout(() => connect(voice, systemPromptRef.current), 500);
+            };
+
+            performVoiceChange();
+        }
+    }, [pendingVoiceChange, disconnect, connect]);
+
+
+
     const toggleConversation = useCallback(async (voice: 'echo' | 'ash' = 'echo', systemPrompt?: string) => {
         if (isConnected) {
             await disconnect();
@@ -621,5 +716,6 @@ PAGES RÉELLES (navigation): tableau de bord, assistant iasted, conseil des mini
         connect,
         disconnect,
         toggleConversation,
+        clearSession: () => setMessages([]),
     };
 };
