@@ -59,27 +59,17 @@ export const AdminUnlock = ({ onUnlocked }: AdminUnlockProps) => {
         return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/secure-admin-access`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ password }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('secure-admin-access', {
+        body: { password },
+      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Échec du déblocage');
+      if (error) {
+        throw error;
       }
 
       toast({
         title: '✅ Accès débloqué',
-        description: data.message,
+        description: (data as any)?.message ?? 'Accès admin accordé avec succès',
         duration: 3000,
       });
 
