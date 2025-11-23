@@ -400,31 +400,43 @@ export type Database = {
       }
       knowledge_base: {
         Row: {
+          access_level: string[] | null
           category: string | null
           content: string
           created_at: string | null
           created_by: string | null
+          file_path: string | null
+          file_type: string | null
           id: string
+          status: string | null
           tags: string[] | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          access_level?: string[] | null
           category?: string | null
           content: string
           created_at?: string | null
           created_by?: string | null
+          file_path?: string | null
+          file_type?: string | null
           id?: string
+          status?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          access_level?: string[] | null
           category?: string | null
           content?: string
           created_at?: string | null
           created_by?: string | null
+          file_path?: string | null
+          file_type?: string | null
           id?: string
+          status?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string | null

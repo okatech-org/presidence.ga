@@ -40,7 +40,7 @@ export const KnowledgeBaseSection = () => {
     const fetchDocuments = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('knowledge_base')
                 .select('*')
                 .order('created_at', { ascending: false });
@@ -64,10 +64,11 @@ export const KnowledgeBaseSection = () => {
 
         setLoading(true);
         try {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('knowledge_base')
                 .insert({
                     title: newDocTitle,
+                    content: '',
                     file_path: newDocPath,
                     file_type: newDocPath.split('.').pop() || 'unknown',
                     status: 'indexing',
@@ -99,7 +100,7 @@ export const KnowledgeBaseSection = () => {
         if (!confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) return;
 
         try {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('knowledge_base')
                 .delete()
                 .eq('id', id);
@@ -122,7 +123,7 @@ export const KnowledgeBaseSection = () => {
 
     const handleReindex = async (id: string) => {
         try {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('knowledge_base')
                 .update({ status: 'indexing' })
                 .eq('id', id);
