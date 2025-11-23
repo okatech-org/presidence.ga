@@ -164,7 +164,9 @@ const CabinetDirectorSpace = () => {
     checkAccess();
   }, [navigate, toast]);
 
-  // Data Fetching
+  // Data Fetching - COMMENTED OUT: These tables don't exist yet
+  // TODO: Create these tables in Supabase or remove this functionality
+  /*
   const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: ["ministerial_projects"],
     queryFn: async () => {
@@ -177,7 +179,11 @@ const CabinetDirectorSpace = () => {
       return (data || []) as MinisterialProject[];
     },
   });
+  */
+  const projects: any[] = [];
+  const projectsLoading = false;
 
+  /*
   const { data: instructions = [], isLoading: instructionsLoading } = useQuery({
     queryKey: ["presidential_instructions"],
     queryFn: async () => {
@@ -190,8 +196,12 @@ const CabinetDirectorSpace = () => {
       return (data || []) as PresidentialInstruction[];
     },
   });
+  */
+  const instructions: any[] = [];
+  const instructionsLoading = false;
 
-  // Interministerial Coordination Query
+  // Interministerial Coordination Query - COMMENTED OUT
+  /*
   const { data: coordinations = [], isLoading: coordinationsLoading } = useQuery({
     queryKey: ["interministerial_coordination"],
     queryFn: async () => {
@@ -204,8 +214,12 @@ const CabinetDirectorSpace = () => {
       return (data || []) as InterministerialCoordination[];
     },
   });
+  */
+  const coordinations: any[] = [];
+  const coordinationsLoading = false;
 
-  // Council Preparations Query
+  // Council Preparations Query - COMMENTED OUT
+  /*
   const { data: councils = [], isLoading: councilsLoading } = useQuery({
     queryKey: ["council_preparations"],
     queryFn: async () => {
@@ -218,6 +232,9 @@ const CabinetDirectorSpace = () => {
       return (data || []) as CouncilPreparation[];
     },
   });
+  */
+  const councils: any[] = [];
+  const councilsLoading = false;
 
   // Mutations
   const createProjectMutation = useMutation({

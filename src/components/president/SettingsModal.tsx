@@ -82,20 +82,15 @@ export function SettingsModal({ isOpen, onClose, userRole = "president" }: Setti
                     setProfile({
                         fullName: profileData.full_name || "",
                         email: user.email || "",
-                        phone: profileData.phone || "",
-                        title: profileData.title || "",
+                        phone: "", // Not in database yet
+                        title: profileData.preferred_title || "",
                     });
 
-                    // Load preferences if stored
-                    if (profileData.preferences) {
-                        const prefs = profileData.preferences as any;
-                        if (prefs.notifications) setNotifications(prefs.notifications);
-                        if (prefs.display) setDisplayPrefs(prefs.display);
-                        if (prefs.export) setExportPrefs(prefs.export);
-                    }
-                } else {
-                    setProfile(prev => ({ ...prev, email: user.email || "" }));
+                    // Preferences are stored separately, not in user_profiles
+                    // They could be loaded from user_preferences table if needed
                 }
+            } else {
+                setProfile(prev => ({ ...prev, email: user.email || "" }));
             }
         } catch (error) {
             console.error("Error loading settings:", error);
