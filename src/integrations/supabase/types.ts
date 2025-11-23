@@ -421,6 +421,7 @@ export type Database = {
           recipient_id: string
           security_level: string
           sender_id: string
+          sender_name: string | null
           subject: string
         }
         Insert: {
@@ -433,6 +434,7 @@ export type Database = {
           recipient_id: string
           security_level?: string
           sender_id: string
+          sender_name?: string | null
           subject: string
         }
         Update: {
@@ -445,6 +447,7 @@ export type Database = {
           recipient_id?: string
           security_level?: string
           sender_id?: string
+          sender_name?: string | null
           subject?: string
         }
         Relationships: []
@@ -490,6 +493,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      guest_lists: {
+        Row: {
+          category: string
+          created_at: string | null
+          event_id: string
+          id: string
+          name: string
+          organization: string | null
+          status: string
+          title: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          event_id: string
+          id?: string
+          name: string
+          organization?: string | null
+          status?: string
+          title?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          name?: string
+          organization?: string | null
+          status?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_lists_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "official_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       iasted_config: {
         Row: {
@@ -920,6 +964,39 @@ export type Database = {
           satisfaction_publique?: number | null
           signalements_totaux?: number | null
           taux_resolution?: number | null
+        }
+        Relationships: []
+      }
+      official_events: {
+        Row: {
+          created_at: string | null
+          date: string
+          description: string | null
+          id: string
+          location: string
+          status: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          description?: string | null
+          id?: string
+          location: string
+          status?: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          location?: string
+          status?: string
+          title?: string
+          type?: string
         }
         Relationships: []
       }

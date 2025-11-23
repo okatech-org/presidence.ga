@@ -12,6 +12,8 @@ import { resolveRoute } from '@/utils/route-mapping';
 interface IAstedInterfaceProps {
     userRole?: string;
     defaultOpen?: boolean;
+    isOpen?: boolean; // Allow external control
+    onClose?: () => void; // Allow external control
     onToolCall?: (toolName: string, args: any) => void;
 }
 
@@ -20,8 +22,15 @@ interface IAstedInterfaceProps {
  * Includes the floating button and the chat modal.
  * Manages its own connection and visibility state.
  */
-export default function IAstedInterface({ userRole = 'user', defaultOpen = false, onToolCall }: IAstedInterfaceProps) {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
+export default function IAstedInterface({ userRole = 'user', defaultOpen = false, isOpen: controlledIsOpen, onClose: controlledOnClose, onToolCall }: IAstedInterfaceProps) {
+    const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen);
+    
+    // Use controlled state if provided, otherwise use internal state
+    const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+    const setIsOpen = controlledOnClose ? (value: boolean) => {
+        if (!value) controlledOnClose();
+    } : setInternalIsOpen;
+    
     const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('ash');
     const [pendingDocument, setPendingDocument] = useState<any>(null);
     const { setTheme, theme } = useTheme();
