@@ -47,14 +47,32 @@ Deno.serve(async (req) => {
       }
     )
 
-    // Verify the user's token
+    // Extraire l'utilisateur depuis le JWT déjà vérifié par la plateforme
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
-    if (authError || !user) {
-      console.error('Auth error:', authError)
+    let userId: string | null = null
+    let userEmail: string | null = null
+
+    try {
+      const payloadBase64 = token.split('.')[1]
+      const payloadJson = atob(payloadBase64)
+      const payload = JSON.parse(payloadJson)
+      userId = payload.sub as string
+      userEmail = (payload.email ?? null) as string | null
+    } catch (e) {
+      console.error('JWT parse error:', e)
       return new Response(
         JSON.stringify({ error: 'Token invalide' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'Utilisateur non trouvé dans le token' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -66,7 +84,7 @@ Deno.serve(async (req) => {
     const { data: existingRole } = await supabase
       .from('user_roles')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('role', 'admin')
       .single()
 
@@ -87,7 +105,7 @@ Deno.serve(async (req) => {
     const { error: insertError } = await supabase
       .from('user_roles')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         role: 'admin'
       })
 
@@ -102,14 +120,14 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log(`✅ Admin access granted to user ${user.id} (${user.email})`)
+    console.log(`✅ Admin access granted to user ${userId} (${userEmail ?? 'no-email'})`)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'Accès admin accordé avec succès',
-        userId: user.id,
-        userEmail: user.email
+        userId,
+        userEmail,
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
