@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      administrative_archives: {
+        Row: {
+          access_level: string
+          archiving_date: string
+          category: string
+          created_at: string | null
+          id: string
+          reference_code: string
+          title: string
+        }
+        Insert: {
+          access_level?: string
+          archiving_date?: string
+          category: string
+          created_at?: string | null
+          id?: string
+          reference_code: string
+          title: string
+        }
+        Update: {
+          access_level?: string
+          archiving_date?: string
+          category?: string
+          created_at?: string | null
+          id?: string
+          reference_code?: string
+          title?: string
+        }
+        Relationships: []
+      }
       analytics_voice_events: {
         Row: {
           at: string
@@ -727,6 +757,39 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_reviews: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          document_title: string
+          due_date: string | null
+          id: string
+          priority: string
+          requestor: string
+          status: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          document_title: string
+          due_date?: string | null
+          id?: string
+          priority?: string
+          requestor: string
+          status?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          document_title?: string
+          due_date?: string | null
+          id?: string
+          priority?: string
+          requestor?: string
+          status?: string
+        }
+        Relationships: []
+      }
       mail_ai_analysis: {
         Row: {
           confidentiality_level: string | null
@@ -964,6 +1027,39 @@ export type Database = {
           satisfaction_publique?: number | null
           signalements_totaux?: number | null
           taux_resolution?: number | null
+        }
+        Relationships: []
+      }
+      official_decrees: {
+        Row: {
+          created_at: string | null
+          id: string
+          publication_date: string | null
+          reference_number: string
+          signature_date: string | null
+          status: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          publication_date?: string | null
+          reference_number: string
+          signature_date?: string | null
+          status?: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          publication_date?: string | null
+          reference_number?: string
+          signature_date?: string | null
+          status?: string
+          title?: string
+          type?: string
         }
         Relationships: []
       }
@@ -1233,6 +1329,30 @@ export type Database = {
           type?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      protocol_procedures: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string
+          id: string
+          title: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          description: string
+          id?: string
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          title?: string
         }
         Relationships: []
       }
