@@ -167,6 +167,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           folder_type: Database["public"]["Enums"]["folder_type"] | null
+          icon: string | null
           id: string
           name: string
           service_role: string | null
@@ -177,6 +178,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           folder_type?: Database["public"]["Enums"]["folder_type"] | null
+          icon?: string | null
           id?: string
           name: string
           service_role?: string | null
@@ -187,6 +189,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           folder_type?: Database["public"]["Enums"]["folder_type"] | null
+          icon?: string | null
           id?: string
           name?: string
           service_role?: string | null
@@ -232,10 +235,13 @@ export type Database = {
       }
       documents: {
         Row: {
+          content_scan_urls: string[] | null
           created_at: string | null
           current_holder_service: string | null
+          deposited_at: string | null
           document_number: string
           document_type: Database["public"]["Enums"]["document_type"] | null
+          envelope_scan_urls: string[] | null
           file_path: string | null
           file_size: number | null
           file_type: string | null
@@ -250,10 +256,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          content_scan_urls?: string[] | null
           created_at?: string | null
           current_holder_service?: string | null
+          deposited_at?: string | null
           document_number?: string
           document_type?: Database["public"]["Enums"]["document_type"] | null
+          envelope_scan_urls?: string[] | null
           file_path?: string | null
           file_size?: number | null
           file_type?: string | null
@@ -268,10 +277,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          content_scan_urls?: string[] | null
           created_at?: string | null
           current_holder_service?: string | null
+          deposited_at?: string | null
           document_number?: string
           document_type?: Database["public"]["Enums"]["document_type"] | null
+          envelope_scan_urls?: string[] | null
           file_path?: string | null
           file_size?: number | null
           file_type?: string | null
@@ -355,6 +367,123 @@ export type Database = {
           taux_resolution?: number | null
         }
         Relationships: []
+      }
+      mail_ai_analysis: {
+        Row: {
+          confidentiality_level: string | null
+          created_at: string | null
+          id: string
+          key_points: Json | null
+          mail_id: string
+          suggested_routing: string | null
+          summary: string | null
+          urgency: string | null
+        }
+        Insert: {
+          confidentiality_level?: string | null
+          created_at?: string | null
+          id?: string
+          key_points?: Json | null
+          mail_id: string
+          suggested_routing?: string | null
+          summary?: string | null
+          urgency?: string | null
+        }
+        Update: {
+          confidentiality_level?: string | null
+          created_at?: string | null
+          id?: string
+          key_points?: Json | null
+          mail_id?: string
+          suggested_routing?: string | null
+          summary?: string | null
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_ai_analysis_mail_id_fkey"
+            columns: ["mail_id"]
+            isOneToOne: false
+            referencedRelation: "mails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mail_attachments: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          mail_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          mail_id: string
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          mail_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_attachments_mail_id_fkey"
+            columns: ["mail_id"]
+            isOneToOne: false
+            referencedRelation: "mails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mail_routing: {
+        Row: {
+          from_service: string | null
+          id: string
+          mail_id: string
+          notes: string | null
+          routed_at: string | null
+          routed_by: string | null
+          to_service: string
+        }
+        Insert: {
+          from_service?: string | null
+          id?: string
+          mail_id: string
+          notes?: string | null
+          routed_at?: string | null
+          routed_by?: string | null
+          to_service: string
+        }
+        Update: {
+          from_service?: string | null
+          id?: string
+          mail_id?: string
+          notes?: string | null
+          routed_at?: string | null
+          routed_by?: string | null
+          to_service?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_routing_mail_id_fkey"
+            columns: ["mail_id"]
+            isOneToOne: false
+            referencedRelation: "mails"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mails: {
         Row: {

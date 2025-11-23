@@ -2,15 +2,17 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, MessageCircle, Brain } from 'lucide-react';
 
 interface IAstedButtonProps {
-  voiceListening: boolean;
-  voiceSpeaking: boolean;
-  voiceProcessing: boolean;
+  voiceListening?: boolean;
+  voiceSpeaking?: boolean;
+  voiceProcessing?: boolean;
   pulsing?: boolean; // Visual feedback for sound events
-  onClick: () => void;
-  onDoubleClick: () => void;
+  onClick?: () => void;
+  onSingleClick?: () => void;
+  onDoubleClick?: () => void;
   className?: string;
   audioLevel?: number; // 0 to 1
   size?: 'sm' | 'md' | 'lg'; // Button size variant
+  isInterfaceOpen?: boolean;
 }
 
 interface Shockwave {
