@@ -24,15 +24,16 @@ export type SecurityLevel = 'standard' | 'enhanced' | 'maximum';
 
 export interface EncryptedMessage {
     id: string;
-    sender_name: string;
-    sender_role?: string;
+    sender_id: string;
+    sender_name?: string;
+    recipient_id: string;
     subject: string;
     content: string;
     is_read: boolean;
     priority: MessagePriority;
     security_level: SecurityLevel;
+    encryption_key?: string;
     created_at: string;
-    recipient_id?: string;
 }
 
 export type CorrespondencePriority = 'basse' | 'moyenne' | 'haute';

@@ -137,8 +137,9 @@ const PrivateCabinetDirectorSpace = () => {
       setMessages([
         {
           id: "1",
+          sender_id: "demo-sender-1",
           sender_name: "Secrétariat Élysée",
-          sender_role: "Conseiller diplomatique",
+          recipient_id: "demo-recipient",
           subject: "Coordination visite d'État",
           content: "Concernant les modalités de la prochaine visite, nous souhaiterions aborder les points suivants en toute confidentialité...",
           created_at: "2025-11-19T15:30:00Z",
@@ -148,7 +149,9 @@ const PrivateCabinetDirectorSpace = () => {
         },
         {
           id: "2",
+          sender_id: "demo-sender-2",
           sender_name: "Cabinet Présidence UA",
+          recipient_id: "demo-recipient",
           subject: "Invitation sommet africain",
           content: "Le Président de la Commission vous invite personnellement au prochain sommet...",
           created_at: "2025-11-18T09:00:00Z",
