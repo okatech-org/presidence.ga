@@ -54,13 +54,8 @@ export const EncryptedMessageItem = ({ message, onClick }: EncryptedMessageItemP
                 <div className="flex items-center gap-2">
                     <Lock className={`h-3.5 w-3.5 ${!message.is_read ? "text-blue-600" : "text-gray-400"}`} />
                     <span className={`text-sm font-medium ${!message.is_read ? "text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"}`}>
-                        {message.sender_name}
+                        {message.sender_name || 'Expéditeur inconnu'}
                     </span>
-                    {message.sender_role && (
-                        <span className="text-xs text-gray-500 hidden sm:inline-block">
-                            • {message.sender_role}
-                        </span>
-                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     {getSecurityBadge(message.security_level)}

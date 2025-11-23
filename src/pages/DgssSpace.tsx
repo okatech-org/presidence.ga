@@ -84,53 +84,89 @@ const DgssSpace = () => {
     const { data: reports = [], isLoading: reportsLoading } = useQuery({
         queryKey: ["intelligence_reports"],
         queryFn: async () => {
-            // TODO: Créer la table intelligence_reports
-            return [] as IntelligenceReport[];
+            const { data, error } = await supabase
+                .from('intelligence_reports')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return data as IntelligenceReport[];
         },
     });
 
     const { data: targets = [], isLoading: targetsLoading } = useQuery({
         queryKey: ["surveillance_targets"],
         queryFn: async () => {
-            // TODO: Créer la table surveillance_targets
-            return [] as SurveillanceTarget[];
+            const { data, error } = await supabase
+                .from('surveillance_targets')
+                .select('*')
+                .order('last_update', { ascending: false });
+            if (error) throw error;
+            return data as SurveillanceTarget[];
         },
     });
 
     const { data: threats = [], isLoading: threatsLoading } = useQuery({
         queryKey: ["threat_indicators"],
         queryFn: async () => {
-            // TODO: Créer la table threat_indicators
-            return [] as ThreatIndicator[];
+            const { data, error } = await supabase
+                .from('threat_indicators')
+                .select('*')
+                .order('timestamp', { ascending: false });
+            if (error) throw error;
+            return data as ThreatIndicator[];
         },
     });
 
-    // Mutations - Désactivées temporairement
+    // Mutations
     const createReportMutation = useMutation({
         mutationFn: async (newReport: Omit<IntelligenceReport, "id" | "created_at">) => {
-            console.log("Table intelligence_reports non créée");
-            throw new Error("Table non créée");
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const { data, error } = await supabase
+                .from('intelligence_reports')
+                .insert({
+                    ...newReport,
+                    created_by: user.id,
+                })
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["intelligence_reports"] });
             toast({ title: "Succès", description: "Rapport créé avec succès" });
         },
-        onError: () => {
-            toast({ title: "Erreur", description: "Table non créée dans la base de données", variant: "destructive" });
+        onError: (error) => {
+            toast({ title: "Erreur", description: error.message, variant: "destructive" });
         },
     });
 
     const addTargetMutation = useMutation({
         mutationFn: async (newTarget: Omit<SurveillanceTarget, "id" | "created_at" | "last_update">) => {
-            console.log("Table surveillance_targets non créée");
-            throw new Error("Table non créée");
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const { data, error } = await supabase
+                .from('surveillance_targets')
+                .insert({
+                    ...newTarget,
+                    created_by: user.id,
+                })
+                .select()
+                .single();
+            
+            if (error) throw error;
+            return data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["surveillance_targets"] });
             toast({ title: "Succès", description: "Cible ajoutée avec succès" });
         },
-        onError: () => {
-            toast({ title: "Erreur", description: "Impossible d'ajouter la cible", variant: "destructive" });
+        onError: (error) => {
+            toast({ title: "Erreur", description: error.message, variant: "destructive" });
         },
     });
 

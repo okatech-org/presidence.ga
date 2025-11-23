@@ -73,7 +73,7 @@ export class PrivateCabinetService {
         return data as EncryptedMessage[];
     }
 
-    async createMessage(message: Omit<EncryptedMessage, "id" | "created_at">): Promise<EncryptedMessage> {
+    async createMessage(message: Omit<EncryptedMessage, "id" | "created_at" | "sender_id">): Promise<EncryptedMessage> {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated");
 

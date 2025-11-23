@@ -682,6 +682,42 @@ export type Database = {
         }
         Relationships: []
       }
+      intelligence_reports: {
+        Row: {
+          classification: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          source: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          classification?: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          source: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          classification?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       interministerial_coordination: {
         Row: {
           created_at: string | null
@@ -1500,6 +1536,48 @@ export type Database = {
         }
         Relationships: []
       }
+      surveillance_targets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          last_update: string
+          location: string | null
+          metadata: Json | null
+          name: string
+          priority: string
+          status: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          last_update?: string
+          location?: string | null
+          metadata?: Json | null
+          name: string
+          priority?: string
+          status?: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          last_update?: string
+          location?: string | null
+          metadata?: Json | null
+          name?: string
+          priority?: string
+          status?: string
+          type?: string
+        }
+        Relationships: []
+      }
       system_config: {
         Row: {
           created_at: string | null
@@ -1560,6 +1638,42 @@ export type Database = {
           setting_value?: Json
           updated_at?: string | null
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      threat_indicators: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          level: string
+          location: string | null
+          metadata: Json | null
+          timestamp: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          level?: string
+          location?: string | null
+          metadata?: Json | null
+          timestamp?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          level?: string
+          location?: string | null
+          metadata?: Json | null
+          timestamp?: string
+          type?: string
         }
         Relationships: []
       }
