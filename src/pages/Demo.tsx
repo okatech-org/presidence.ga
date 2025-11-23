@@ -318,13 +318,34 @@ const Demo = () => {
     }
   };
 
-  const handleAdminClick = () => {
+  const handleAdminClick = async () => {
     const newClicks = adminClicks + 1;
     setAdminClicks(newClicks);
 
     if (newClicks === 2) {
-      setShowAdminDialog(true);
       setAdminClicks(0);
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+          toast({
+            title: "Authentification requise",
+            description: "Veuillez d'abord vous connecter avec un compte de démonstration",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setShowAdminDialog(true);
+      } catch (error) {
+        console.error("Erreur lors de la vérification de l'authentification :", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de vérifier votre authentification",
+          variant: "destructive",
+        });
+      }
     }
 
     setTimeout(() => {
