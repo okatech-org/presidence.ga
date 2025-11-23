@@ -356,6 +356,45 @@ export type Database = {
         }
         Relationships: []
       }
+      encrypted_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          encryption_key: string | null
+          id: string
+          is_read: boolean | null
+          priority: string
+          recipient_id: string
+          security_level: string
+          sender_id: string
+          subject: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          encryption_key?: string | null
+          id?: string
+          is_read?: boolean | null
+          priority?: string
+          recipient_id: string
+          security_level?: string
+          sender_id: string
+          subject: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          encryption_key?: string | null
+          id?: string
+          is_read?: boolean | null
+          priority?: string
+          recipient_id?: string
+          security_level?: string
+          sender_id?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       iasted_config: {
         Row: {
           agent_id: string | null
@@ -695,6 +734,51 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_correspondence: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          priority: string
+          received_date: string
+          sender_name: string
+          sender_organization: string | null
+          status: string
+          subject: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          priority?: string
+          received_date?: string
+          sender_name: string
+          sender_organization?: string | null
+          status?: string
+          subject: string
+          type?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          priority?: string
+          received_date?: string
+          sender_name?: string
+          sender_organization?: string | null
+          status?: string
+          subject?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       presidential_decisions: {
         Row: {
           created_at: string | null
@@ -732,6 +816,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      private_audiences: {
+        Row: {
+          confidentiality_level: string
+          created_at: string | null
+          created_by: string
+          date: string
+          id: string
+          location: string | null
+          notes: string | null
+          person_name: string
+          person_title: string | null
+          status: string
+          subject: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          confidentiality_level?: string
+          created_at?: string | null
+          created_by: string
+          date: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          person_name: string
+          person_title?: string | null
+          status?: string
+          subject: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          confidentiality_level?: string
+          created_at?: string | null
+          created_by?: string
+          date?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          person_name?: string
+          person_title?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      private_trips: {
+        Row: {
+          created_at: string | null
+          destination: string
+          end_date: string
+          id: string
+          notes: string | null
+          purpose: string
+          start_date: string
+          status: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          destination: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          purpose: string
+          start_date: string
+          status?: string
+          type?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          destination?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          purpose?: string
+          start_date?: string
+          status?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       role_feedback: {
         Row: {
@@ -987,6 +1161,57 @@ export type Database = {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vip_contacts: {
+        Row: {
+          address: string | null
+          category: string
+          created_at: string | null
+          email: string | null
+          id: string
+          is_favorite: boolean | null
+          last_contact_date: string | null
+          name: string
+          notes: string | null
+          organization: string | null
+          phone: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          category?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          last_contact_date?: string | null
+          name: string
+          notes?: string | null
+          organization?: string | null
+          phone?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          category?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          last_contact_date?: string | null
+          name?: string
+          notes?: string | null
+          organization?: string | null
+          phone?: string | null
+          title?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
