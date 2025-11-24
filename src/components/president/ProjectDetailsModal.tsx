@@ -59,7 +59,7 @@ export function ProjectDetailsModal({ isOpen, onClose, projectId, projectType }:
 
             // Load project details
             const { data: projectData, error: projectError } = await supabase
-                .from(tableName)
+                .from(tableName as any)
                 .select("*")
                 .eq("id", projectId)
                 .single();
@@ -70,7 +70,7 @@ export function ProjectDetailsModal({ isOpen, onClose, projectId, projectType }:
             // Load updates if applicable
             if (updatesTable) {
                 const { data: updatesData } = await supabase
-                    .from(updatesTable)
+                    .from(updatesTable as any)
                     .select("*")
                     .eq(projectType === 'construction' ? "chantier_id" : "project_id", projectId)
                     .order("date", { ascending: false });
@@ -81,7 +81,7 @@ export function ProjectDetailsModal({ isOpen, onClose, projectId, projectType }:
             // Load photos if applicable
             if (photosTable) {
                 const { data: photosData } = await supabase
-                    .from(photosTable)
+                    .from(photosTable as any)
                     .select("*")
                     .eq("chantier_id", projectId)
                     .order("created_at", { ascending: false });

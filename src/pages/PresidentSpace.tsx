@@ -1354,7 +1354,7 @@ export function Nominations({ theme, onOpenNomination }: { theme: ThemeConfig, o
   };
 
   return (
-    <SectionCard title="Nominations en Attente" theme={theme} right={<User size={18} color={theme.textSecondary} />}>
+    <SectionCard title="Nominations en Attente" theme={theme} right={<Users size={18} color={theme.textSecondary} />}>
       <div style={{ display: "grid", gap: "12px" }}>
         {loading ? (
           <div style={{ padding: "20px", textAlign: "center", color: theme.textSecondary }}>Chargement...</div>
