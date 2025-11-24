@@ -5,6 +5,9 @@
 ```
 scripts/intelligence/
 ├── keywords.py           # Base de données de 300+ mots-clés stratégiques
+├── sources.py            # URLs presse, comptes sociaux, hashtags
+├── config.json           # Configuration JSON complète
+├── rss_scraper.py        # Scraper RSS dédié (sources officielles)
 ├── web_scraper.py        # Scraper web/YouTube avec rotation intelligente
 ├── whatsapp_monitor.js   # Moniteur WhatsApp (nécessite session active)
 └── README.md             # Ce fichier
@@ -12,10 +15,10 @@ scripts/intelligence/
 
 ## 🚀 Installation
 
-### Python (Web Scraper)
+### Python (Web & RSS Scrapers)
 ```bash
 cd scripts/intelligence
-pip install supabase duckduckgo-search youtube-search-python python-dotenv
+pip install supabase duckduckgo-search youtube-search-python python-dotenv feedparser
 ```
 
 ### Node.js (WhatsApp Monitor)
@@ -82,7 +85,55 @@ python web_scraper.py
 ============================================================
 ```
 
-### 2. WhatsApp Monitor (Nécessite session active)
+### 2. RSS Feed Scraper (⭐ Recommandé : Sources Officielles)
+
+```bash
+python rss_scraper.py
+```
+
+**Fonctionnement** :
+- ✅ Scrape **directement** les flux RSS des médias gabonais
+- ✅ Plus rapide et fiable que DuckDuckGo
+- ✅ Sources vérifiées : Gabon Review, Gabon Media Time, Jeune Afrique, RFI...
+- ✅ Filtrage par mots-clés prioritaires
+- ✅ Pas de rate limiting (sources directes)
+
+**Sources couvertes** :
+- **Presse Nationale** : L'Union, Gabon Review, Gabon Media Time, AGP, Infos241...
+- **Presse Internationale** : Jeune Afrique, RFI, Africa Intelligence, Mondafrique
+- **Économie** : Le Nouveau Gabon, Direct Infos Gabon
+
+**Sortie exemple** :
+```
+============================================================
+🦅 LYNX EYE - RSS FEED SCRAPER (Sources Officielles)
+============================================================
+⏰ Exécution: 2024-11-24 22:00:00
+
+📰 Scraping des flux RSS...
+
+  [NATIONAL]
+    ✓ Gabon Review: 8 articles
+    ✓ Gabon Media Time: 6 articles
+    ✓ AGP Gabon: 4 articles
+    ...
+
+  [INTERNATIONAL]
+    ✓ Jeune Afrique: 5 articles
+    ✓ RFI: 3 articles
+    ...
+
+✓ RSS: 42 items collectés
+
+💾 Enregistrement dans Supabase...
+✅ 42/42 items sauvegardés avec succès
+
+============================================================
+✅ SCRAPING RSS TERMINÉ
+============================================================
+```
+
+### 3. WhatsApp Monitor (Nécessite session active)
 
 ```bash
 node whatsapp_monitor.js
