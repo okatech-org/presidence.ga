@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { generateOfficialPDFWithURL } from '@/utils/generateOfficialPDF';
+import { documentGenerationService } from '@/services/documentGenerationService';
 import {
   Send,
   Loader2,
@@ -742,33 +743,63 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
           const requestedFormat = args.format || 'pdf';
           console.log(`📄 [generateDocument] Format demandé: ${requestedFormat}`, args);
 
-          // Pour l'instant, seul PDF est supporté, mais on accepte la demande et génère en PDF
-          if (requestedFormat === 'docx') {
-            toast({
-              title: "📝 Format Word",
-              description: "Génération en PDF pour l'instant. Le support Docx arrive bientôt.",
-              duration: 3000,
-            });
-          }
-
           try {
-            const { blob, url, filename } = await generateOfficialPDFWithURL({
-              type: args.type,
-              recipient: args.recipient,
-              subject: args.subject,
-              content_points: args.content_points || [],
-              signature_authority: args.signature_authority,
-              serviceContext: args.service_context
-            });
-
-            console.log('✅ [generatePDF] Document généré:', filename);
+            let blob: Blob, url: string, filename: string;
+            
+            if (requestedFormat === 'docx') {
+              // Génération DOCX avec le service
+              const title = `${args.type} - ${args.recipient}`;
+              const content = `Objet : ${args.subject}\n\n${(args.content_points || []).map((p: string, i: number) => `${i + 1}. ${p}`).join('\n\n')}`;
+              
+              // Mapping des types de documents vers les templates
+              const templateMap: Record<string, 'decret' | 'rapport' | 'note'> = {
+                'lettre': 'rapport',
+                'decret': 'decret',
+                'rapport': 'rapport',
+                'circulaire': 'note',
+                'note': 'note',
+                'nomination': 'decret',
+                'communique': 'rapport'
+              };
+              
+              const template = templateMap[args.type] || 'rapport';
+              
+              const result = await documentGenerationService.generateDocument({
+                title,
+                content,
+                template,
+                format: 'docx',
+              });
+              
+              blob = result.blob;
+              filename = `${args.type}_${args.recipient.replace(/\s+/g, '_')}_${Date.now()}.docx`;
+              url = URL.createObjectURL(blob);
+              
+              console.log('✅ [generateDOCX] Document généré:', filename);
+            } else {
+              // Génération PDF existante
+              const pdfResult = await generateOfficialPDFWithURL({
+                type: args.type,
+                recipient: args.recipient,
+                subject: args.subject,
+                content_points: args.content_points || [],
+                signature_authority: args.signature_authority,
+                serviceContext: args.service_context
+              });
+              
+              blob = pdfResult.blob;
+              url = pdfResult.url;
+              filename = pdfResult.filename;
+              
+              console.log('✅ [generatePDF] Document généré:', filename);
+            }
 
             // Créer l'objet document pour le chat
             const docPreview = {
               id: crypto.randomUUID(),
               name: filename,
               url: url,  // URL blob pour téléchargement
-              type: 'application/pdf',
+              type: requestedFormat === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf',
             };
 
             // Créer un message assistant dédié avec le document attaché
