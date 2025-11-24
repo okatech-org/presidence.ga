@@ -43,12 +43,20 @@ import { IASTED_SYSTEM_PROMPT } from "@/config/iasted-config";
 import { useUserContext } from "@/hooks/useUserContext";
 import { generateSystemPrompt } from "@/utils/generateSystemPrompt";
 import { DocumentsSection } from '@/components/documents/DocumentsSection';
+import { useSuperAdmin } from "@/contexts/SuperAdminContext";
 
 const CabinetDirectorSpace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
+  const { registerCustomIAsted } = useSuperAdmin();
+
+  // Enregistrer le bouton iAsted personnalisé
+  useEffect(() => {
+    registerCustomIAsted(true);
+    return () => registerCustomIAsted(false);
+  }, [registerCustomIAsted]);
 
   // Hook OpenAI WebRTC
   const openaiRTC = useRealtimeVoiceWebRTC((toolName, args) => {

@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSuperAdmin } from "@/contexts/SuperAdminContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserContext } from '@/hooks/useUserContext';
@@ -70,6 +72,15 @@ const AdminSpace = () => {
     const { toast } = useToast();
     const navigate = useNavigate();
     const { theme, setTheme } = useTheme();
+    const queryClient = useQueryClient();
+    const { registerCustomIAsted } = useSuperAdmin();
+
+    // Enregistrer le bouton iAsted personnalisé
+    useEffect(() => {
+        registerCustomIAsted(true);
+        return () => registerCustomIAsted(false);
+    }, [registerCustomIAsted]);
+
     const [mounted, setMounted] = useState(false);
 
     const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);

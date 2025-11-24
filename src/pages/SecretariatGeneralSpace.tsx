@@ -30,7 +30,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "next-themes";
-import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
 import IAstedInterface from "@/components/iasted/IAstedInterface";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

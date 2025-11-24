@@ -39,11 +39,22 @@ import type { IntelligenceReport, SurveillanceTarget, ThreatIndicator } from "@/
 import { ThreatHeatmap } from "@/components/dgss/ThreatHeatmap";
 import { ThreatTrends } from "@/components/dgss/ThreatTrends";
 
+import { useUserContext } from "@/hooks/useUserContext";
+import { generateSystemPrompt } from "@/utils/generateSystemPrompt";
+import { useSuperAdmin } from "@/contexts/SuperAdminContext";
+
 const DgssSpace = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
     const { theme, setTheme } = useTheme();
     const queryClient = useQueryClient();
+    const { registerCustomIAsted } = useSuperAdmin();
+
+    // Enregistrer le bouton iAsted personnalisé
+    useEffect(() => {
+        registerCustomIAsted(true);
+        return () => registerCustomIAsted(false);
+    }, [registerCustomIAsted]);
 
     const [mounted, setMounted] = useState(false);
     const [iastedOpen, setIastedOpen] = useState(false);
@@ -133,7 +144,7 @@ const DgssSpace = () => {
                 })
                 .select()
                 .single();
-            
+
             if (error) throw error;
             return data;
         },
@@ -159,7 +170,7 @@ const DgssSpace = () => {
                 })
                 .select()
                 .single();
-            
+
             if (error) throw error;
             return data;
         },

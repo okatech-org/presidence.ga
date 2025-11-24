@@ -15,6 +15,7 @@ interface SuperAdminContextValue {
     handleNavigation: (query: string) => void;
     returnToBase: () => void;
     returnToOrigin: () => void;
+    registerCustomIAsted: (active: boolean) => void;
 }
 
 const SuperAdminContext = createContext<SuperAdminContextValue | null>(null);
@@ -40,6 +41,8 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
     const [securityOverrideActive, setSecurityOverrideActive] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false); // For UI tools
     const [pendingDocument, setPendingDocument] = useState<any>(null); // For document generation
+
+    const [customIAstedActive, setCustomIAstedActive] = useState(false);
 
     const isAdmin = useMemo(() => {
         return !isLoading && (role === 'admin' || role === 'president');
@@ -168,19 +171,24 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
         handleToolCall('return_to_origin', {});
     }, [handleToolCall]);
 
+    const registerCustomIAsted = useCallback((active: boolean) => {
+        setCustomIAstedActive(active);
+    }, []);
+
     const contextValue = useMemo<SuperAdminContextValue>(() => ({
         isAdmin,
         originRoute,
         handleNavigation,
         returnToBase,
-        returnToOrigin
-    }), [isAdmin, originRoute, handleNavigation, returnToBase, returnToOrigin]);
+        returnToOrigin,
+        registerCustomIAsted
+    }), [isAdmin, originRoute, handleNavigation, returnToBase, returnToOrigin, registerCustomIAsted]);
 
     return (
         <SuperAdminContext.Provider value={contextValue}>
             {children}
-            {/* Render button only if user is admin/president */}
-            {isAdmin && ReactDOM.createPortal(
+            {/* Render button only if user is admin/president AND no custom IAsted is active */}
+            {isAdmin && !customIAstedActive && ReactDOM.createPortal(
                 <div className="fixed bottom-6 right-6 z-[9999]" style={{ pointerEvents: 'auto' }}>
                     <IAstedButtonFull
                         onClick={async () => {

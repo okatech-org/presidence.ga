@@ -65,6 +65,7 @@ import { IASTED_SYSTEM_PROMPT } from "@/config/iasted-config";
 import { soundManager } from "@/utils/SoundManager";
 import { useUserContext } from "@/hooks/useUserContext";
 import { generateSystemPrompt } from "@/utils/generateSystemPrompt";
+import { useSuperAdmin } from "@/contexts/SuperAdminContext";
 
 type ThemeConfig = {
   primary: string;
@@ -184,6 +185,13 @@ export default function PresidentSpace() {
 
   // Context utilisateur pour personnalisation
   const userContext = useUserContext({ spaceName: 'PresidentSpace' });
+  const { registerCustomIAsted } = useSuperAdmin();
+
+  // Enregistrer le bouton iAsted personnalisé pour masquer le bouton global
+  useEffect(() => {
+    registerCustomIAsted(true);
+    return () => registerCustomIAsted(false);
+  }, [registerCustomIAsted]);
 
   // Ref pour tracker la dernière section ouverte (pour contexte intelligent)
   const lastOpenedSectionRef = useRef<keyof typeof expandedSections | null>(null);
