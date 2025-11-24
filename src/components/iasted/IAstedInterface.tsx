@@ -151,6 +151,45 @@ export default function IAstedInterface({ userRole = 'user', defaultOpen = false
             }
         }
 
+        if (toolName === 'navigate_within_space') {
+            console.log('📍 [IAstedInterface] Navigation dans l\'espace présidentiel:', args);
+            
+            // Scroll vers le module dans la page actuelle (président uniquement)
+            const moduleId = args.module_id;
+            if (moduleId) {
+                const element = document.getElementById(moduleId);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    toast.success(`Module ${moduleId} affiché`);
+                    console.log(`✅ [IAstedInterface] Scroll vers module: ${moduleId}`);
+                } else {
+                    console.error(`❌ [IAstedInterface] Module non trouvé: ${moduleId}`);
+                    toast.error(`Module ${moduleId} introuvable`);
+                }
+            }
+        }
+
+        if (toolName === 'navigate_app') {
+            console.log('🌍 [IAstedInterface] Navigation Globale (Admin):', args);
+            
+            // Navigation complète vers une autre route (admin uniquement)
+            if (args.route) {
+                navigate(args.route);
+                toast.success(`Navigation vers ${args.route}`);
+                console.log(`✅ [IAstedInterface] Navigation vers: ${args.route}`);
+                
+                // Si module_id est spécifié, scroll après navigation
+                if (args.module_id) {
+                    setTimeout(() => {
+                        const element = document.getElementById(args.module_id);
+                        if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 500);
+                }
+            }
+        }
+
         if (toolName === 'global_navigate') {
             console.log('🌍 [IAstedInterface] Navigation Globale:', args);
 

@@ -41,14 +41,15 @@ export const ROLE_CONTEXTS: Record<AppRole, RoleContext | null> = {
         accessLevel: 'full',
         availableTools: [
             'control_ui',
-            'navigate_app',
+            'navigate_within_space',  // Navigation limitée à l'espace présidentiel uniquement
             'generate_document',
-            'access_all_data',
-            'manage_instructions',
-            'view_intelligence',
-            'manage_protocol'
+            'view_all_data',          // Consultation des données (lecture seule)
+            'view_intelligence',      // Accès aux rapports de renseignement
+            'view_kpis',              // Consultation des indicateurs nationaux
+            'view_projects',          // Supervision des projets stratégiques
+            'manage_protocol'         // Gestion du protocole présidentiel
         ],
-        contextDescription: 'Vous assistez le Président de la République Gabonaise'
+        contextDescription: 'Vous assistez le Président dans la consultation des informations stratégiques et la supervision de l\'action gouvernementale. Vous ne pouvez PAS naviguer vers les espaces administratifs ou techniques.'
     },
     dgr: {
         role: 'dgr',
