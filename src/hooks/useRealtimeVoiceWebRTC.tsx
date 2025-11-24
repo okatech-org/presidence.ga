@@ -246,6 +246,33 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                     const args = JSON.parse(data.arguments);
                     console.log(`🛠️ [WebRTC] Appel d'outil: ${functionName}`, args);
 
+                    // Gérer stop_conversation en interne (déconnexion)
+                    if (functionName === 'stop_conversation') {
+                        console.log('🛑 [WebRTC] Arrêt de la conversation demandé');
+                        setVoiceState('idle');
+                        // Fermer la connexion après un court délai (laisser l'AI confirmer)
+                        setTimeout(() => {
+                            if (pcRef.current) {
+                                pcRef.current.close();
+                                pcRef.current = null;
+                            }
+                            if (dcRef.current) {
+                                dcRef.current.close();
+                                dcRef.current = null;
+                            }
+                            if (recorderRef.current) {
+                                recorderRef.current.stop();
+                                recorderRef.current = null;
+                            }
+                            stopAudioAnalysis();
+                            setIsConnected(false);
+                            setMessages([]);
+                        }, 1500);
+                        
+                        // Pas besoin de response.create, on arrête
+                        break;
+                    }
+
                     // Gérer le changement de voix en interne
                     if (functionName === 'change_voice') {
                         setPendingVoiceChange(args.voice_id);
@@ -489,16 +516,31 @@ ${controlInstructions}`;
                             {
                                 type: 'function',
                                 name: 'navigate_to_section',
-                                description: 'Navigue vers une section spécifique de l\'application.',
+                                description: 'Navigue vers une section spécifique DANS l\'espace actuel. Utilise cet outil pour ouvrir/déplier des sections locales (ex: dashboard, documents, users). NE PAS utiliser pour changer d\'espace/page (utilise global_navigate pour ça).',
                                 parameters: {
                                     type: 'object',
                                     properties: {
                                         section_id: {
                                             type: 'string',
-                                            description: 'ID technique de la section (ex: "dashboard", "documents", "ministeres")'
+                                            description: 'ID technique de la section en minuscules et en anglais (ex: "dashboard", "documents", "navigation", "users", "config")'
                                         }
                                     },
                                     required: ['section_id']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'global_navigate',
+                                description: 'Navigue vers un autre ESPACE ou PAGE de l\'application (changement de route). Utilise cet outil pour aller vers president-space, admin-space, demo, home, etc. NE PAS utiliser pour les sections locales (utilise navigate_to_section pour ça).',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        query: {
+                                            type: 'string',
+                                            description: 'Terme simple ou chemin de la route (ex: "president", "admin", "demo", "home", "/president-space", "/admin-space", "/")'
+                                        }
+                                    },
+                                    required: ['query']
                                 }
                             },
                             {

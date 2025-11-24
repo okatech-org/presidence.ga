@@ -349,6 +349,7 @@ const PrivateCabinetDirectorSpace = () => {
         if (accordionSections.includes(targetSection)) {
           toggleSection(targetSection);
           toast({ title: "Navigation", description: `Section ${targetSection} basculée` });
+          return { success: true, message: `Section ${targetSection} basculée` };
         } else {
           setActiveSection(targetSection);
 
@@ -366,8 +367,8 @@ const PrivateCabinetDirectorSpace = () => {
             setExpandedSections(prev => ({ ...prev, [parent]: true }));
           }
           toast({ title: "Navigation", description: `Ouverture de ${targetSection}` });
+          return { success: true, message: `Section ${targetSection} ouverte` };
         }
-        break;
 
       case 'open_chat':
         setIastedOpen(true);

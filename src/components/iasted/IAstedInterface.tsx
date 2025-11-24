@@ -81,10 +81,26 @@ export default function IAstedInterface({ userRole = 'user', defaultOpen = false
         console.log(`🔧 [IAstedInterface] Tool call: ${toolName}`, args);
 
         // 1. Internal Handlers
-        if (toolName === 'change_voice' && args.voice_id) {
-            console.log('🎙️ [IAstedInterface] Changement de voix demandé:', args.voice_id);
-            setSelectedVoice(args.voice_id as any);
-            toast.success(`Voix modifiée : ${args.voice_id === 'ash' ? 'Homme (Ash)' : args.voice_id === 'shimmer' ? 'Femme (Shimmer)' : 'Standard (Echo)'}`);
+        if (toolName === 'change_voice') {
+            console.log('🎙️ [IAstedInterface] Changement de voix demandé');
+            
+            // Si voice_id spécifique fourni, l'utiliser
+            if (args.voice_id) {
+                setSelectedVoice(args.voice_id as any);
+                toast.success(`Voix modifiée : ${args.voice_id === 'ash' ? 'Homme (Ash)' : args.voice_id === 'shimmer' ? 'Femme (Shimmer)' : 'Standard (Echo)'}`);
+            } 
+            // Sinon, alterner homme↔femme selon voix actuelle
+            else {
+                const currentVoice = selectedVoice;
+                const isCurrentlyMale = currentVoice === 'ash' || currentVoice === 'echo';
+                const newVoice = isCurrentlyMale ? 'shimmer' : 'ash';
+                
+                console.log(`🎙️ [IAstedInterface] Alternance voix: ${currentVoice} (${isCurrentlyMale ? 'homme' : 'femme'}) -> ${newVoice} (${isCurrentlyMale ? 'femme' : 'homme'})`);
+                setSelectedVoice(newVoice);
+                toast.success(`Voix changée : ${newVoice === 'shimmer' ? 'Femme (Shimmer)' : 'Homme (Ash)'}`);
+            }
+            
+            return { success: true, message: `Voix modifiée` };
         }
 
         if (toolName === 'logout_user') {
@@ -128,6 +144,7 @@ export default function IAstedInterface({ userRole = 'user', defaultOpen = false
                     toast.success("Mode sombre activé");
                     console.log('✅ [IAstedInterface] Thème changé vers dark');
                 }, 100);
+                return { success: true, message: 'Mode sombre activé' };
             } else if (args.action === 'set_theme_light') {
                 console.log('🎨 [IAstedInterface] Activation du mode clair...');
                 setTheme('light');
@@ -135,6 +152,7 @@ export default function IAstedInterface({ userRole = 'user', defaultOpen = false
                     toast.success("Mode clair activé");
                     console.log('✅ [IAstedInterface] Thème changé vers light');
                 }, 100);
+                return { success: true, message: 'Mode clair activé' };
             } else if (args.action === 'toggle_theme') {
                 const newTheme = theme === 'dark' ? 'light' : 'dark';
                 console.log(`🎨 [IAstedInterface] Basculement: ${theme} -> ${newTheme}`);
@@ -143,11 +161,13 @@ export default function IAstedInterface({ userRole = 'user', defaultOpen = false
                     toast.success(`Thème basculé vers ${newTheme === 'dark' ? 'sombre' : 'clair'}`);
                     console.log(`✅ [IAstedInterface] Thème basculé vers ${newTheme}`);
                 }, 100);
+                return { success: true, message: `Thème basculé vers ${newTheme === 'dark' ? 'sombre' : 'clair'}` };
             }
 
             if (args.action === 'toggle_sidebar') {
                 // Dispatch event for sidebar since it's often controlled by layout
                 window.dispatchEvent(new CustomEvent('iasted-sidebar-toggle'));
+                return { success: true, message: 'Sidebar basculée' };
             }
         }
 
@@ -206,9 +226,12 @@ export default function IAstedInterface({ userRole = 'user', defaultOpen = false
                     console.log(`🦎 [IAstedInterface] Mode Caméléon: ${args.target_role}`);
                     localStorage.setItem('chameleon_role', args.target_role);
                 }
+                
+                return { success: true, message: `Navigation vers ${resolvedPath} effectuée` };
             } else {
                 console.error(`❌ [IAstedInterface] Route not found for: "${args.query}"`);
                 toast.error(`Impossible de trouver la route pour "${args.query}"`);
+                return { success: false, message: `Route "${args.query}" introuvable` };
             }
         }
 

@@ -231,6 +231,7 @@ export default function PresidentSpace() {
         if (accordionSections.includes(sectionId)) {
           toggleSection(sectionId as keyof typeof expandedSections);
           toast({ title: "Navigation", description: `Section ${sectionId} basculée` });
+          return { success: true, message: `Section ${sectionId} basculée` };
         } else {
           // Pages (navigation directe)
           setActiveSection(sectionId);
@@ -262,8 +263,8 @@ export default function PresidentSpace() {
           }
 
           toast({ title: "Navigation", description: `Ouverture de ${sectionId}` });
+          return { success: true, message: `Section ${sectionId} ouverte` };
         }
-        break;
 
       case 'control_document':
         console.log('📄 [PresidentSpace] Contrôle document:', args);

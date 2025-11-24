@@ -163,7 +163,8 @@ const AdminSpace = () => {
                     title: "Navigation",
                     description: `Section ${targetSection} ouverte`,
                 });
-                break;
+                
+                return { success: true, message: `Section ${targetSection} ouverte` };
 
             case 'global_navigate':
                 // Intelligent route resolution
