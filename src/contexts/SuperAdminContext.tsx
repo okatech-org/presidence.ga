@@ -182,6 +182,35 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                 });
                 return { success: true, message: `Section ${sectionId} ouverte` };
 
+            // UI Control
+            case 'control_ui':
+                console.log('🎨 [Super Admin Context] UI Control:', args);
+                
+                // Dispatch event for theme changes
+                if (args.action === 'toggle_theme' || args.action === 'set_theme_dark' || args.action === 'set_theme_light') {
+                    const themeEvent = new CustomEvent('iasted-control-ui', {
+                        detail: { action: args.action, value: args.value }
+                    });
+                    window.dispatchEvent(themeEvent);
+                    
+                    const actionMsg = args.action === 'set_theme_dark' ? 'Mode sombre activé' : 
+                                      args.action === 'set_theme_light' ? 'Mode clair activé' : 
+                                      'Thème basculé';
+                    toast({
+                        title: 'Thème',
+                        description: actionMsg,
+                    });
+                    return { success: true, message: actionMsg };
+                }
+                
+                // Sidebar toggle
+                if (args.action === 'toggle_sidebar') {
+                    window.dispatchEvent(new CustomEvent('iasted-sidebar-toggle'));
+                    return { success: true, message: 'Menu latéral basculé' };
+                }
+                
+                return { success: false, message: 'Action UI non reconnue' };
+
             default:
                 console.log('[Super Admin Context] Tool call forwardé:', toolName, args);
                 // Return undefined for unknown tools (let them be handled elsewhere)
