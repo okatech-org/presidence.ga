@@ -80,6 +80,7 @@ const CabinetDirectorSpace = () => {
         if (accordionSections.includes(sectionId)) {
           toggleSection(sectionId);
           toast({ title: "Navigation", description: `Section ${sectionId} basculée` });
+          return { success: true, message: `Section ${sectionId} basculée` };
         } else {
           setActiveSection(sectionId);
 
@@ -97,8 +98,8 @@ const CabinetDirectorSpace = () => {
             setExpandedSections(prev => ({ ...prev, [parent]: true }));
           }
           toast({ title: "Navigation", description: `Ouverture de ${sectionId}` });
+          return { success: true, message: `Section ${sectionId} ouverte` };
         }
-        break;
 
       case 'control_document':
         toast({ title: "Document", description: `Action ${args.action} sur document` });
