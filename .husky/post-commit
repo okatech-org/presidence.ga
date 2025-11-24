@@ -1,5 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 set -e
 branch="$(git rev-parse --abbrev-ref HEAD)"
 if git remote get-url origin >/dev/null 2>&1; then
