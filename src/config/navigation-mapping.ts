@@ -111,6 +111,56 @@ export const NAVIGATION_SECTIONS: Record<string, SectionDefinition[]> = {
             description: "Vue d'ensemble des projets de l'État."
         }
     ],
+    admin: [
+        {
+            id: "dashboard",
+            label: "Tableau de Bord",
+            keywords: ["tableau de bord", "accueil", "résumé", "vue d'ensemble", "dashboard", "statistiques"],
+            description: "Vue d'ensemble du système avec statistiques globales (utilisateurs, santé système, alertes, requêtes iAsted)."
+        },
+        {
+            id: "feedbacks",
+            label: "Feedbacks",
+            keywords: ["feedbacks", "retours", "avis", "suggestions"],
+            description: "Gestion des feedbacks des responsables de services."
+        },
+        {
+            id: "users",
+            label: "Utilisat eurs",
+            keywords: ["utilisateurs", "comptes", "gestion utilisateurs", "users"],
+            description: "Gestion complète des utilisateurs et de leurs rôles."
+        },
+        {
+            id: "ai",
+            label: "IA & Voix",
+            keywords: ["ia", "intelligence artificielle", "voix", "iasted", "configuration ia"],
+            description: "Configuration de l'IA et des paramètres vocaux."
+        },
+        {
+            id: "knowledge",
+            label: "Connaissances",
+            keywords: ["connaissances", "base de connaissances", "knowledge base", "données"],
+            description: "Gestion de la base de connaissances système."
+        },
+        {
+            id: "documents",
+            label: "Gestion Documents",
+            keywords: ["documents", "gestion documents", "paramètres documents"],
+            description: "Paramètres et gestion des documents système."
+        },
+        {
+            id: "audit",
+            label: "Audit & Logs",
+            keywords: ["audit", "logs", "journaux", "historique", "traçabilité"],
+            description: "Consultation des logs d'audit et de l'historique système."
+        },
+        {
+            id: "config",
+            label: "Configuration",
+            keywords: ["configuration", "paramètres", "settings", "config système"],
+            description: "Configuration globale du système."
+        }
+    ],
     // Add mappings for other roles if needed, defaulting to a subset or similar structure
     dgr: [
         {

@@ -416,62 +416,53 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                 console.log('📡 [WebRTC] Canal de données ouvert, configuration de la voix:', voice);
 
                 // Instructions système enrichies pour le contrôle de l'interface
+                // Si un systemPrompt est fourni (depuis SuperAdminContext), on l'utilise avec les compléments
+                // Sinon on utilise un prompt par défaut basique
                 const baseInstructions = systemPrompt || (voice === 'ash'
-                    ? "Vous êtes iAsted, l'assistant du Président. Vous avez une voix posée, grave et sage, avec un accent africain francophone subtil et distingué."
-                    : "Vous êtes iAsted, l'assistant du Président. Vous êtes professionnel, dynamique et efficace.");
+                    ? "Vous êtes iAsted, l'assistant vocal intelligent de la Présidence de la République Gabonaise. Vous avez une voix posée, grave et sage, avec un accent africain francophone subtil et distingué."
+                    : "Vous êtes iAsted, l'assistant vocal intelligent de la Présidence de la République Gabonaise. Vous êtes professionnel, dynamique et efficace.");
 
-                const appKnowledge = `
-# CARTE MENTALE DE L'APPLICATION (Connaissance Totale)
-Vous êtes l'expert absolu de cette application "ADMIN.GA - Espace Président". Vous connaissez chaque recoin, chaque donnée, chaque rôle.
-
-## STRUCTURE & DONNÉES
-1. **Tableau de Bord (Dashboard)** : Vue d'ensemble stratégique.
-   - *Données clés* : Nombre d'agents (12,543), Structures (28), Postes vacants (342), Actes en attente (12).
-   - *Graphiques* : Répartition par catégorie (Cadres, Techniciens...), Parité (Hommes/Femmes).
-   - *Logique* : Un taux de vacance élevé signale un besoin de recrutement. Des actes en attente > 20 est critique.
-
-2. **Gouvernance** : Gestion de l'exécutif.
-   - *Conseil des Ministres* : Ordres du jour, relevés de décisions.
-   - *Ministères & Directions* : Organigrammes, suivi des performances.
-   - *Décrets & Ordonnances* : Signature électronique, historique juridique.
-   - *Nominations* : Gestion des hauts fonctionnaires.
-
-3. **Économie & Finances** : Suivi budgétaire (Recettes/Dépenses), Dette, Investissements.
-4. **Affaires Sociales** : Santé, Éducation, Logement.
-5. **Infrastructures** : Suivi des grands chantiers de l'État.
-
-## RÔLES & POUVOIRS
-- **Le Président (Utilisateur)** : A tous les droits. Peut signer, valider, nommer.
-- **Directeur de Cabinet** : Prépare les dossiers, filtre les urgences.
-- **Secrétaire Général** : Valide la légalité des actes.
-
-## ACTIONS D'INTERFACE (UI)
-- Vous pouvez changer le thème (clair/sombre) via l'outil 'control_ui'.
-- Vous pouvez naviguer ou ouvrir/fermer des sections via 'navigate_app'.
-`;
-
+                // Compléter avec les instructions de contrôle (communes à tous les espaces)
                 const controlInstructions = `
-# CONTRÔLE & OUTILS
-Vous avez le contrôle total sur l'interface utilisateur via des outils.
-- **Navigation** : Pour aller quelque part ou ouvrir une section, utilisez 'navigate_to_section' avec l'ID approprié.
-- **Changement de Voix** : Si l'utilisateur demande une autre voix (homme/femme), utilisez 'change_voice'.
-- **Interface (Thème)** : 
-  - "Mets le mode sombre" -> 'control_ui' avec action='set_theme_dark'
-  - "Mets le mode clair" -> 'control_ui' avec action='set_theme_light'
-- **Documents** : Pour créer/rédiger, utilisez 'generate_document'. Pour ouvrir/fermer, utilisez 'control_document'.
-- **Chat** : Pour ouvrir/fermer le chat, utilisez 'open_chat' / 'close_chat'.
-- **Historique** : Pour gérer la conversation :
-  - "Supprime toute la conversation" / "Efface tout" -> 'manage_history' avec action='delete_all'
-  - "Supprime le dernier message" / "Efface le dernier" -> 'manage_history' avec action='delete_last'
-- **Arrêt** : Pour "stop", "au revoir", "coupe", utilisez 'stop_conversation'.
 
-IMPORTANT : Au démarrage, saluez IMMÉDIATEMENT l'utilisateur.
-Lorsque vous analysez des données, soyez proactif : "Je vois 12 actes en attente, voulez-vous les passer en revue ?".
+# OUTILS ET CAPACITÉS
+Vous avez accès à plusieurs outils pour interagir avec l'interface :
+
+**Navigation:**
+- 'navigate_to_section' : Ouvrir une section spécifique de l'application
+- 'global_navigate' : Naviguer vers une autre route/espace
+
+**Interface:**
+- 'control_ui' : Changer le thème, ajuster les paramètres d'affichage
+  - Exemples : "Mets le mode sombre" → action='set_theme_dark'
+  - "Mets le mode clair" → action='set_theme_light'  
+
+**Documents:**
+- 'generate_document' : Créer un document officiel (décret, note, lettre)
+- 'control_document' : Ouvrir/fermer/gérer un document
+
+**Conversation:**
+- 'open_chat' / 'close_chat' : Ouvrir/fermer chat interface de chat
+- 'change_voice' : Changer la voix (ash, shimmer, echo)
+- 'manage_history' : Gérer l'historique de conversation
+- 'stop_conversation' : Arrêter la conversation
+
+**Actions:**
+- Utilise les outils dès que l'utilisateur le demande
+- Sois proactif et propose des actions pertinentes
+- IMPORTANT : Salue l'utilisateur au démarrage
 `;
 
+                // Obtenir la cartographie des routes disponibles
                 const routeKnowledge = getRouteKnowledgePrompt();
 
-                const finalInstructions = `${baseInstructions} ${appKnowledge} ${routeKnowledge} ${controlInstructions}`;
+                // Combiner tout : contexte utilisateur + routes + outils
+                const finalInstructions = `${baseInstructions}
+
+${routeKnowledge}
+
+${controlInstructions}`;
+
 
                 const event = {
                     type: 'session.update',
