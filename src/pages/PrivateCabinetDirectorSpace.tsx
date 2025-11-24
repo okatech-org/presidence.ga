@@ -875,8 +875,8 @@ const PrivateCabinetDirectorSpace = () => {
               NAVIGATION
               {expandedSections.navigation ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             </button>
-            {expandedSections.navigation && (
-              <nav className="space-y-1 ml-2">
+        {expandedSections.navigation && (
+          <nav className="space-y-1 ml-2 animate-fade-in">
                 <button
                   onClick={() => setActiveSection("dashboard")}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "dashboard"
@@ -900,8 +900,8 @@ const PrivateCabinetDirectorSpace = () => {
               AFFAIRES PRIVÉES
               {expandedSections.private ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             </button>
-            {expandedSections.private && (
-              <nav className="space-y-1 ml-2">
+        {expandedSections.private && (
+          <nav className="space-y-1 ml-2 animate-fade-in">
                 <button
                   onClick={() => setActiveSection("audiences")}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "audiences"
@@ -955,8 +955,8 @@ const PrivateCabinetDirectorSpace = () => {
               CONTACTS VIP
               {expandedSections.contacts ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             </button>
-            {expandedSections.contacts && (
-              <nav className="space-y-1 ml-2">
+        {expandedSections.contacts && (
+          <nav className="space-y-1 ml-2 animate-fade-in">
                 <button
                   onClick={() => setActiveSection("vip-contacts")}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "vip-contacts"

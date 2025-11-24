@@ -226,8 +226,8 @@ const ServiceCourriersSpace = () => {
     <button
       onClick={() => setActiveSection(id)}
       className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 ${activeSection === id
-        ? "neu-inset text-primary font-medium"
-        : "hover:bg-white/50 dark:hover:bg-black/20"
+        ? "neu-inset text-primary font-medium scale-105"
+        : "hover:bg-white/50 dark:hover:bg-black/20 hover:scale-105"
         }`}
     >
       <div className="flex items-center gap-3">
@@ -300,8 +300,8 @@ const ServiceCourriersSpace = () => {
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 min-w-0 space-y-6">
+          {/* Main Content */}
+          <main className="flex-1 min-w-0 space-y-6 transition-all duration-300">
           {/* Top Bar */}
           <header className="flex items-center justify-between mb-8">
             <div>

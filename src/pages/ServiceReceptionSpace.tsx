@@ -284,13 +284,13 @@ const ServiceReceptionSpace = () => {
               NAVIGATION
               {expandedSections.navigation ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             </button>
-            {expandedSections.navigation && (
-              <nav className="space-y-1 ml-2">
+          {expandedSections.navigation && (
+              <nav className="space-y-1 ml-2 animate-fade-in">
                 <button
                   onClick={() => setActiveSection("dashboard")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "dashboard"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "dashboard"
+                    ? "neu-inset text-primary font-semibold scale-105"
+                    : "neu-raised hover:shadow-neo-md hover:scale-105"
                     } `}
                 >
                   <LayoutDashboard className="w-4 h-4" />
@@ -309,13 +309,13 @@ const ServiceReceptionSpace = () => {
               VISITEURS
               {expandedSections.visitors ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             </button>
-            {expandedSections.visitors && (
-              <nav className="space-y-1 ml-2">
+          {expandedSections.visitors && (
+              <nav className="space-y-1 ml-2 animate-fade-in">
                 <button
                   onClick={() => setActiveSection("visitors")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "visitors"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "visitors"
+                    ? "neu-inset text-primary font-semibold scale-105"
+                    : "neu-raised hover:shadow-neo-md hover:scale-105"
                     } `}
                 >
                   <Users className="w-4 h-4" />
@@ -334,13 +334,13 @@ const ServiceReceptionSpace = () => {
               ACCRÉDITATIONS
               {expandedSections.accreditations ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             </button>
-            {expandedSections.accreditations && (
-              <nav className="space-y-1 ml-2">
+          {expandedSections.accreditations && (
+              <nav className="space-y-1 ml-2 animate-fade-in">
                 <button
                   onClick={() => setActiveSection("accreditations")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "accreditations"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "accreditations"
+                    ? "neu-inset text-primary font-semibold scale-105"
+                    : "neu-raised hover:shadow-neo-md hover:scale-105"
                     } `}
                 >
                   <CreditCard className="w-4 h-4" />
@@ -359,13 +359,13 @@ const ServiceReceptionSpace = () => {
               COURRIER
               {expandedSections.courrier ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             </button>
-            {expandedSections.courrier && (
-              <nav className="space-y-1 ml-2">
+          {expandedSections.courrier && (
+              <nav className="space-y-1 ml-2 animate-fade-in">
                 <button
                   onClick={() => setActiveSection("mail-ingestion")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "mail-ingestion"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "mail-ingestion"
+                    ? "neu-inset text-primary font-semibold scale-105"
+                    : "neu-raised hover:shadow-neo-md hover:scale-105"
                     } `}
                 >
                   <Mail className="w-4 h-4" />
@@ -373,9 +373,9 @@ const ServiceReceptionSpace = () => {
                 </button>
                 <button
                   onClick={() => setActiveSection("mail-history")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "mail-history"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "mail-history"
+                    ? "neu-inset text-primary font-semibold scale-105"
+                    : "neu-raised hover:shadow-neo-md hover:scale-105"
                     } `}
                 >
                   <History className="w-4 h-4" />
@@ -433,7 +433,7 @@ const ServiceReceptionSpace = () => {
 
             {/* Dashboard */}
             {activeSection === "dashboard" && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="animate-fade-in" key="dashboard">
                 {/* KPIs */}
                 <div className="neu-card p-6 mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-0 lg:divide-x lg:divide-border">
