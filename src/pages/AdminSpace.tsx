@@ -29,18 +29,13 @@ import { useRealtimeFeedbacks } from "@/hooks/useRealtimeSync";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { FeedbackDocumentsViewer } from "@/components/FeedbackDocumentsViewer";
-import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
-import { DocumentSettingsManager } from '@/components/admin/documents/DocumentSettingsManager';
-import { FileText, Download, Eye, Paperclip, FileSpreadsheet, MessageSquare, FileCog } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useTheme } from "next-themes";
 import emblemGabon from "@/assets/emblem_gabon.png";
-import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
-import { generateSystemPrompt } from '@/utils/generateSystemPrompt';
-import { resolveRoute } from '@/utils/route-mapping';
+import { DocumentSettingsManager } from '@/components/admin/documents/DocumentSettingsManager';
+import { FileText, Download, Eye, Paperclip, FileSpreadsheet, MessageSquare, FileCog } from "lucide-react";
 
 // Admin Components
 import { AIConfigSection } from '@/components/admin/AIConfigSection';
@@ -64,7 +59,7 @@ interface Feedback {
 const AdminSpace = () => {
     const userContext = useUserContext({ spaceName: 'AdminSpace' });
     const { profile, role, isLoading } = userContext;
-    const [isIAstedOpen, setIsIAstedOpen] = useState(false);
+    
     const [activeSection, setActiveSection] = useState('dashboard');
     const [expandedSections, setExpandedSections] = useState({
         general: true,
@@ -92,164 +87,49 @@ const AdminSpace = () => {
     const { data: feedbacks = [], isLoading: loadingFeedbacks, error: feedbackError } = useFeedbacks();
     useRealtimeFeedbacks();
 
-    // Voice & Super Admin Tools
-    const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('echo');
-    const [securityOverrideActive, setSecurityOverrideActive] = useState(false);
-    const [originRoute, setOriginRoute] = useState<string | null>(null); // Track where we came from
+    // Track origin for navigation
+    const [originRoute, setOriginRoute] = useState<string | null>(null);
 
-    const handleToolCall = useCallback((toolName: string, args: any) => {
-        switch (toolName) {
-            case 'control_ui':
-                console.log('[AdminSpace] UI Control:', args);
-                if (args.action === 'toggle_theme') {
-                    setTheme(theme === 'dark' ? 'light' : 'dark');
-                } else if (args.action === 'set_theme_dark') {
-                    setTheme('dark');
-                } else if (args.action === 'set_theme_light') {
-                    setTheme('light');
-                }
-                break;
+    const handleNavigationLocally = useCallback((sectionId: string) => {
+        // Map section IDs to valid sections
+        const sectionMap: Record<string, string> = {
+            'dashboard': 'dashboard',
+            'tableau-de-bord': 'dashboard',
+            'users': 'users',
+            'utilisateurs': 'users',
+            'feedbacks': 'feedbacks',
+            'retours': 'feedbacks',
+            'ai': 'ai',
+            'ia': 'ai',
+            'knowledge': 'knowledge',
+            'base-connaissances': 'knowledge',
+            'connaissances': 'knowledge',
+            'audit': 'audit',
+            'logs': 'audit',
+            'config': 'config',
+            'configuration': 'config',
+            'documents': 'documents'
+        };
 
-            case 'change_voice':
-                console.log('[AdminSpace] Changement de voix demandé:', args);
-                if (args.voice_id) {
-                    setSelectedVoice(args.voice_id as any);
-                    toast({
-                        title: "Voix modifiée",
-                        description: `Passage à la voix ${args.voice_id}`,
-                    });
-                }
-                break;
-
-            // Local Section Navigation
-            case 'navigate_to_section':
-                console.log('🧭 [AdminSpace] Section navigation:', args);
-                const sectionId = args.section_id;
-                
-                // Map section IDs to valid sections
-                const sectionMap: Record<string, string> = {
-                    'dashboard': 'dashboard',
-                    'tableau-de-bord': 'dashboard',
-                    'users': 'users',
-                    'utilisateurs': 'users',
-                    'feedbacks': 'feedbacks',
-                    'retours': 'feedbacks',
-                    'ai': 'ai',
-                    'ia': 'ai',
-                    'knowledge': 'knowledge',
-                    'base-connaissances': 'knowledge',
-                    'connaissances': 'knowledge',
-                    'audit': 'audit',
-                    'logs': 'audit',
-                    'config': 'config',
-                    'configuration': 'config',
-                    'documents': 'documents'
-                };
-
-                const targetSection = sectionMap[sectionId] || sectionId;
-                
-                // Determine which accordion to open
-                const generalSections = ['dashboard', 'users', 'feedbacks'];
-                const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
-                
-                if (generalSections.includes(targetSection)) {
-                    setExpandedSections(prev => ({ ...prev, general: true }));
-                } else if (systemSections.includes(targetSection)) {
-                    setExpandedSections(prev => ({ ...prev, systeme: true }));
-                }
-                
-                setActiveSection(targetSection);
-                
-                toast({
-                    title: "Navigation",
-                    description: `Section ${targetSection} ouverte`,
-                });
-                
-                return { success: true, message: `Section ${targetSection} ouverte` };
-
-            case 'global_navigate':
-                // Intelligent route resolution
-                const query = args.query || args.route; // Support both old and new format
-                console.log('🦭 [Super Admin] Navigation request:', query);
-
-                const resolvedRoute = resolveRoute(query);
-                if (resolvedRoute) {
-                    // Store current location before navigating
-                    setOriginRoute(window.location.pathname);
-                    console.log('✅ [Super Admin] Resolved to:', resolvedRoute);
-                    navigate(resolvedRoute);
-                } else {
-                    console.error('❌ [Super Admin] Route not found for:', query);
-                    toast({
-                        title: 'Route inconnue',
-                        description: `Impossible de trouver la route pour "${query}"`,
-                        variant: 'destructive'
-                    });
-                }
-                break;
-            case 'return_to_base':
-                console.log('🏠 [Super Admin] Returning to base (AdminSpace)');
-                setOriginRoute(window.location.pathname);
-                navigate('/admin-space');
-                toast({
-                    title: 'Retour à la base',
-                    description: 'Navigation vers l\'AdminSpace',
-                });
-                break;
-            case 'return_to_origin':
-                if (originRoute) {
-                    console.log('⏮️ [Super Admin] Returning to origin:', originRoute);
-                    navigate(originRoute);
-                    toast({
-                        title: 'Retour à l\'origine',
-                        description: `Navigation vers ${originRoute}`,
-                    });
-                    setOriginRoute(null); // Clear after use
-                } else {
-                    console.log('⚠️ [Super Admin] No origin route stored');
-                    toast({
-                        title: 'Pas d\'origine',
-                        description: 'Aucune page d\'origine enregistrée',
-                        variant: 'destructive'
-                    });
-                }
-                break;
-            case 'security_override':
-                if (args.action === 'unlock_admin_access') {
-                    console.log('🔓 [Super Admin] Security override activated');
-                    setSecurityOverrideActive(true);
-                    toast({
-                        title: '🔐 Accès déverrouillé',
-                        description: 'Mode God: Tous les accès sont autorisés',
-                        duration: 3000,
-                    });
-                    // Visual effect: reset after 3 seconds
-                    setTimeout(() => setSecurityOverrideActive(false), 3000);
-                }
-                break;
-
-            // UI Tools (like PresidentSpace)
-            case 'open_chat':
-                console.log('💬 [AdminSpace] Opening chat');
-                setIsIAstedOpen(true);
-                break;
-
-            case 'close_chat':
-                console.log('❌ [AdminSpace] Closing chat');
-                setIsIAstedOpen(false);
-                break;
-
-            case 'stop_conversation':
-                console.log('🛑 [AdminSpace] Stopping conversation');
-                setIsIAstedOpen(false);
-                break;
-
-            default:
-                console.log('[AdminSpace] Tool call not handled:', toolName, args);
+        const targetSection = sectionMap[sectionId] || sectionId;
+        
+        // Determine which accordion to open
+        const generalSections = ['dashboard', 'users', 'feedbacks'];
+        const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
+        
+        if (generalSections.includes(targetSection)) {
+            setExpandedSections(prev => ({ ...prev, general: true }));
+        } else if (systemSections.includes(targetSection)) {
+            setExpandedSections(prev => ({ ...prev, systeme: true }));
         }
-    }, [navigate, toast, originRoute, theme, setTheme]);
-
-    const openaiRTC = useRealtimeVoiceWebRTC(handleToolCall);
+        
+        setActiveSection(targetSection);
+        
+        toast({
+            title: "Navigation",
+            description: `Section ${targetSection} ouverte`,
+        });
+    }, [toast]);
 
     useEffect(() => {
         setMounted(true);
@@ -622,14 +502,6 @@ const AdminSpace = () => {
                                     <p className="text-sm text-muted-foreground">Gestion globale de la plateforme iAsted</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    onClick={() => setIsIAstedOpen(true)}
-                                    className="bg-primary text-white hover:bg-primary/90"
-                                >
-                                    <Bot className="mr-2 h-4 w-4" /> Ouvrir iAsted
-                                </Button>
-                            </div>
                         </div>
 
                         {/* Contenu Dynamique */}
@@ -845,31 +717,6 @@ const AdminSpace = () => {
                 />
             )}
 
-            {/* iAsted Integration */}
-            {userContext.hasIAstedAccess && (
-                <IAstedButtonFull
-                    onClick={async () => {
-                        if (openaiRTC.isConnected) {
-                            openaiRTC.disconnect();
-                        } else {
-                            const systemPrompt = generateSystemPrompt(userContext);
-                            await openaiRTC.connect(selectedVoice, systemPrompt);
-                        }
-                    }}
-                    onDoubleClick={() => setIsIAstedOpen(true)}
-                    audioLevel={openaiRTC.audioLevel}
-                    voiceListening={openaiRTC.voiceState === 'listening'}
-                    voiceSpeaking={openaiRTC.voiceState === 'speaking'}
-                    voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
-                />
-            )}
-
-            <IAstedChatModal
-                isOpen={isIAstedOpen}
-                onClose={() => setIsIAstedOpen(false)}
-                openaiRTC={openaiRTC}
-                currentVoice={selectedVoice}
-            />
 
         </div>
     );
