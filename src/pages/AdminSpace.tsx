@@ -187,6 +187,19 @@ const AdminSpace = () => {
         setMounted(true);
     }, []);
 
+    // Listen for iAsted section navigation events
+    useEffect(() => {
+        const handleSectionNav = (event: Event) => {
+            const customEvent = event as CustomEvent<{ sectionId: string }>;
+            const { sectionId } = customEvent.detail;
+            console.log(`📍 [AdminSpace] Received section navigation: ${sectionId}`);
+            setActiveSection(sectionId);
+        };
+
+        window.addEventListener('iasted-navigate-section', handleSectionNav);
+        return () => window.removeEventListener('iasted-navigate-section', handleSectionNav);
+    }, []);
+
     // Fetch real statistics
     useEffect(() => {
         const fetchStats = async () => {

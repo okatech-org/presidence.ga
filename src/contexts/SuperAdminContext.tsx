@@ -165,6 +165,23 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                 // Note: Can't disconnect from here, would need openaiRTC reference
                 return { success: true, message: 'Conversation arrêtée' };
 
+            // Local Section Navigation
+            case 'navigate_to_section':
+                const sectionId = args.section_id;
+                console.log(`📍 [Super Admin Context] Section navigation: ${sectionId}`);
+
+                // Dispatch a custom event that spaces can listen to
+                const navEvent = new CustomEvent('iasted-navigate-section', {
+                    detail: { sectionId }
+                });
+                window.dispatchEvent(navEvent);
+
+                toast({
+                    title: 'Navigation',
+                    description: `Ouverture de la section ${sectionId}`,
+                });
+                return { success: true, message: `Section ${sectionId} ouverte` };
+
             default:
                 console.log('[Super Admin Context] Tool call forwardé:', toolName, args);
                 // Return undefined for unknown tools (let them be handled elsewhere)
