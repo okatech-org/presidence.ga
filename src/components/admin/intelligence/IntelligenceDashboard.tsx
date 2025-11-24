@@ -3,8 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IntelligenceFeed } from './IntelligenceFeed';
 import { IntelligenceSources } from './IntelligenceSources';
+import { IntelligenceSearch } from './IntelligenceSearch';
 import { supabase } from "@/integrations/supabase/client";
-import { Activity, Database, AlertCircle, ShieldAlert } from "lucide-react";
+import { Activity, Database, AlertCircle, ShieldAlert, Search as SearchIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export const IntelligenceDashboard = () => {
     const [stats, setStats] = useState({
@@ -79,28 +82,83 @@ export const IntelligenceDashboard = () => {
             </div>
 
             <Tabs defaultValue="feed" className="space-y-4">
-                <TabsList>
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="feed">Flux en Direct</TabsTrigger>
+                    <TabsTrigger value="search">
+                        <SearchIcon className="h-4 w-4 mr-2" />
+                        Recherche IA
+                    </TabsTrigger>
                     <TabsTrigger value="sources">Gestion des Sources</TabsTrigger>
-                    <TabsTrigger value="config">Configuration IA</TabsTrigger>
+                    <TabsTrigger value="config">Configuration</TabsTrigger>
                 </TabsList>
                 <TabsContent value="feed" className="space-y-4">
                     <IntelligenceFeed />
+                </TabsContent>
+                <TabsContent value="search" className="space-y-4">
+                    <IntelligenceSearch />
                 </TabsContent>
                 <TabsContent value="sources" className="space-y-4">
                     <IntelligenceSources />
                 </TabsContent>
                 <TabsContent value="config">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Configuration du Cerveau</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground">
-                                Les paramètres du modèle RAG (Gemini) et les seuils de similarité vectorielle sont gérés via les variables d'environnement des Edge Functions.
-                            </p>
-                        </CardContent>
-                    </Card>
+                    <div className="grid gap-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Configuration du Cerveau IA</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-medium">Modèle d'Analyse</h3>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="secondary">Gemini 2.0 Flash</Badge>
+                                        <span className="text-xs text-muted-foreground">
+                                            Analyse automatique (Résumé, Catégorie, Sentiment, Entités)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-medium">Vectorisation</h3>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="secondary">OpenAI text-embedding-3-small</Badge>
+                                        <span className="text-xs text-muted-foreground">
+                                            1536 dimensions pour la recherche sémantique
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-medium">Base Vectorielle</h3>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="secondary">pgvector (Supabase)</Badge>
+                                        <span className="text-xs text-muted-foreground">
+                                            Index ivfflat pour performances optimales
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="pt-4 border-t">
+                                    <p className="text-sm text-muted-foreground">
+                                        Les paramètres avancés (température, seuils de confiance, etc.) sont gérés via les 
+                                        Edge Functions Supabase. Contactez l'administrateur système pour toute modification.
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Scripts de Collecte Externes</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    Les collecteurs externes (WhatsApp, Web, YouTube) doivent être déployés sur un serveur 
+                                    avec Node.js et Python. Consultez le guide de déploiement :
+                                </p>
+                                <Button variant="outline" asChild>
+                                    <a href="/scripts/intelligence/README_DEPLOYMENT.md" target="_blank">
+                                        📖 Guide de Déploiement
+                                    </a>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </TabsContent>
             </Tabs>
         </div>
