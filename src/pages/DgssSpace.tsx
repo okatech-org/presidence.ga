@@ -71,18 +71,7 @@ const DgssSpace = () => {
     };
 
     const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('echo');
-    const { profile, role } = useUserContext({ spaceName: 'DgssSpace' });
-
-    const toggleSection = (section: string) => {
-        setExpandedSections(prev => ({
-            ...prev,
-            [section]: !prev[section as keyof typeof prev],
-        }));
-    };
-
-    const toggleTheme = () => {
-        setTheme(theme === "dark" ? "light" : "dark");
-    };
+    const userContext = useUserContext({ spaceName: 'DgssSpace' });
 
     // Tool call handler for iAsted
     const handleToolCall = useCallback((toolName: string, args: any) => {
@@ -793,7 +782,7 @@ const DgssSpace = () => {
                     <IAstedChatModal
                         isOpen={iastedOpen}
                         onClose={() => setIastedOpen(false)}
-                        systemPrompt={generateSystemPrompt(role)}
+                        systemPrompt={generateSystemPrompt(userContext)}
                         openaiRTC={openaiRTC}
                     />
                 )}
