@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { Document, Paragraph, TextRun, AlignmentType, HeadingLevel, Packer } from "docx";
 
 export interface DocumentTemplate {
   name: string;
@@ -59,11 +60,25 @@ export interface GenerateDocumentParams {
   title: string;
   content: string;
   template: keyof typeof DOCUMENT_TEMPLATES;
+  format?: "pdf" | "docx";
   metadata?: Record<string, any>;
   onProgress?: (progress: number, status: string) => void;
 }
 
 export class DocumentGenerationService {
+  async generateDocument(params: GenerateDocumentParams): Promise<{
+    blob: Blob;
+    fileName: string;
+    documentId: string;
+  }> {
+    const { title, content, template, format = "pdf", metadata, onProgress } = params;
+    
+    if (format === "docx") {
+      return this.generateDOCX(params);
+    }
+    return this.generatePDF(params);
+  }
+
   async generatePDF(params: GenerateDocumentParams): Promise<{
     blob: Blob;
     fileName: string;
@@ -230,6 +245,137 @@ export class DocumentGenerationService {
       .createSignedUrl(filePath, 3600); // 1 hour expiry
 
     return data?.signedUrl || "";
+  }
+
+  async generateDOCX(params: GenerateDocumentParams): Promise<{
+    blob: Blob;
+    fileName: string;
+    documentId: string;
+  }> {
+    const { title, content, template, metadata, onProgress } = params;
+    const templateConfig = DOCUMENT_TEMPLATES[template];
+
+    try {
+      // Step 1: Initialize Document
+      onProgress?.(10, "Initialisation du document...");
+
+      const paragraphs: Paragraph[] = [];
+
+      // Add Republic header for official documents
+      if (templateConfig.type === "decret") {
+        paragraphs.push(
+          new Paragraph({
+            text: "RÉPUBLIQUE GABONAISE",
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 100 },
+          }),
+          new Paragraph({
+            text: "Unité - Travail - Justice",
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 300 },
+          })
+        );
+      }
+
+      // Step 2: Add title
+      onProgress?.(30, "Application du template...");
+      paragraphs.push(
+        new Paragraph({
+          text: title,
+          heading: HeadingLevel.HEADING_1,
+          alignment: templateConfig.styles.header.alignment === "center" 
+            ? AlignmentType.CENTER 
+            : templateConfig.styles.header.alignment === "right"
+            ? AlignmentType.RIGHT
+            : AlignmentType.LEFT,
+          spacing: { after: 400 },
+        })
+      );
+
+      // Step 3: Add content
+      const contentParagraphs = content.split('\n').filter(line => line.trim());
+      contentParagraphs.forEach(line => {
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: line,
+                size: templateConfig.styles.body.fontSize * 2, // Word uses half-points
+              })
+            ],
+            alignment: templateConfig.styles.body.alignment === "justify"
+              ? AlignmentType.JUSTIFIED
+              : templateConfig.styles.body.alignment === "center"
+              ? AlignmentType.CENTER
+              : templateConfig.styles.body.alignment === "right"
+              ? AlignmentType.RIGHT
+              : AlignmentType.LEFT,
+            spacing: { 
+              after: 200,
+              line: Math.round(templateConfig.styles.body.lineHeight * 240)
+            },
+          })
+        );
+      });
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: paragraphs,
+        }],
+      });
+
+      // Step 4: Generate blob
+      onProgress?.(60, "Génération du fichier DOCX...");
+      const docxBlob = await Packer.toBlob(doc);
+
+      // Step 5: Upload to Storage
+      onProgress?.(80, "Sauvegarde dans le cloud...");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const fileName = `${template}_${Date.now()}.docx`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("generated-documents")
+        .upload(filePath, docxBlob, {
+          contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Step 6: Save metadata to database
+      onProgress?.(90, "Enregistrement des métadonnées...");
+      const { data: docData, error: docError } = await supabase
+        .from("generated_documents")
+        .insert({
+          user_id: user.id,
+          document_name: title,
+          document_type: template,
+          template_used: templateConfig.name,
+          file_path: filePath,
+          file_size: docxBlob.size,
+          storage_url: uploadData.path,
+          metadata: metadata || {},
+        })
+        .select()
+        .single();
+
+      if (docError) throw docError;
+
+      onProgress?.(100, "Document généré avec succès !");
+
+      return {
+        blob: docxBlob,
+        fileName,
+        documentId: docData.id,
+      };
+    } catch (error) {
+      console.error("Error generating DOCX:", error);
+      throw error;
+    }
   }
 
   async deleteDocument(id: string, filePath: string): Promise<void> {
