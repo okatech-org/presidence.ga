@@ -374,6 +374,74 @@ export default function PresidentSpace() {
     setMounted(true);
   }, []);
 
+  // Écouter les événements de navigation et contrôle UI depuis iAsted
+  useEffect(() => {
+    const handleNavigationEvent = (e: CustomEvent) => {
+      const { sectionId } = e.detail;
+      console.log('📍 [PresidentSpace] Événement navigation reçu:', sectionId);
+
+      // Sections accordéon
+      const accordionSections = ['navigation', 'gouvernance', 'economie', 'affaires', 'infrastructures'];
+      
+      if (accordionSections.includes(sectionId)) {
+        setExpandedSections(prev => ({
+          ...prev,
+          [sectionId]: !prev[sectionId as keyof typeof prev]
+        }));
+      } else {
+        // Pages
+        setActiveSection(sectionId);
+        
+        // Ouvrir la section parente si nécessaire
+        const parentMap: Record<string, keyof typeof expandedSections> = {
+          'dashboard': 'navigation',
+          'iasted': 'navigation',
+          'documents': 'navigation',
+          'courriers': 'navigation',
+          'conseil-ministres': 'gouvernance',
+          'ministeres': 'gouvernance',
+          'decrets': 'gouvernance',
+          'nominations': 'gouvernance',
+          'budget': 'economie',
+          'indicateurs': 'economie',
+          'investissements': 'economie',
+          'education': 'affaires',
+          'sante': 'affaires',
+          'emploi': 'affaires',
+          'chantiers': 'infrastructures',
+          'projets-presidentiels': 'infrastructures',
+          'projets-etat': 'infrastructures'
+        };
+        
+        const parent = parentMap[sectionId];
+        if (parent) {
+          setExpandedSections(prev => ({ ...prev, [parent]: true }));
+        }
+      }
+    };
+
+    const handleUIControlEvent = (e: CustomEvent) => {
+      const { action, value } = e.detail;
+      console.log('🎨 [PresidentSpace] Événement UI Control reçu:', action);
+      
+      if (action === 'toggle_theme') {
+        setTheme(theme === 'dark' ? 'light' : 'dark');
+      } else if (action === 'set_theme_dark') {
+        setTheme('dark');
+      } else if (action === 'set_theme_light') {
+        setTheme('light');
+      }
+    };
+
+    window.addEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+    window.addEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+      window.removeEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+    };
+  }, [theme, setTheme]);
+
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
       ...prev,
