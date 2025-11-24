@@ -14,6 +14,7 @@ export const DocumentGenerator = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [template, setTemplate] = useState<keyof typeof DOCUMENT_TEMPLATES>("rapport");
+  const [format, setFormat] = useState<"pdf" | "docx">("pdf");
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressStatus, setProgressStatus] = useState("");
@@ -30,10 +31,11 @@ export const DocumentGenerator = () => {
     setProgressStatus("Démarrage...");
 
     try {
-      const result = await documentGenerationService.generatePDF({
+      const result = await documentGenerationService.generateDocument({
         title,
         content,
         template,
+        format,
         onProgress: (prog, status) => {
           setProgress(prog);
           setProgressStatus(status);
@@ -59,7 +61,8 @@ export const DocumentGenerator = () => {
     if (generatedPdfUrl) {
       const link = document.createElement("a");
       link.href = generatedPdfUrl;
-      link.download = `${template}_${title.replace(/\s+/g, "_")}.pdf`;
+      const extension = format === "docx" ? "docx" : "pdf";
+      link.download = `${template}_${title.replace(/\s+/g, "_")}.${extension}`;
       link.click();
     }
   };
@@ -93,6 +96,19 @@ export const DocumentGenerator = () => {
                 <SelectItem value="note">
                   Note de service - L'Exécutif Dynamique
                 </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="format">Format de fichier</Label>
+            <Select value={format} onValueChange={(val) => setFormat(val as "pdf" | "docx")}>
+              <SelectTrigger id="format">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pdf">PDF</SelectItem>
+                <SelectItem value="docx">DOCX (Word/Pages)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -163,7 +179,7 @@ export const DocumentGenerator = () => {
         </CardContent>
       </Card>
 
-      {generatedPdfUrl && (
+      {generatedPdfUrl && format === "pdf" && (
         <Card>
           <CardHeader>
             <CardTitle>Aperçu du document</CardTitle>
