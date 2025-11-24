@@ -18,27 +18,50 @@ serve(async (req) => {
     }
 
     try {
-        const { query } = await req.json();
+        const { query, filters } = await req.json();
 
         if (!query) {
             throw new Error("Query is required");
         }
 
-        console.log(`Searching intelligence for: ${query}`);
+        console.log(`Searching intelligence for: ${query}`, filters ? `with filters: ${JSON.stringify(filters)}` : "");
 
         // 1. Generate Embedding for the query
         const embedding = await generateEmbedding(query);
 
         // 2. Call RPC to search by vector similarity
-        const { data: results, error } = await supabase.rpc("query_intelligence", {
+        const { data, error } = await supabase.rpc("query_intelligence", {
             query_embedding: embedding,
-            match_threshold: 0.7, // Seuil de similarité (à ajuster)
-            match_count: 5        // Nombre de résultats
+            match_threshold: filters?.threshold || 0.6,
+            match_count: filters?.limit || 10
         });
 
         if (error) throw error;
 
-        return new Response(JSON.stringify({ success: true, results }), {
+        // 3. Apply additional filters if provided
+        let results = data || [];
+        if (filters) {
+            if (filters.category) {
+                results = results.filter((item: any) => item.category === filters.category);
+            }
+            if (filters.sentiment) {
+                results = results.filter((item: any) => item.sentiment === filters.sentiment);
+            }
+            if (filters.dateFrom) {
+                results = results.filter((item: any) => 
+                    new Date(item.published_at) >= new Date(filters.dateFrom)
+                );
+            }
+            if (filters.dateTo) {
+                results = results.filter((item: any) => 
+                    new Date(item.published_at) <= new Date(filters.dateTo)
+                );
+            }
+        }
+
+        console.log(`Found ${results.length} matching intelligence items`);
+
+        return new Response(JSON.stringify({ success: true, results, count: results.length }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
 
@@ -66,6 +89,12 @@ async function generateEmbedding(text: string) {
             input: text.substring(0, 8000)
         })
     });
+
+    if (!response.ok) {
+        const error = await response.text();
+        console.error("OpenAI API error:", error);
+        throw new Error(`OpenAI API failed: ${response.status}`);
+    }
 
     const data = await response.json();
     return data.data[0].embedding;

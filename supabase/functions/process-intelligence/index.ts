@@ -68,32 +68,43 @@ async function analyzeWithGemini(text: string) {
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set");
 
     const prompt = `
-    Analyse le texte suivant provenant d'une source de veille (WhatsApp, Web, etc.) pour la Présidence du Gabon.
-    
-    Texte: "${text.substring(0, 2000)}"
-    
-    Tâche:
-    1. Résume le contenu en 2 phrases maximum (français).
-    2. Catégorise parmi: 'securite', 'economie', 'social', 'politique', 'rumeur', 'autre'.
-    3. Détermine le sentiment: 'positif', 'negatif', 'neutre', 'colere', 'peur', 'joie'.
-    4. Extrait les entités nommées (Personnes, Lieux, Organisations).
+Analyse le texte suivant provenant d'une source de veille stratégique pour la Présidence du Gabon.
 
-    Réponds UNIQUEMENT au format JSON:
-    {
-      "summary": "...",
-      "category": "...",
-      "sentiment": "...",
-      "entities": ["..."]
-    }
-  `;
+Texte: "${text.substring(0, 2000)}"
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+Tâche:
+1. Résume le contenu en 2-3 phrases maximum (français). Focus sur l'essentiel.
+2. Catégorise parmi: 'securite', 'economie', 'social', 'politique', 'rumeur', 'autre'.
+3. Détermine le sentiment dominant: 'positif', 'negatif', 'neutre', 'colere', 'peur', 'joie'.
+4. Extrait les entités nommées importantes (Personnes, Lieux, Organisations, Événements).
+
+Réponds UNIQUEMENT au format JSON strict (pas de markdown):
+{
+  "summary": "résumé concis",
+  "category": "categorie",
+  "sentiment": "sentiment",
+  "entities": ["entité1", "entité2"]
+}
+`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.3,
+                topK: 40,
+                topP: 0.95,
+            }
         })
     });
+
+    if (!response.ok) {
+        const error = await response.text();
+        console.error("Gemini API error:", error);
+        throw new Error(`Gemini API failed: ${response.status}`);
+    }
 
     const data = await response.json();
     const resultText = data.candidates[0].content.parts[0].text;
