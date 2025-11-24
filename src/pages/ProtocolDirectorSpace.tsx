@@ -36,20 +36,13 @@ import emblemGabon from "@/assets/emblem_gabon.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { OfficialEvent, Guest, ProtocolProcedure } from "@/types/protocol";
 import { protocolService } from "@/services/protocolService";
-import { useSuperAdmin } from "@/contexts/SuperAdminContext";
+
 
 const ProtocolDirectorSpace = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
     const { theme, setTheme } = useTheme();
     const queryClient = useQueryClient();
-    const { registerCustomIAsted } = useSuperAdmin();
-
-    // Enregistrer le bouton iAsted personnalisé
-    useEffect(() => {
-        registerCustomIAsted(true);
-        return () => registerCustomIAsted(false);
-    }, [registerCustomIAsted]);
 
     const [mounted, setMounted] = useState(false);
     const [iastedOpen, setIastedOpen] = useState(false);

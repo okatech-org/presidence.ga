@@ -40,21 +40,13 @@ import { EncryptedMessageItem } from "@/components/cabinet/EncryptedMessageItem"
 import { privateCabinetService } from "@/services/privateCabinetService";
 import { useAsyncOperation, useFormValidation } from "@/hooks/useAsyncOperation";
 import { validationUtils, errorMessages } from "@/utils/validation";
-import { useSuperAdmin } from "@/contexts/SuperAdminContext";
+
 
 const PrivateCabinetDirectorSpace = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
-  const { registerCustomIAsted } = useSuperAdmin();
-
-  // Enregistrer le bouton iAsted personnalisé
-  useEffect(() => {
-    registerCustomIAsted(true);
-    return () => registerCustomIAsted(false);
-  }, [registerCustomIAsted]);
-
   const [mounted, setMounted] = useState(false);
   const [iastedOpen, setIastedOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");

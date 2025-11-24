@@ -65,7 +65,7 @@ import { IASTED_SYSTEM_PROMPT } from "@/config/iasted-config";
 import { soundManager } from "@/utils/SoundManager";
 import { useUserContext } from "@/hooks/useUserContext";
 import { generateSystemPrompt } from "@/utils/generateSystemPrompt";
-import { useSuperAdmin } from "@/contexts/SuperAdminContext";
+
 
 type ThemeConfig = {
   primary: string;
@@ -185,13 +185,6 @@ export default function PresidentSpace() {
 
   // Context utilisateur pour personnalisation
   const userContext = useUserContext({ spaceName: 'PresidentSpace' });
-  const { registerCustomIAsted } = useSuperAdmin();
-
-  // Enregistrer le bouton iAsted personnalisé pour masquer le bouton global
-  useEffect(() => {
-    registerCustomIAsted(true);
-    return () => registerCustomIAsted(false);
-  }, [registerCustomIAsted]);
 
   // Ref pour tracker la dernière section ouverte (pour contexte intelligent)
   const lastOpenedSectionRef = useRef<keyof typeof expandedSections | null>(null);
@@ -980,37 +973,7 @@ export default function PresidentSpace() {
         </main >
       </div >
 
-      {/* Bouton IAsted flottant - Affiché seulement si l'utilisateur a accès */}
-      {
-        userContext.hasIAstedAccess && (
-          <IAstedButtonFull
-            onClick={async () => {
-              if (openaiRTC.isConnected) {
-                openaiRTC.disconnect();
-              } else {
-                console.log('🎤 [IAstedButton] Démarrage OpenAI RT');
-                // Générer le prompt système personnalisé basé sur le contexte utilisateur
-                const systemPrompt = userContext.roleContext
-                  ? generateSystemPrompt(userContext)
-                  : IASTED_SYSTEM_PROMPT
-                    .replace('{{USER_TITLE}}', "Monsieur le Président")
-                    .replace('{{CURRENT_TIME_OF_DAY}}', new Date().getHours() < 18 ? "journée" : "soirée");
 
-                await openaiRTC.connect(selectedVoice, systemPrompt);
-              }
-            }}
-            onDoubleClick={() => {
-              console.log('🖱️🖱️ [IAstedButton] Double clic - ouverture modal chat');
-              setIastedOpen(true);
-            }}
-            audioLevel={openaiRTC.audioLevel}
-            voiceListening={openaiRTC.voiceState === 'listening'}
-            voiceSpeaking={openaiRTC.voiceState === 'speaking'}
-            voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
-            pulsing={isPulsing}
-          />
-        )
-      }
 
       {/* Interface iAsted avec chat et documents */}
       <IAstedChatModal

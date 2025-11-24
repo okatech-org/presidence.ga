@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 import ReactDOM from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserContext } from '@/hooks/useUserContext';
 import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
 import { useToast } from '@/hooks/use-toast';
@@ -15,7 +15,6 @@ interface SuperAdminContextValue {
     handleNavigation: (query: string) => void;
     returnToBase: () => void;
     returnToOrigin: () => void;
-    registerCustomIAsted: (active: boolean) => void;
 }
 
 const SuperAdminContext = createContext<SuperAdminContextValue | null>(null);
@@ -33,16 +32,32 @@ interface SuperAdminProviderProps {
 }
 
 export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children }) => {
-    const { profile, role, isLoading } = useUserContext({ spaceName: 'Global' });
+    const location = useLocation();
     const navigate = useNavigate();
     const { toast } = useToast();
+
+    // Detect current space from route
+    const currentSpaceName = useMemo(() => {
+        const path = location.pathname;
+        if (path.includes('/president-space')) return 'PresidentSpace';
+        if (path.includes('/admin-space')) return 'AdminSpace';
+        if (path.includes('/cabinet-director')) return 'CabinetDirectorSpace';
+        if (path.includes('/dgss')) return 'DgssSpace';
+        if (path.includes('/protocol')) return 'ProtocolDirectorSpace';
+        if (path.includes('/private-cabinet')) return 'PrivateCabinetDirectorSpace';
+        if (path.includes('/secretariat-general')) return 'SecretariatGeneralSpace';
+        return 'Global';
+    }, [location.pathname]);
+
+    // Get user context with current space
+    const userContext = useUserContext({ spaceName: currentSpaceName });
+    const { profile, role, isLoading } = userContext;
+
     const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('echo');
     const [originRoute, setOriginRoute] = useState<string | null>(null);
     const [securityOverrideActive, setSecurityOverrideActive] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false); // For UI tools
     const [pendingDocument, setPendingDocument] = useState<any>(null); // For document generation
-
-    const [customIAstedActive, setCustomIAstedActive] = useState(false);
 
     const isAdmin = useMemo(() => {
         return !isLoading && (role === 'admin' || role === 'president');
@@ -155,7 +170,7 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                 // Return undefined for unknown tools (let them be handled elsewhere)
                 return undefined;
         }
-    }, [navigate, toast, originRoute]);
+    }, [navigate, toast, originRoute, isAdmin]);
 
     const openaiRTC = useRealtimeVoiceWebRTC(handleToolCall);
 
@@ -171,44 +186,30 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
         handleToolCall('return_to_origin', {});
     }, [handleToolCall]);
 
-    const registerCustomIAsted = useCallback((active: boolean) => {
-        setCustomIAstedActive(active);
-    }, []);
+
 
     const contextValue = useMemo<SuperAdminContextValue>(() => ({
         isAdmin,
         originRoute,
         handleNavigation,
         returnToBase,
-        returnToOrigin,
-        registerCustomIAsted
-    }), [isAdmin, originRoute, handleNavigation, returnToBase, returnToOrigin, registerCustomIAsted]);
+        returnToOrigin
+    }), [isAdmin, originRoute, handleNavigation, returnToBase, returnToOrigin]);
 
     return (
         <SuperAdminContext.Provider value={contextValue}>
             {children}
-            {/* Render button only if user is admin/president AND no custom IAsted is active */}
-            {isAdmin && !customIAstedActive && ReactDOM.createPortal(
+            {/* Render global iAsted button for all users with access */}
+            {userContext.hasIAstedAccess && ReactDOM.createPortal(
                 <div className="fixed bottom-6 right-6 z-[9999]" style={{ pointerEvents: 'auto' }}>
                     <IAstedButtonFull
                         onClick={async () => {
                             if (openaiRTC.isConnected) {
                                 openaiRTC.disconnect();
                             } else {
-                                const userContext = {
-                                    profile,
-                                    role,
-                                    roleContext: null,
-                                    spaceContext: {
-                                        spaceName: 'Global',
-                                        displayName: 'Super Admin Global',
-                                        description: "navigation globale omnipresente"
-                                    },
-                                    hasIAstedAccess: true,
-                                    userId: profile?.user_id || null,
-                                    isLoading: false
-                                };
+                                // Generate contextual system prompt based on current user and space
                                 const systemPrompt = generateSystemPrompt(userContext);
+                                console.log(`🎯 [iAsted Global] Connexion pour ${role} dans ${currentSpaceName}`);
                                 await openaiRTC.connect(selectedVoice, systemPrompt);
                             }
                         }}
