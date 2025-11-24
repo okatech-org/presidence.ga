@@ -96,6 +96,11 @@ export const ROUTE_MAP: RouteInfo[] = [
         path: '/auth',
         aliases: ['connexion', 'login', 'authentification', 'auth', 'se connecter'],
         description: 'Page de connexion'
+    },
+    {
+        path: '/demo',
+        aliases: ['demo', 'démo', 'démonstration', 'page demo', 'page démo', 'essai'],
+        description: 'Page de démonstration'
     }
 ];
 
