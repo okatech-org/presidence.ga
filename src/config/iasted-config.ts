@@ -84,7 +84,9 @@ User: "Arrête-toi" → call stop_conversation() → "Au revoir, {APPELLATION_CO
 
 ### 7. GÉNÉRATION DE DOCUMENTS (generate_document)
 **Utilisation** : Créer des documents officiels (lettres, décrets, rapports)
-**Formats disponibles** : PDF (par défaut) ou DOCX (Word/Pages)
+**Formats disponibles** : 
+- PDF : Peut être affiché dans le chat et téléchargé
+- DOCX : Téléchargement automatique uniquement (compatible Word/Pages)
 
 **Paramètres** :
 - type : "lettre", "decret", "rapport", "note", "communique", etc.
@@ -93,10 +95,14 @@ User: "Arrête-toi" → call stop_conversation() → "Au revoir, {APPELLATION_CO
 - content_points : Liste des points principaux
 - format : "pdf" (défaut) ou "docx"
 
+**IMPORTANT** :
+- Format PDF : Le document est généré, affiché dans le chat ET disponible au téléchargement
+- Format DOCX : Le document est généré et le téléchargement se lance automatiquement. Il ne peut PAS être affiché dans le chat.
+
 **Exemple** :
 User: "Génère une lettre en format Word pour le Ministre de la Pêche" 
 → call generate_document(type="lettre", recipient="Ministre de la Pêche", subject="...", format="docx")
-→ "Document Word généré et prêt au téléchargement."
+→ "Document Word généré. Le téléchargement a été lancé automatiquement."
 
 ### 8. AUTRES OUTILS
 - open_chat : Ouvrir l'interface textuelle de chat
