@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "next-themes";
-import IAstedInterface from "@/components/iasted/IAstedInterface";
+import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
+import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
+import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
+import { generateSystemPrompt } from "@/utils/generateSystemPrompt";
+import { useUserContext } from "@/hooks/useUserContext";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { VisitorLog, AccreditationRequest } from "@/types/reception";
@@ -45,6 +49,7 @@ const ServiceReceptionSpace = () => {
   const queryClient = useQueryClient();
 
   const [mounted, setMounted] = useState(false);
+  const [iastedOpen, setIastedOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [expandedSections, setExpandedSections] = useState({
     navigation: true,
@@ -52,6 +57,9 @@ const ServiceReceptionSpace = () => {
     accreditations: false,
     courrier: true,
   });
+
+  const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('echo');
+  const userContext = useUserContext({ spaceName: 'ServiceReceptionSpace' });
 
   // Access Control
   useEffect(() => {
@@ -141,6 +149,94 @@ const ServiceReceptionSpace = () => {
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
+
+  // Tool call handler for iAsted
+  const handleToolCall = useCallback((toolName: string, args: any) => {
+    console.log(`🔧 [ServiceReceptionSpace] Tool call: ${toolName}`, args);
+    switch (toolName) {
+      case 'control_ui':
+        if (args.action === 'toggle_theme') toggleTheme();
+        else if (args.action === 'set_theme_dark') setTheme("dark");
+        else if (args.action === 'set_theme_light') setTheme("light");
+        else if (args.action === 'set_volume') toast({ title: "Volume", description: `Volume ajusté` });
+        else if (args.action === 'set_speech_rate') {
+          if (args.value && openaiRTC) openaiRTC.setSpeechRate(parseFloat(args.value));
+          toast({ title: "Vitesse", description: `Vitesse ajustée` });
+        }
+        break;
+
+      case 'change_voice':
+        if (args.voice_id) {
+          setSelectedVoice(args.voice_id as any);
+          toast({ title: "Voix modifiée", description: `Voix changée pour ${args.voice_id}` });
+        }
+        break;
+
+      case 'navigate_to_section':
+        const sectionId = args.section_id;
+        const accordionSections = ['navigation', 'visitors', 'accreditations', 'courrier'];
+
+        const sectionMap: Record<string, string> = {
+          'dashboard': 'dashboard',
+          'tableau-de-bord': 'dashboard',
+          'visitors': 'visitors',
+          'visiteurs': 'visitors',
+          'registre': 'visitors',
+          'accreditations': 'accreditations',
+          'accréditations': 'accreditations',
+          'badges': 'accreditations',
+          'mail-ingestion': 'mail-ingestion',
+          'courrier': 'mail-ingestion',
+          'nouveau-pli': 'mail-ingestion',
+          'scan': 'mail-ingestion',
+          'depot': 'mail-ingestion',
+          'mail-history': 'mail-history',
+          'historique': 'mail-history',
+          'traitement': 'mail-history'
+        };
+
+        const targetSection = sectionMap[sectionId] || sectionId;
+
+        if (accordionSections.includes(targetSection)) {
+          toggleSection(targetSection);
+          toast({ title: "Navigation", description: `Section ${targetSection} basculée` });
+        } else {
+          setActiveSection(targetSection);
+
+          const parentSectionMap: Record<string, string> = {
+            'dashboard': 'navigation',
+            'visitors': 'visitors',
+            'accreditations': 'accreditations',
+            'mail-ingestion': 'courrier',
+            'mail-history': 'courrier'
+          };
+
+          const parent = parentSectionMap[targetSection];
+          if (parent) {
+            setExpandedSections(prev => ({ ...prev, [parent]: true }));
+          }
+          toast({ title: "Navigation", description: `Ouverture de ${targetSection}` });
+        }
+        break;
+
+      case 'open_chat':
+        setIastedOpen(true);
+        break;
+
+      case 'close_chat':
+        setIastedOpen(false);
+        break;
+
+      case 'stop_conversation':
+        setIastedOpen(false);
+        break;
+
+      default:
+        console.log('[ServiceReceptionSpace] Tool call not handled:', toolName);
+    }
+  }, [toast, theme, setTheme]);
+
+  const openaiRTC = useRealtimeVoiceWebRTC(handleToolCall);
 
   // Stats
   const stats = {
@@ -621,7 +717,18 @@ const ServiceReceptionSpace = () => {
         </main>
 
         {/* iAsted Integration */}
-        <IAstedInterface userRole="reception" />
+        <IAstedButtonFull
+          onClick={() => setIastedOpen(true)}
+        />
+
+        {iastedOpen && (
+          <IAstedChatModal
+            isOpen={iastedOpen}
+            onClose={() => setIastedOpen(false)}
+            systemPrompt={generateSystemPrompt(userContext)}
+            openaiRTC={openaiRTC}
+          />
+        )}
       </div>
     </div>
   );
