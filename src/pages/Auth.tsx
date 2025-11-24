@@ -10,6 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { usePrefetch } from "@/hooks/usePrefetch";
 import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
+
+type AppRole = Database['public']['Enums']['app_role'];
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -60,7 +63,12 @@ const Auth = () => {
       let destination = "/dashboard"; // Par défaut pour les utilisateurs standards
 
       if (roles && roles.length > 0) {
-        const userRole = roles[0].role; // Prendre le premier rôle
+        // Hiérarchie des rôles: president > admin > autres
+        const roleHierarchy: AppRole[] = ['president', 'admin', 'dgss', 'dgr', 'cabinet_private', 'sec_gen', 'minister', 'protocol', 'courrier', 'reception', 'user'];
+        const userRoles = roles.map(r => r.role as AppRole);
+        
+        // Trouver le rôle le plus élevé dans la hiérarchie
+        const userRole = roleHierarchy.find(role => userRoles.includes(role)) || 'user';
 
         switch (userRole) {
           case 'president':

@@ -9,6 +9,9 @@ import { RoleFeedbackModal } from "@/components/RoleFeedbackModal";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { usePrefetch } from "@/hooks/usePrefetch";
 import { useTheme } from "next-themes";
+import type { Database } from "@/integrations/supabase/types";
+
+type AppRole = Database['public']['Enums']['app_role'];
 import {
   Dialog,
   DialogContent,
@@ -181,7 +184,12 @@ const Demo = () => {
         let destination = "/dashboard";
 
         if (roles && roles.length > 0) {
-          const userRole = roles[0].role;
+          // Hiérarchie des rôles: president > admin > autres
+          const roleHierarchy: AppRole[] = ['president', 'admin', 'dgss', 'dgr', 'cabinet_private', 'sec_gen', 'minister', 'protocol', 'courrier', 'reception', 'user'];
+          const userRoles = roles.map(r => r.role as AppRole);
+          
+          // Trouver le rôle le plus élevé dans la hiérarchie
+          const userRole = roleHierarchy.find(role => userRoles.includes(role)) || 'user';
 
           switch (userRole) {
             case 'president':
