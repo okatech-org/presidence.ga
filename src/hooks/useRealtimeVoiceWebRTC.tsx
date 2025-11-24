@@ -471,11 +471,13 @@ Vous avez accès à plusieurs outils pour interagir avec l'interface :
 - 'control_ui' : Changer le thème, ajuster les paramètres d'affichage, vitesse de parole
   - Exemples thème : "Mets le mode sombre" → action='set_theme_dark'
   - "Mets le mode clair" → action='set_theme_light'
-  - Exemples vitesse : "Parle plus vite" → action='set_speech_rate', value='1.5'
-  - "Parle plus lentement" → action='set_speech_rate', value='0.75'
-  - "Parle normalement" → action='set_speech_rate', value='1.0'
-  - **Valeurs vitesse** : 0.5 (très lent) à 2.0 (très rapide), 1.0 = normal
-  - **Tu DOIS ajuster ta vitesse dès que l'utilisateur le demande**
+  - Exemples VITESSE PHYSIQUE : "Parle plus vite" → action='set_speech_rate', value='1.3'
+  - "Accélère", "Parle plus rapidement" → action='set_speech_rate', value='1.3' à '1.5'
+  - "Parle plus lentement", "Ralentis" → action='set_speech_rate', value='0.7'
+  - "Vitesse normale" → action='set_speech_rate', value='1.0'
+  - **⚠️ NE PAS CONFONDRE** : "Résume" ou "Synthétise" = contenu plus court, PAS de vitesse
+  - **Plage recommandée vitesse** : x1.2 à x1.5 (rapide), x0.7 à x0.8 (lent), 1.0 = normal
+  - **Tu DOIS ajuster ta vitesse physique dès que l'utilisateur le demande**
 
 **Documents:**
 - 'generate_document' : Créer un document officiel (décret, note, lettre)
