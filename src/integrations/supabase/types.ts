@@ -121,6 +121,114 @@ export type Database = {
         }
         Relationships: []
       }
+      budget_national: {
+        Row: {
+          created_at: string | null
+          executed_amount: number | null
+          id: string
+          last_updated: string | null
+          ministry_allocations: Json | null
+          total_budget: number
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          executed_amount?: number | null
+          id?: string
+          last_updated?: string | null
+          ministry_allocations?: Json | null
+          total_budget: number
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          executed_amount?: number | null
+          id?: string
+          last_updated?: string | null
+          ministry_allocations?: Json | null
+          total_budget?: number
+          year?: number
+        }
+        Relationships: []
+      }
+      chantiers: {
+        Row: {
+          budget: number | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          location: string | null
+          ministry: string | null
+          name: string
+          progress: number | null
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          ministry?: string | null
+          name: string
+          progress?: number | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          location?: string | null
+          ministry?: string | null
+          name?: string
+          progress?: number | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      conseil_ministres_sessions: {
+        Row: {
+          agenda_summary: string | null
+          created_at: string | null
+          date: string
+          id: string
+          location: string | null
+          status: string | null
+          time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agenda_summary?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+          location?: string | null
+          status?: string | null
+          time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agenda_summary?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          location?: string | null
+          status?: string | null
+          time?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       conversation_messages: {
         Row: {
           audio_url: string | null
@@ -237,6 +345,121 @@ export type Database = {
           id?: string
           meeting_date?: string
           status?: string
+        }
+        Relationships: []
+      }
+      decret_comments: {
+        Row: {
+          comment: string
+          created_at: string | null
+          decret_id: string | null
+          id: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          comment: string
+          created_at?: string | null
+          decret_id?: string | null
+          id?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          comment?: string
+          created_at?: string | null
+          decret_id?: string | null
+          id?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decret_comments_decret_id_fkey"
+            columns: ["decret_id"]
+            isOneToOne: false
+            referencedRelation: "decrets_ordonnances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decret_signatures: {
+        Row: {
+          decret_id: string | null
+          id: string
+          signature_type: string | null
+          signed_at: string | null
+          signed_by: string
+          signed_by_name: string | null
+        }
+        Insert: {
+          decret_id?: string | null
+          id?: string
+          signature_type?: string | null
+          signed_at?: string | null
+          signed_by: string
+          signed_by_name?: string | null
+        }
+        Update: {
+          decret_id?: string | null
+          id?: string
+          signature_type?: string | null
+          signed_at?: string | null
+          signed_by?: string
+          signed_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decret_signatures_decret_id_fkey"
+            columns: ["decret_id"]
+            isOneToOne: false
+            referencedRelation: "decrets_ordonnances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decrets_ordonnances: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          ministry: string | null
+          publication_date: string | null
+          reference_number: string
+          signature_date: string | null
+          status: string | null
+          title: string
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          ministry?: string | null
+          publication_date?: string | null
+          reference_number: string
+          signature_date?: string | null
+          status?: string | null
+          title: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          ministry?: string | null
+          publication_date?: string | null
+          reference_number?: string
+          signature_date?: string | null
+          status?: string | null
+          title?: string
+          type?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1066,6 +1289,48 @@ export type Database = {
         }
         Relationships: []
       }
+      nominations: {
+        Row: {
+          candidate_info: Json | null
+          candidate_name: string
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_notes: string | null
+          id: string
+          ministere: string
+          poste: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          candidate_info?: Json | null
+          candidate_name: string
+          created_at?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          id?: string
+          ministere: string
+          poste: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          candidate_info?: Json | null
+          candidate_name?: string
+          created_at?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          id?: string
+          ministere?: string
+          poste?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       official_decrees: {
         Row: {
           created_at: string | null
@@ -1164,6 +1429,47 @@ export type Database = {
           sentiment_satisfaits?: number | null
         }
         Relationships: []
+      }
+      ordre_du_jour: {
+        Row: {
+          created_at: string | null
+          id: string
+          ministry: string | null
+          order_index: number | null
+          presenter: string | null
+          session_id: string | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ministry?: string | null
+          order_index?: number | null
+          presenter?: string | null
+          session_id?: string | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ministry?: string | null
+          order_index?: number | null
+          presenter?: string | null
+          session_id?: string | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordre_du_jour_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "conseil_ministres_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       personal_correspondence: {
         Row: {
@@ -1365,6 +1671,105 @@ export type Database = {
           type?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      projets_etat: {
+        Row: {
+          budget: number | null
+          completion_date: string | null
+          created_at: string | null
+          description: string | null
+          funding_source: string | null
+          id: string
+          impact_score: number | null
+          name: string
+          progress: number | null
+          responsible_entity: string | null
+          sector: string | null
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget?: number | null
+          completion_date?: string | null
+          created_at?: string | null
+          description?: string | null
+          funding_source?: string | null
+          id?: string
+          impact_score?: number | null
+          name: string
+          progress?: number | null
+          responsible_entity?: string | null
+          sector?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget?: number | null
+          completion_date?: string | null
+          created_at?: string | null
+          description?: string | null
+          funding_source?: string | null
+          id?: string
+          impact_score?: number | null
+          name?: string
+          progress?: number | null
+          responsible_entity?: string | null
+          sector?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      projets_presidentiels: {
+        Row: {
+          budget: number | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          priority: string | null
+          progress: number | null
+          responsible_ministry: string | null
+          start_date: string | null
+          status: string | null
+          target_date: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          budget?: number | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          priority?: string | null
+          progress?: number | null
+          responsible_ministry?: string | null
+          start_date?: string | null
+          status?: string | null
+          target_date?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          budget?: number | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          priority?: string | null
+          progress?: number | null
+          responsible_ministry?: string | null
+          start_date?: string | null
+          status?: string | null
+          target_date?: string | null
+          title?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
