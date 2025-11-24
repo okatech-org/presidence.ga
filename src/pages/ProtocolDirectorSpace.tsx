@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -30,8 +30,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "next-themes";
+import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import IAstedInterface from "@/components/iasted/IAstedInterface";
+import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
+import { generateSystemPrompt } from "@/utils/generateSystemPrompt";
+import { useUserContext } from "@/hooks/useUserContext";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { OfficialEvent, Guest, ProtocolProcedure } from "@/types/protocol";
@@ -52,6 +55,9 @@ const ProtocolDirectorSpace = () => {
         agenda: true,
         guests: false,
     });
+
+    const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('echo');
+    const userContext = useUserContext({ spaceName: 'ProtocolDirectorSpace' });
 
     // Access Control
     useEffect(() => {
@@ -146,6 +152,91 @@ const ProtocolDirectorSpace = () => {
     const toggleTheme = () => {
         setTheme(theme === "dark" ? "light" : "dark");
     };
+
+    // Tool call handler for iAsted
+    const handleToolCall = useCallback((toolName: string, args: any) => {
+        console.log(`🔧 [ProtocolDirectorSpace] Tool call: ${toolName}`, args);
+        switch (toolName) {
+            case 'control_ui':
+                if (args.action === 'toggle_theme') toggleTheme();
+                else if (args.action === 'set_theme_dark') setTheme("dark");
+                else if (args.action === 'set_theme_light') setTheme("light");
+                else if (args.action === 'set_volume') toast({ title: "Volume", description: `Volume ajusté` });
+                else if (args.action === 'set_speech_rate') {
+                    if (args.value && openaiRTC) openaiRTC.setSpeechRate(parseFloat(args.value));
+                    toast({ title: "Vitesse", description: `Vitesse ajustée` });
+                }
+                break;
+
+            case 'change_voice':
+                if (args.voice_id) {
+                    setSelectedVoice(args.voice_id as any);
+                    toast({ title: "Voix modifiée", description: `Voix changée pour ${args.voice_id}` });
+                }
+                break;
+
+            case 'navigate_to_section':
+                const sectionId = args.section_id;
+                const accordionSections = ['navigation', 'agenda', 'guests'];
+
+                const sectionMap: Record<string, string> = {
+                    'dashboard': 'dashboard',
+                    'tableau-de-bord': 'dashboard',
+                    'events': 'events',
+                    'evenements': 'events',
+                    'événements': 'events',
+                    'ceremonie': 'events',
+                    'cérémonial': 'events',
+                    'procedures': 'procedures',
+                    'procédures': 'procedures',
+                    'protocole': 'procedures',
+                    'guest_list': 'guest_list',
+                    'invites': 'guest_list',
+                    'invités': 'guest_list',
+                    'listes': 'guest_list'
+                };
+
+                const targetSection = sectionMap[sectionId] || sectionId;
+
+                if (accordionSections.includes(targetSection)) {
+                    toggleSection(targetSection);
+                    toast({ title: "Navigation", description: `Section ${targetSection} basculée` });
+                } else {
+                    setActiveSection(targetSection);
+
+                    const parentSectionMap: Record<string, string> = {
+                        'dashboard': 'navigation',
+                        'events': 'agenda',
+                        'procedures': 'agenda',
+                        'guest_list': 'guests'
+                    };
+
+                    const parent = parentSectionMap[targetSection];
+                    if (parent) {
+                        setExpandedSections(prev => ({ ...prev, [parent]: true }));
+                    }
+                    toast({ title: "Navigation", description: `Ouverture de ${targetSection}` });
+                }
+                break;
+
+            case 'open_chat':
+                setIastedOpen(true);
+                break;
+
+            case 'close_chat':
+                setIastedOpen(false);
+                break;
+
+            case 'stop_conversation':
+                setIastedOpen(false);
+                break;
+
+            default:
+                console.log('[ProtocolDirectorSpace] Tool call not handled:', toolName);
+        }
+    }, [toast, theme, setTheme]);
+
+    const openaiRTC = useRealtimeVoiceWebRTC(handleToolCall);
 
     // Helper functions
     const getStatusBadge = (status: string) => {
@@ -728,14 +819,15 @@ const ProtocolDirectorSpace = () => {
 
                 {/* iAsted Integration */}
                 <IAstedButtonFull
-                    onSingleClick={() => setIastedOpen(true)}
-                    onDoubleClick={() => setIastedOpen(true)}
+                    onClick={() => setIastedOpen(true)}
                 />
 
                 {iastedOpen && (
-                    <IAstedInterface
+                    <IAstedChatModal
                         isOpen={iastedOpen}
                         onClose={() => setIastedOpen(false)}
+                        systemPrompt={generateSystemPrompt(userContext)}
+                        openaiRTC={openaiRTC}
                     />
                 )}
             </div>
