@@ -43,6 +43,7 @@ import { KnowledgeBaseSection } from '@/components/admin/KnowledgeBaseSection';
 import { UserManagementSection } from '@/components/admin/UserManagementSection';
 import { AuditLogSection } from '@/components/admin/AuditLogSection';
 import { ConfigSection } from '@/components/admin/ConfigSection';
+import { ProjectDocumentation } from '@/components/admin/ProjectDocumentation';
 
 interface Feedback {
     id: string;
@@ -92,30 +93,33 @@ const AdminSpace = () => {
 
     const handleNavigationLocally = useCallback((sectionId: string) => {
         // Map section IDs to valid sections
-        const sectionMap: Record<string, string> = {
-            'dashboard': 'dashboard',
-            'tableau-de-bord': 'dashboard',
-            'users': 'users',
-            'utilisateurs': 'users',
-            'feedbacks': 'feedbacks',
-            'retours': 'feedbacks',
-            'ai': 'ai',
-            'ia': 'ai',
-            'knowledge': 'knowledge',
-            'base-connaissances': 'knowledge',
-            'connaissances': 'knowledge',
-            'audit': 'audit',
-            'logs': 'audit',
-            'config': 'config',
-            'configuration': 'config',
-            'documents': 'documents'
-        };
+            const sectionMap: Record<string, string> = {
+                'dashboard': 'dashboard',
+                'tableau-de-bord': 'dashboard',
+                'users': 'users',
+                'utilisateurs': 'users',
+                'feedbacks': 'feedbacks',
+                'retours': 'feedbacks',
+                'ai': 'ai',
+                'ia': 'ai',
+                'knowledge': 'knowledge',
+                'base-connaissances': 'knowledge',
+                'connaissances': 'knowledge',
+                'audit': 'audit',
+                'logs': 'audit',
+                'config': 'config',
+                'configuration': 'config',
+                'documents': 'documents',
+                'projet': 'projet',
+                'project': 'projet',
+                'documentation': 'projet'
+            };
 
         const targetSection = sectionMap[sectionId] || sectionId;
         
-        // Determine which accordion to open
-        const generalSections = ['dashboard', 'users', 'feedbacks'];
-        const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
+            // Determine which accordion to open
+            const generalSections = ['dashboard', 'users', 'feedbacks', 'projet'];
+            const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
         
         if (generalSections.includes(targetSection)) {
             setExpandedSections(prev => ({ ...prev, general: true }));
@@ -158,13 +162,16 @@ const AdminSpace = () => {
                 'logs': 'audit',
                 'config': 'config',
                 'configuration': 'config',
-                'documents': 'documents'
+                'documents': 'documents',
+                'projet': 'projet',
+                'project': 'projet',
+                'documentation': 'projet'
             };
 
             const targetSection = sectionMap[sectionId] || sectionId;
             
             // Determine which accordion to open
-            const generalSections = ['dashboard', 'users', 'feedbacks'];
+            const generalSections = ['dashboard', 'users', 'feedbacks', 'projet'];
             const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
             
             if (generalSections.includes(targetSection)) {
@@ -403,6 +410,13 @@ const AdminSpace = () => {
                                 >
                                     <Users className="w-4 h-4" />
                                     Utilisateurs
+                                </button>
+                                <button
+                                    onClick={() => setActiveSection('projet')}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'projet' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    Projet
                                 </button>
                             </nav>
                         )}
@@ -668,6 +682,10 @@ const AdminSpace = () => {
                                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <UserManagementSection />
                                 </div>
+                            )}
+
+                            {activeSection === 'projet' && (
+                                <ProjectDocumentation />
                             )}
 
                             {activeSection === 'ai' && (
