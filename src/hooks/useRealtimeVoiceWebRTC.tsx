@@ -106,23 +106,43 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
     const [speechRate, setSpeechRate] = useState(1.0); // 0.5 to 2.0
     const speechRateRef = useRef(1.0); // Ref pour éviter les closures
     
+    // Fonction pour appliquer le playbackRate de manière robuste
+    const applyPlaybackRate = useCallback((rate: number) => {
+        if (audioElRef.current) {
+            audioElRef.current.playbackRate = rate;
+            console.log('🎚️ [WebRTC] PlaybackRate appliqué:', rate);
+        }
+    }, []);
+
     // Mettre à jour le playbackRate quand speechRate change
     useEffect(() => {
-        speechRateRef.current = speechRate; // Sync ref
-        if (audioElRef.current) {
-            audioElRef.current.playbackRate = speechRate;
-            console.log('🎚️ [WebRTC] Speech rate applied:', speechRate);
-            
-            // Vérifier que c'est bien appliqué
-            setTimeout(() => {
-                if (audioElRef.current) {
-                    console.log('🎚️ [WebRTC] Speech rate verified:', audioElRef.current.playbackRate);
-                }
-            }, 100);
-        } else {
-            console.warn('⚠️ [WebRTC] Cannot apply speech rate: audioEl not ready');
-        }
-    }, [speechRate]);
+        speechRateRef.current = speechRate;
+        applyPlaybackRate(speechRate);
+    }, [speechRate, applyPlaybackRate]);
+
+    // Réappliquer le playbackRate sur les événements audio
+    useEffect(() => {
+        const audioEl = audioElRef.current;
+        if (!audioEl) return;
+
+        const handlePlay = () => {
+            console.log('🎵 [WebRTC] Audio playing, réapplication du playbackRate');
+            applyPlaybackRate(speechRateRef.current);
+        };
+
+        const handleLoadedData = () => {
+            console.log('📦 [WebRTC] Audio data loaded, application du playbackRate');
+            applyPlaybackRate(speechRateRef.current);
+        };
+
+        audioEl.addEventListener('playing', handlePlay);
+        audioEl.addEventListener('loadeddata', handleLoadedData);
+
+        return () => {
+            audioEl.removeEventListener('playing', handlePlay);
+            audioEl.removeEventListener('loadeddata', handleLoadedData);
+        };
+    }, [applyPlaybackRate]);
     const currentTranscriptRef = useRef<string>('');
     const systemPromptRef = useRef<string | undefined>(undefined);
     const [pendingVoiceChange, setPendingVoiceChange] = useState<string | null>(null);
@@ -428,18 +448,12 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                 if (audioElRef.current) {
                     audioElRef.current.srcObject = e.streams[0];
                     
-                    // Appliquer le playbackRate depuis le ref (évite closure)
-                    const currentRate = speechRateRef.current;
-                    audioElRef.current.playbackRate = currentRate;
-                    console.log(`🎚️ [WebRTC] PlaybackRate appliqué lors du track: ${currentRate}`);
+                    // Appliquer immédiatement le playbackRate
+                    applyPlaybackRate(speechRateRef.current);
                     
-                    // Force l'application après un court délai (parfois nécessaire)
-                    setTimeout(() => {
-                        if (audioElRef.current) {
-                            audioElRef.current.playbackRate = speechRateRef.current;
-                            console.log(`🎚️ [WebRTC] PlaybackRate réappliqué: ${speechRateRef.current}`);
-                        }
-                    }, 200);
+                    // Force l'application après un délai pour s'assurer qu'il est bien pris en compte
+                    setTimeout(() => applyPlaybackRate(speechRateRef.current), 100);
+                    setTimeout(() => applyPlaybackRate(speechRateRef.current), 500);
                 }
             };
 
