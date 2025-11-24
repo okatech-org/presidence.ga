@@ -1035,6 +1035,39 @@ export type Database = {
         }
         Relationships: []
       }
+      intelligence_scraping_config: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          frequency_hours: number | null
+          id: string
+          last_run_at: string | null
+          next_run_at: string | null
+          social_networks: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          frequency_hours?: number | null
+          id?: string
+          last_run_at?: string | null
+          next_run_at?: string | null
+          social_networks?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          frequency_hours?: number | null
+          id?: string
+          last_run_at?: string | null
+          next_run_at?: string | null
+          social_networks?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       intelligence_sources: {
         Row: {
           created_at: string | null
