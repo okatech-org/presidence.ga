@@ -303,12 +303,12 @@ const ProtocolDirectorSpace = () => {
                             {expandedSections.navigation ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                         </button>
                         {expandedSections.navigation && (
-                            <nav className="space-y-1 ml-2">
+                            <nav className="space-y-1 ml-2 animate-fade-in">
                                 <button
                                     onClick={() => setActiveSection("dashboard")}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "dashboard"
-                                        ? "neu-inset text-primary font-semibold"
-                                        : "neu-raised hover:shadow-neo-md"
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "dashboard"
+                                        ? "neu-inset text-primary font-semibold scale-105"
+                                        : "neu-raised hover:shadow-neo-md hover:scale-105"
                                         } `}
                                 >
                                     <LayoutDashboard className="w-4 h-4" />
@@ -328,12 +328,12 @@ const ProtocolDirectorSpace = () => {
                             {expandedSections.agenda ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                         </button>
                         {expandedSections.agenda && (
-                            <nav className="space-y-1 ml-2">
+                            <nav className="space-y-1 ml-2 animate-fade-in">
                                 <button
                                     onClick={() => setActiveSection("events")}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "events"
-                                        ? "neu-inset text-primary font-semibold"
-                                        : "neu-raised hover:shadow-neo-md"
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "events"
+                                        ? "neu-inset text-primary font-semibold scale-105"
+                                        : "neu-raised hover:shadow-neo-md hover:scale-105"
                                         } `}
                                 >
                                     <Calendar className="w-4 h-4" />
@@ -341,9 +341,9 @@ const ProtocolDirectorSpace = () => {
                                 </button>
                                 <button
                                     onClick={() => setActiveSection("procedures")}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "procedures"
-                                        ? "neu-inset text-primary font-semibold"
-                                        : "neu-raised hover:shadow-neo-md"
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "procedures"
+                                        ? "neu-inset text-primary font-semibold scale-105"
+                                        : "neu-raised hover:shadow-neo-md hover:scale-105"
                                         } `}
                                 >
                                     <ScrollText className="w-4 h-4" />
@@ -363,12 +363,12 @@ const ProtocolDirectorSpace = () => {
                             {expandedSections.guests ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                         </button>
                         {expandedSections.guests && (
-                            <nav className="space-y-1 ml-2">
+                            <nav className="space-y-1 ml-2 animate-fade-in">
                                 <button
                                     onClick={() => setActiveSection("guest_list")}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "guest_list"
-                                        ? "neu-inset text-primary font-semibold"
-                                        : "neu-raised hover:shadow-neo-md"
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "guest_list"
+                                        ? "neu-inset text-primary font-semibold scale-105"
+                                        : "neu-raised hover:shadow-neo-md hover:scale-105"
                                         } `}
                                 >
                                     <Users className="w-4 h-4" />
