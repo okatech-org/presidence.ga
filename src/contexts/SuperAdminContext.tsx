@@ -132,13 +132,14 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                 // Determine service context based on role or args
                 // Default to 'president' if not specified, or 'admin' if in admin space
                 const serviceContext = args.service_context || (isAdmin ? 'admin' : 'president');
+                const requestedFormat = args.format || 'pdf';
 
                 setPendingDocument({
                     type: args.type,
                     recipient: args.recipient,
                     subject: args.subject,
                     contentPoints: args.content_points || [],
-                    format: args.format || 'pdf',
+                    format: requestedFormat,
                     serviceContext: serviceContext
                 });
                 setIsChatOpen(true);
@@ -146,7 +147,19 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                     title: "Génération",
                     description: `Création de ${args.type} pour ${args.recipient}...`
                 });
-                return { success: true, message: 'Document généré' };
+                
+                // Message spécifique selon le format
+                if (requestedFormat === 'docx') {
+                    return { 
+                        success: true, 
+                        message: `Document Word (DOCX) généré et téléchargé automatiquement : ${args.type} pour ${args.recipient}. Le fichier est maintenant disponible dans vos téléchargements.` 
+                    };
+                } else {
+                    return { 
+                        success: true, 
+                        message: `Document PDF généré : ${args.type} pour ${args.recipient}. Le document est affiché dans le chat et téléchargé automatiquement.` 
+                    };
+                }
 
             // UI Tools
             case 'open_chat':
