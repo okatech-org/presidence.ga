@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,11 @@ import {
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "next-themes";
+import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import IAstedButtonFull from "@/components/iasted/IAstedButtonFull";
-import IAstedInterface from "@/components/iasted/IAstedInterface";
+import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
+import { generateSystemPrompt } from "@/utils/generateSystemPrompt";
+import { useUserContext } from "@/hooks/useUserContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +58,9 @@ const PrivateCabinetDirectorSpace = () => {
     private: true,
     contacts: false,
   });
+
+  const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('echo');
+  const userContext = useUserContext({ spaceName: 'PrivateCabinetDirectorSpace' });
 
   // State for data
   const [audiences, setAudiences] = useState<PrivateAudience[]>([]);
@@ -289,6 +295,98 @@ const PrivateCabinetDirectorSpace = () => {
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
+
+  // Tool call handler for iAsted
+  const handleToolCall = useCallback((toolName: string, args: any) => {
+    console.log(`🔧 [PrivateCabinetDirectorSpace] Tool call: ${toolName}`, args);
+    switch (toolName) {
+      case 'control_ui':
+        if (args.action === 'toggle_theme') toggleTheme();
+        else if (args.action === 'set_theme_dark') setTheme("dark");
+        else if (args.action === 'set_theme_light') setTheme("light");
+        else if (args.action === 'set_volume') toast({ title: "Volume", description: `Volume ajusté` });
+        else if (args.action === 'set_speech_rate') {
+          if (args.value && openaiRTC) openaiRTC.setSpeechRate(parseFloat(args.value));
+          toast({ title: "Vitesse", description: `Vitesse ajustée` });
+        }
+        break;
+
+      case 'change_voice':
+        if (args.voice_id) {
+          setSelectedVoice(args.voice_id as any);
+          toast({ title: "Voix modifiée", description: `Voix changée pour ${args.voice_id}` });
+        }
+        break;
+
+      case 'navigate_to_section':
+        const sectionId = args.section_id;
+        const accordionSections = ['navigation', 'private', 'contacts'];
+
+        const sectionMap: Record<string, string> = {
+          'dashboard': 'dashboard',
+          'tableau-de-bord': 'dashboard',
+          'audiences': 'audiences',
+          'audiences-privees': 'audiences',
+          'audiences-privées': 'audiences',
+          'rencontres': 'audiences',
+          'messages': 'messages',
+          'messagerie': 'messages',
+          'correspondance': 'correspondence',
+          'correspondances': 'correspondence',
+          'courrier': 'correspondence',
+          'courriers': 'correspondence',
+          'contacts': 'vip_contacts',
+          'vip': 'vip_contacts',
+          'carnet': 'vip_contacts',
+          'trips': 'trips',
+          'voyages': 'trips',
+          'deplacements': 'trips',
+          'déplacements': 'trips'
+        };
+
+        const targetSection = sectionMap[sectionId] || sectionId;
+
+        if (accordionSections.includes(targetSection)) {
+          toggleSection(targetSection);
+          toast({ title: "Navigation", description: `Section ${targetSection} basculée` });
+        } else {
+          setActiveSection(targetSection);
+
+          const parentSectionMap: Record<string, string> = {
+            'dashboard': 'navigation',
+            'audiences': 'private',
+            'messages': 'private',
+            'correspondence': 'private',
+            'trips': 'private',
+            'vip_contacts': 'contacts'
+          };
+
+          const parent = parentSectionMap[targetSection];
+          if (parent) {
+            setExpandedSections(prev => ({ ...prev, [parent]: true }));
+          }
+          toast({ title: "Navigation", description: `Ouverture de ${targetSection}` });
+        }
+        break;
+
+      case 'open_chat':
+        setIastedOpen(true);
+        break;
+
+      case 'close_chat':
+        setIastedOpen(false);
+        break;
+
+      case 'stop_conversation':
+        setIastedOpen(false);
+        break;
+
+      default:
+        console.log('[PrivateCabinetDirectorSpace] Tool call not handled:', toolName);
+    }
+  }, [toast, theme, setTheme]);
+
+  const openaiRTC = useRealtimeVoiceWebRTC(handleToolCall);
 
   // Audiences handlers
   const handleCreateAudience = async () => {
@@ -1780,16 +1878,19 @@ const PrivateCabinetDirectorSpace = () => {
         </main>
       </div >
 
-      {/* IAsted Button */}
-      < IAstedButtonFull
-        onSingleClick={() => setIastedOpen(true)}
-        onDoubleClick={() => setIastedOpen(true)}
+      {/* IAsted Integration */}
+      <IAstedButtonFull
+        onClick={() => setIastedOpen(true)}
       />
-      < IAstedInterface
-        isOpen={iastedOpen}
-        onClose={() => setIastedOpen(false)}
-        userRole="default"
-      />
+
+      {iastedOpen && (
+        <IAstedChatModal
+          isOpen={iastedOpen}
+          onClose={() => setIastedOpen(false)}
+          systemPrompt={generateSystemPrompt(userContext)}
+          openaiRTC={openaiRTC}
+        />
+      )}
     </div >
   );
 };
