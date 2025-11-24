@@ -104,12 +104,23 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
     const audioElRef = useRef<HTMLAudioElement | null>(null);
     const recorderRef = useRef<AudioRecorder | null>(null);
     const [speechRate, setSpeechRate] = useState(1.0); // 0.5 to 2.0
+    const speechRateRef = useRef(1.0); // Ref pour éviter les closures
     
     // Mettre à jour le playbackRate quand speechRate change
     useEffect(() => {
+        speechRateRef.current = speechRate; // Sync ref
         if (audioElRef.current) {
             audioElRef.current.playbackRate = speechRate;
-            console.log('🎚️ [WebRTC] Speech rate updated:', speechRate);
+            console.log('🎚️ [WebRTC] Speech rate applied:', speechRate);
+            
+            // Vérifier que c'est bien appliqué
+            setTimeout(() => {
+                if (audioElRef.current) {
+                    console.log('🎚️ [WebRTC] Speech rate verified:', audioElRef.current.playbackRate);
+                }
+            }, 100);
+        } else {
+            console.warn('⚠️ [WebRTC] Cannot apply speech rate: audioEl not ready');
         }
     }, [speechRate]);
     const currentTranscriptRef = useRef<string>('');
@@ -416,9 +427,19 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                 console.log('🎵 [WebRTC] Track audio reçu');
                 if (audioElRef.current) {
                     audioElRef.current.srcObject = e.streams[0];
-                    audioElRef.current.playbackRate = speechRate; // Appliquer le débit
-                    // Analyser l'audio distant aussi si on veut (ou juste local pour "listening")
-                    // Pour l'instant on analyse le local pour "listening" et on pourrait analyser le distant pour "speaking"
+                    
+                    // Appliquer le playbackRate depuis le ref (évite closure)
+                    const currentRate = speechRateRef.current;
+                    audioElRef.current.playbackRate = currentRate;
+                    console.log(`🎚️ [WebRTC] PlaybackRate appliqué lors du track: ${currentRate}`);
+                    
+                    // Force l'application après un court délai (parfois nécessaire)
+                    setTimeout(() => {
+                        if (audioElRef.current) {
+                            audioElRef.current.playbackRate = speechRateRef.current;
+                            console.log(`🎚️ [WebRTC] PlaybackRate réappliqué: ${speechRateRef.current}`);
+                        }
+                    }, 200);
                 }
             };
 
