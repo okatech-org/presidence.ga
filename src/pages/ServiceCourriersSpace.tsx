@@ -56,6 +56,28 @@ const ServiceCourriersSpace = () => {
     checkAccess();
   }, []);
 
+  // Écouter les événements de navigation et contrôle UI depuis SuperAdminContext
+  useEffect(() => {
+    const handleUIControlEvent = (e: CustomEvent) => {
+      const { action } = e.detail;
+      console.log('🎨 [ServiceCourriersSpace] Événement UI Control reçu:', action);
+      
+      if (action === 'toggle_theme') {
+        setTheme(theme === 'dark' ? 'light' : 'dark');
+      } else if (action === 'set_theme_dark') {
+        setTheme('dark');
+      } else if (action === 'set_theme_light') {
+        setTheme('light');
+      }
+    };
+
+    window.addEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+    };
+  }, [theme, setTheme]);
+
   const checkAccess = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();

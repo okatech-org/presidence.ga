@@ -240,6 +240,71 @@ const PrivateCabinetDirectorSpace = () => {
     setMounted(true);
   }, []);
 
+  // Écouter les événements de navigation et contrôle UI depuis SuperAdminContext
+  useEffect(() => {
+    const handleNavigationEvent = (e: CustomEvent) => {
+      const { sectionId } = e.detail;
+      console.log('📍 [PrivateCabinetDirectorSpace] Événement navigation reçu:', sectionId);
+
+      const accordionSections = ['navigation', 'private', 'contacts'];
+      const sectionMap: Record<string, string> = {
+        'dashboard': 'dashboard',
+        'tableau-de-bord': 'dashboard',
+        'audiences': 'audiences',
+        'messages': 'messages',
+        'messagerie': 'messages',
+        'correspondence': 'correspondence',
+        'courriers': 'correspondence',
+        'contacts': 'contacts_list',
+        'vip': 'contacts_list',
+        'trips': 'trips',
+        'voyages': 'trips',
+        'déplacements': 'trips'
+      };
+
+      const targetSection = sectionMap[sectionId] || sectionId;
+
+      if (accordionSections.includes(targetSection)) {
+        toggleSection(targetSection);
+      } else {
+        setActiveSection(targetSection);
+        const parentSectionMap: Record<string, string> = {
+          'dashboard': 'navigation',
+          'audiences': 'private',
+          'messages': 'private',
+          'correspondence': 'private',
+          'contacts_list': 'contacts',
+          'trips': 'private'
+        };
+        const parent = parentSectionMap[targetSection];
+        if (parent) {
+          setExpandedSections(prev => ({ ...prev, [parent]: true }));
+        }
+      }
+    };
+
+    const handleUIControlEvent = (e: CustomEvent) => {
+      const { action } = e.detail;
+      console.log('🎨 [PrivateCabinetDirectorSpace] Événement UI Control reçu:', action);
+      
+      if (action === 'toggle_theme') {
+        setTheme(theme === 'dark' ? 'light' : 'dark');
+      } else if (action === 'set_theme_dark') {
+        setTheme('dark');
+      } else if (action === 'set_theme_light') {
+        setTheme('light');
+      }
+    };
+
+    window.addEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+    window.addEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+      window.removeEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+    };
+  }, [theme, setTheme, toast]);
+
   useEffect(() => {
     const checkAccess = async () => {
       try {

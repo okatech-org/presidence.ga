@@ -87,6 +87,71 @@ const ProtocolDirectorSpace = () => {
         checkAccess();
     }, [navigate, toast]);
 
+    // Écouter les événements de navigation et contrôle UI depuis SuperAdminContext
+    useEffect(() => {
+        const handleNavigationEvent = (e: CustomEvent) => {
+            const { sectionId } = e.detail;
+            console.log('📍 [ProtocolDirectorSpace] Événement navigation reçu:', sectionId);
+
+            const accordionSections = ['navigation', 'agenda', 'guests'];
+            const sectionMap: Record<string, string> = {
+                'dashboard': 'dashboard',
+                'tableau-de-bord': 'dashboard',
+                'events': 'events',
+                'evenements': 'events',
+                'événements': 'events',
+                'ceremonie': 'events',
+                'cérémonial': 'events',
+                'procedures': 'procedures',
+                'procédures': 'procedures',
+                'protocole': 'procedures',
+                'guest_list': 'guest_list',
+                'invites': 'guest_list',
+                'invités': 'guest_list',
+                'listes': 'guest_list'
+            };
+
+            const targetSection = sectionMap[sectionId] || sectionId;
+
+            if (accordionSections.includes(targetSection)) {
+                toggleSection(targetSection);
+            } else {
+                setActiveSection(targetSection);
+                const parentSectionMap: Record<string, string> = {
+                    'dashboard': 'navigation',
+                    'events': 'agenda',
+                    'procedures': 'agenda',
+                    'guest_list': 'guests'
+                };
+                const parent = parentSectionMap[targetSection];
+                if (parent) {
+                    setExpandedSections(prev => ({ ...prev, [parent]: true }));
+                }
+            }
+        };
+
+        const handleUIControlEvent = (e: CustomEvent) => {
+            const { action } = e.detail;
+            console.log('🎨 [ProtocolDirectorSpace] Événement UI Control reçu:', action);
+            
+            if (action === 'toggle_theme') {
+                setTheme(theme === 'dark' ? 'light' : 'dark');
+            } else if (action === 'set_theme_dark') {
+                setTheme('dark');
+            } else if (action === 'set_theme_light') {
+                setTheme('light');
+            }
+        };
+
+        window.addEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+        window.addEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+
+        return () => {
+            window.removeEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+            window.removeEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+        };
+    }, [theme, setTheme, toast]);
+
     // Data Fetching
     const { data: events = [], isLoading: eventsLoading } = useQuery({
         queryKey: ["official_events"],

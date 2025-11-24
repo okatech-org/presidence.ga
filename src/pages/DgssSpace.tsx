@@ -188,6 +188,72 @@ const DgssSpace = () => {
         checkAccess();
     }, [navigate, toast]);
 
+    // Écouter les événements de navigation et contrôle UI depuis SuperAdminContext
+    useEffect(() => {
+        const handleNavigationEvent = (e: CustomEvent) => {
+            const { sectionId } = e.detail;
+            console.log('📍 [DgssSpace] Événement navigation reçu:', sectionId);
+
+            const accordionSections = ['navigation', 'intelligence', 'operations'];
+            const sectionMap: Record<string, string> = {
+                'dashboard': 'dashboard',
+                'tableau-de-bord': 'dashboard',
+                'reports': 'reports',
+                'rapports': 'reports',
+                'threats': 'threats',
+                'menaces': 'threats',
+                'targets': 'targets',
+                'cibles': 'targets',
+                'surveillance': 'targets',
+                'heatmap': 'heatmap',
+                'carte': 'heatmap',
+                'trends': 'trends',
+                'tendances': 'trends'
+            };
+
+            const targetSection = sectionMap[sectionId] || sectionId;
+
+            if (accordionSections.includes(targetSection)) {
+                toggleSection(targetSection);
+            } else {
+                setActiveSection(targetSection);
+                const parentSectionMap: Record<string, string> = {
+                    'dashboard': 'navigation',
+                    'reports': 'intelligence',
+                    'threats': 'intelligence',
+                    'targets': 'operations',
+                    'heatmap': 'operations',
+                    'trends': 'operations'
+                };
+                const parent = parentSectionMap[targetSection];
+                if (parent) {
+                    setExpandedSections(prev => ({ ...prev, [parent]: true }));
+                }
+            }
+        };
+
+        const handleUIControlEvent = (e: CustomEvent) => {
+            const { action } = e.detail;
+            console.log('🎨 [DgssSpace] Événement UI Control reçu:', action);
+            
+            if (action === 'toggle_theme') {
+                setTheme(theme === 'dark' ? 'light' : 'dark');
+            } else if (action === 'set_theme_dark') {
+                setTheme('dark');
+            } else if (action === 'set_theme_light') {
+                setTheme('light');
+            }
+        };
+
+        window.addEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+        window.addEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+
+        return () => {
+            window.removeEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+            window.removeEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+        };
+    }, [theme, setTheme, toast]);
+
     // Data Fetching
     const { data: reports = [], isLoading: reportsLoading } = useQuery({
         queryKey: ["intelligence_reports"],
