@@ -98,6 +98,73 @@ const AdminSpace = () => {
 
     const handleToolCall = useCallback((toolName: string, args: any) => {
         switch (toolName) {
+            case 'control_ui':
+                console.log('[AdminSpace] UI Control:', args);
+                if (args.action === 'toggle_theme') {
+                    setTheme(theme === 'dark' ? 'light' : 'dark');
+                } else if (args.action === 'set_theme_dark') {
+                    setTheme('dark');
+                } else if (args.action === 'set_theme_light') {
+                    setTheme('light');
+                }
+                break;
+
+            case 'change_voice':
+                console.log('[AdminSpace] Changement de voix demandé:', args);
+                if (args.voice_id) {
+                    setSelectedVoice(args.voice_id as any);
+                    toast({
+                        title: "Voix modifiée",
+                        description: `Passage à la voix ${args.voice_id}`,
+                    });
+                }
+                break;
+
+            // Local Section Navigation
+            case 'navigate_to_section':
+                console.log('🧭 [AdminSpace] Section navigation:', args);
+                const sectionId = args.section_id;
+                
+                // Map section IDs to valid sections
+                const sectionMap: Record<string, string> = {
+                    'dashboard': 'dashboard',
+                    'tableau-de-bord': 'dashboard',
+                    'users': 'users',
+                    'utilisateurs': 'users',
+                    'feedbacks': 'feedbacks',
+                    'retours': 'feedbacks',
+                    'ai': 'ai',
+                    'ia': 'ai',
+                    'knowledge': 'knowledge',
+                    'base-connaissances': 'knowledge',
+                    'connaissances': 'knowledge',
+                    'audit': 'audit',
+                    'logs': 'audit',
+                    'config': 'config',
+                    'configuration': 'config',
+                    'documents': 'documents'
+                };
+
+                const targetSection = sectionMap[sectionId] || sectionId;
+                
+                // Determine which accordion to open
+                const generalSections = ['dashboard', 'users', 'feedbacks'];
+                const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
+                
+                if (generalSections.includes(targetSection)) {
+                    setExpandedSections(prev => ({ ...prev, general: true }));
+                } else if (systemSections.includes(targetSection)) {
+                    setExpandedSections(prev => ({ ...prev, systeme: true }));
+                }
+                
+                setActiveSection(targetSection);
+                
+                toast({
+                    title: "Navigation",
+                    description: `Section ${targetSection} ouverte`,
+                });
+                break;
+
             case 'global_navigate':
                 // Intelligent route resolution
                 const query = args.query || args.route; // Support both old and new format
@@ -172,32 +239,18 @@ const AdminSpace = () => {
 
             case 'stop_conversation':
                 console.log('🛑 [AdminSpace] Stopping conversation');
-                openaiRTC.disconnect();
                 setIsIAstedOpen(false);
                 break;
 
             default:
                 console.log('[AdminSpace] Tool call not handled:', toolName, args);
         }
-    }, [navigate, toast, originRoute]);
+    }, [navigate, toast, originRoute, theme, setTheme]);
 
     const openaiRTC = useRealtimeVoiceWebRTC(handleToolCall);
 
     useEffect(() => {
         setMounted(true);
-    }, []);
-
-    // Listen for iAsted section navigation events
-    useEffect(() => {
-        const handleSectionNav = (event: Event) => {
-            const customEvent = event as CustomEvent<{ sectionId: string }>;
-            const { sectionId } = customEvent.detail;
-            console.log(`📍 [AdminSpace] Received section navigation: ${sectionId}`);
-            setActiveSection(sectionId);
-        };
-
-        window.addEventListener('iasted-navigate-section', handleSectionNav);
-        return () => window.removeEventListener('iasted-navigate-section', handleSectionNav);
     }, []);
 
     // Fetch real statistics
