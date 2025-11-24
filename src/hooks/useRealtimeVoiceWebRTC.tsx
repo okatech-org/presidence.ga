@@ -104,6 +104,14 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
     const audioElRef = useRef<HTMLAudioElement | null>(null);
     const recorderRef = useRef<AudioRecorder | null>(null);
     const [speechRate, setSpeechRate] = useState(1.0); // 0.5 to 2.0
+    
+    // Mettre à jour le playbackRate quand speechRate change
+    useEffect(() => {
+        if (audioElRef.current) {
+            audioElRef.current.playbackRate = speechRate;
+            console.log('🎚️ [WebRTC] Speech rate updated:', speechRate);
+        }
+    }, [speechRate]);
     const currentTranscriptRef = useRef<string>('');
     const systemPromptRef = useRef<string | undefined>(undefined);
     const [pendingVoiceChange, setPendingVoiceChange] = useState<string | null>(null);
@@ -460,9 +468,14 @@ Vous avez accès à plusieurs outils pour interagir avec l'interface :
 - 'global_navigate' : Naviguer vers une autre route/espace
 
 **Interface:**
-- 'control_ui' : Changer le thème, ajuster les paramètres d'affichage
-  - Exemples : "Mets le mode sombre" → action='set_theme_dark'
-  - "Mets le mode clair" → action='set_theme_light'  
+- 'control_ui' : Changer le thème, ajuster les paramètres d'affichage, vitesse de parole
+  - Exemples thème : "Mets le mode sombre" → action='set_theme_dark'
+  - "Mets le mode clair" → action='set_theme_light'
+  - Exemples vitesse : "Parle plus vite" → action='set_speech_rate', value='1.5'
+  - "Parle plus lentement" → action='set_speech_rate', value='0.75'
+  - "Parle normalement" → action='set_speech_rate', value='1.0'
+  - **Valeurs vitesse** : 0.5 (très lent) à 2.0 (très rapide), 1.0 = normal
+  - **Tu DOIS ajuster ta vitesse dès que l'utilisateur le demande**
 
 **Documents:**
 - 'generate_document' : Créer un document officiel (décret, note, lettre)

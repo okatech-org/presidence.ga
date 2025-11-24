@@ -91,13 +91,19 @@ Il existe DEUX types de navigation. NE LES CONFONDS JAMAIS :
      • "Déconnecte-toi" → Appelle 'stop_conversation'
    - **IMPORTANT** : CONFIRME verbalement AVANT d'appeler l'outil
 
-**CONTRÔLE THÈME** ('control_ui') :
-   - **Exemples CONCRETS** :
+**CONTRÔLE THÈME ET VITESSE** ('control_ui') :
+   - **Thème** :
      • "Mode sombre" → action='set_theme_dark'
      • "Mode clair" → action='set_theme_light'
      • "Change le thème" → action='toggle_theme'
-     • "Bascule le thème" → action='toggle_theme'
-   - **IMPORTANT** : Confirme verbalement l'action ("Mode sombre activé")
+   - **Vitesse de parole** :
+     • "Parle plus vite" → action='set_speech_rate', value='1.5'
+     • "Parle plus lentement" → action='set_speech_rate', value='0.75'
+     • "Parle normalement" → action='set_speech_rate', value='1.0'
+     • "Accélère" → action='set_speech_rate', value='1.5'
+     • "Ralentis" → action='set_speech_rate', value='0.75'
+   - **Valeurs pour vitesse** : 0.5 (très lent) à 2.0 (très rapide), 1.0 = normal
+   - **IMPORTANT** : Confirme verbalement l'action et ajuste ta parole selon la nouvelle vitesse
 
 **GESTION DOCUMENTS** ('control_document') :
    - Pour ouvrir/fermer : action='open_viewer' ou 'close_viewer'

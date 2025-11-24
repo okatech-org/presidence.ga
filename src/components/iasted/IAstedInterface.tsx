@@ -169,6 +169,25 @@ export default function IAstedInterface({ userRole = 'user', defaultOpen = false
                 window.dispatchEvent(new CustomEvent('iasted-sidebar-toggle'));
                 return { success: true, message: 'Sidebar basculée' };
             }
+
+            if (args.action === 'set_speech_rate') {
+                // Ajuster la vitesse de parole (0.5 à 2.0)
+                const rate = parseFloat(args.value || '1.0');
+                const clampedRate = Math.max(0.5, Math.min(2.0, rate));
+                
+                console.log(`🎚️ [IAstedInterface] Ajustement vitesse: ${rate} -> ${clampedRate}`);
+                openaiRTC.setSpeechRate(clampedRate);
+                
+                const speedDescription = clampedRate < 0.8 ? 'ralenti' 
+                    : clampedRate > 1.2 ? 'accéléré' 
+                    : 'normal';
+                
+                setTimeout(() => {
+                    toast.success(`Vitesse de parole ajustée (${speedDescription}: ${clampedRate}x)`);
+                }, 100);
+                
+                return { success: true, message: `Vitesse ajustée à ${clampedRate}x` };
+            }
         }
 
         if (toolName === 'navigate_within_space') {
