@@ -14,12 +14,44 @@ const IASTED_TOOLS = [
   {
     type: "function",
     function: {
-      name: "navigate_app",
-      description: "Naviguer vers une page ou module",
+      name: "navigate_within_space",
+      description: "Naviguer vers un module dans l'espace présidentiel (président uniquement)",
       parameters: {
         type: "object",
         properties: {
-          route: { type: "string", enum: ["/president-space", "/dashboard", "/admin-system-space"] },
+          module_id: { 
+            type: "string",
+            enum: ["module-xr7", "vision-nationale", "opinion-publique", "heatmap-regionale", "situations-critiques", "conseil-ministres"]
+          }
+        },
+        required: ["module_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "navigate_app",
+      description: "Naviguer vers n'importe quelle page (admin système uniquement)",
+      parameters: {
+        type: "object",
+        properties: {
+          route: { 
+            type: "string", 
+            enum: [
+              "/president-space", 
+              "/dashboard", 
+              "/admin-space",
+              "/admin-system-settings",
+              "/cabinet-director-space",
+              "/private-cabinet-director-space",
+              "/secretariat-general-space",
+              "/dgss-space",
+              "/protocol-director-space",
+              "/service-reception-space",
+              "/service-courriers-space"
+            ] 
+          },
           module_id: { type: "string" }
         },
         required: ["route"]
@@ -74,6 +106,29 @@ const IASTED_TOOLS = [
     }
   }
 ];
+
+// Fonction pour filtrer les outils selon le rôle
+function getToolsForRole(userRole: string) {
+  if (userRole === 'president') {
+    // Président: navigation limitée à son espace uniquement
+    return IASTED_TOOLS.filter(tool => 
+      tool.function.name !== 'navigate_app' && 
+      tool.function.name !== 'manage_system_settings'
+    );
+  } else if (userRole === 'admin') {
+    // Admin: tous les outils sauf navigate_within_space
+    return IASTED_TOOLS.filter(tool => 
+      tool.function.name !== 'navigate_within_space'
+    );
+  } else {
+    // Autres rôles: outils de base sans navigation globale
+    return IASTED_TOOLS.filter(tool => 
+      tool.function.name !== 'navigate_app' && 
+      tool.function.name !== 'navigate_within_space' &&
+      tool.function.name !== 'manage_system_settings'
+    );
+  }
+}
 
 // Analyse contextuelle avancée
 interface ContextAnalysis {
@@ -441,7 +496,7 @@ serve(async (req) => {
           ...conversationHistory,
           { role: 'user', content: userTranscript }
         ],
-        tools: IASTED_TOOLS,
+        tools: getToolsForRole(userRole), // Filtrer les outils selon le rôle
         tool_choice: toolChoice,
         temperature: 0.7,
         max_tokens: context.responseType === 'briefing' ? 800 : 400,
