@@ -44,6 +44,7 @@ import { UserManagementSection } from '@/components/admin/UserManagementSection'
 import { AuditLogSection } from '@/components/admin/AuditLogSection';
 import { ConfigSection } from '@/components/admin/ConfigSection';
 import { ProjectDocumentation } from '@/components/admin/ProjectDocumentation';
+import { IntelligenceDashboard } from '@/components/admin/intelligence/IntelligenceDashboard';
 
 interface Feedback {
     id: string;
@@ -60,11 +61,12 @@ interface Feedback {
 const AdminSpace = () => {
     const userContext = useUserContext({ spaceName: 'AdminSpace' });
     const { profile, role, isLoading } = userContext;
-    
+
     const [activeSection, setActiveSection] = useState('dashboard');
     const [expandedSections, setExpandedSections] = useState({
         general: true,
         systeme: true,
+        intelligence: true,
     });
     const { toast } = useToast();
     const navigate = useNavigate();
@@ -93,42 +95,47 @@ const AdminSpace = () => {
 
     const handleNavigationLocally = useCallback((sectionId: string) => {
         // Map section IDs to valid sections
-            const sectionMap: Record<string, string> = {
-                'dashboard': 'dashboard',
-                'tableau-de-bord': 'dashboard',
-                'users': 'users',
-                'utilisateurs': 'users',
-                'feedbacks': 'feedbacks',
-                'retours': 'feedbacks',
-                'ai': 'ai',
-                'ia': 'ai',
-                'knowledge': 'knowledge',
-                'base-connaissances': 'knowledge',
-                'connaissances': 'knowledge',
-                'audit': 'audit',
-                'logs': 'audit',
-                'config': 'config',
-                'configuration': 'config',
-                'documents': 'documents',
-                'projet': 'projet',
-                'project': 'projet',
-                'documentation': 'projet'
-            };
+        const sectionMap: Record<string, string> = {
+            'dashboard': 'dashboard',
+            'tableau-de-bord': 'dashboard',
+            'users': 'users',
+            'utilisateurs': 'users',
+            'feedbacks': 'feedbacks',
+            'retours': 'feedbacks',
+            'ai': 'ai',
+            'ia': 'ai',
+            'intelligence': 'intelligence',
+            'veille': 'intelligence',
+            'knowledge': 'knowledge',
+            'base-connaissances': 'knowledge',
+            'connaissances': 'knowledge',
+            'audit': 'audit',
+            'logs': 'audit',
+            'config': 'config',
+            'configuration': 'config',
+            'documents': 'documents',
+            'projet': 'projet',
+            'project': 'projet',
+            'documentation': 'projet'
+        };
 
         const targetSection = sectionMap[sectionId] || sectionId;
-        
-            // Determine which accordion to open
-            const generalSections = ['dashboard', 'users', 'feedbacks', 'projet'];
-            const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
-        
+
+        // Determine which accordion to open
+        const generalSections = ['dashboard', 'users', 'feedbacks', 'projet'];
+        const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
+        const intelligenceSections = ['intelligence'];
+
         if (generalSections.includes(targetSection)) {
             setExpandedSections(prev => ({ ...prev, general: true }));
         } else if (systemSections.includes(targetSection)) {
             setExpandedSections(prev => ({ ...prev, systeme: true }));
+        } else if (intelligenceSections.includes(targetSection)) {
+            setExpandedSections(prev => ({ ...prev, intelligence: true }));
         }
-        
+
         setActiveSection(targetSection);
-        
+
         toast({
             title: "Navigation",
             description: `Section ${targetSection} ouverte`,
@@ -169,19 +176,19 @@ const AdminSpace = () => {
             };
 
             const targetSection = sectionMap[sectionId] || sectionId;
-            
+
             // Determine which accordion to open
             const generalSections = ['dashboard', 'users', 'feedbacks', 'projet'];
             const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
-            
+
             if (generalSections.includes(targetSection)) {
                 setExpandedSections(prev => ({ ...prev, general: true }));
             } else if (systemSections.includes(targetSection)) {
                 setExpandedSections(prev => ({ ...prev, systeme: true }));
             }
-            
+
             setActiveSection(targetSection);
-            
+
             toast({
                 title: "Navigation",
                 description: `Section ${targetSection} ouverte`,
@@ -191,7 +198,7 @@ const AdminSpace = () => {
         const handleUIControlEvent = (e: CustomEvent) => {
             const { action, value } = e.detail;
             console.log('🎨 [AdminSpace] Événement UI Control reçu:', action);
-            
+
             if (action === 'toggle_theme') {
                 setTheme(theme === 'dark' ? 'light' : 'dark');
             } else if (action === 'set_theme_dark') {
@@ -417,6 +424,28 @@ const AdminSpace = () => {
                                 >
                                     <FileText className="w-4 h-4" />
                                     Projet
+                                </button>
+                            </nav>
+                        )}
+                    </div>
+
+                    {/* Navigation Intelligence */}
+                    <div className="mb-4">
+                        <button
+                            onClick={() => toggleSection('intelligence')}
+                            className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+                        >
+                            INTELLIGENCE
+                            {expandedSections.intelligence ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        </button>
+                        {expandedSections.intelligence && (
+                            <nav className="space-y-1 ml-2">
+                                <button
+                                    onClick={() => setActiveSection('intelligence')}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'intelligence' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                                >
+                                    <ShieldAlert className="w-4 h-4" />
+                                    Oeil de Lynx
                                 </button>
                             </nav>
                         )}
@@ -691,6 +720,12 @@ const AdminSpace = () => {
                             {activeSection === 'ai' && (
                                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <AIConfigSection />
+                                </div>
+                            )}
+
+                            {activeSection === 'intelligence' && (
+                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <IntelligenceDashboard />
                                 </div>
                             )}
 

@@ -213,7 +213,7 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
     }, []);
 
 
-    const handleDataChannelMessage = useCallback((event: MessageEvent) => {
+    const handleDataChannelMessage = useCallback(async (event: MessageEvent) => {
         try {
             const data = JSON.parse(event.data);
             console.log('📨 [WebRTC] Message reçu:', data.type);
@@ -307,7 +307,7 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                             setIsConnected(false);
                             setMessages([]);
                         }, 1500);
-                        
+
                         // Pas besoin de response.create, on arrête
                         break;
                     }
@@ -340,8 +340,8 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
 
                     if (onToolCall) {
                         try {
-                            // Execute tool and get result (synchronous for now, but structured for future async)
-                            const executionResult = onToolCall(functionName, args);
+                            // Execute tool and get result (support async)
+                            const executionResult = await onToolCall(functionName, args);
 
                             // If result is an object with success property, use it
                             if (executionResult !== undefined && typeof executionResult === 'object' && executionResult !== null) {
@@ -663,6 +663,21 @@ ${controlInstructions}`;
                                         content_points: { type: 'array', items: { type: 'string' } }
                                     },
                                     required: ['type', 'recipient', 'subject']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'search_knowledge',
+                                description: 'Recherche des informations dans la base de connaissances (WhatsApp, Web, YouTube) pour répondre aux questions sur l\'actualité, la sécurité, l\'économie, etc.',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        query: {
+                                            type: 'string',
+                                            description: 'La question ou les mots-clés à rechercher (ex: "Grève port-gentil", "Rumeurs coup d\'état", "Prix du carburant")'
+                                        }
+                                    },
+                                    required: ['query']
                                 }
                             },
                             {

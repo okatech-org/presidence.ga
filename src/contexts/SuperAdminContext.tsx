@@ -8,6 +8,7 @@ import IAstedButtonFull from '@/components/iasted/IAstedButtonFull';
 import { generateSystemPrompt } from '@/utils/generateSystemPrompt';
 import { resolveRoute } from '@/utils/route-mapping';
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SuperAdminContextValue {
     isAdmin: boolean;
@@ -63,7 +64,7 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
         return !isLoading && (role === 'admin' || role === 'president');
     }, [role, isLoading]);
 
-    const handleToolCall = useCallback((toolName: string, args: any): { success: boolean; message: string } | void => {
+    const handleToolCall = useCallback(async (toolName: string, args: any): Promise<{ success: boolean; message: string } | void> => {
         switch (toolName) {
             case 'global_navigate':
                 const query = args.query || args.route;
@@ -147,17 +148,17 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                     title: "Génération",
                     description: `Création de ${args.type} pour ${args.recipient}...`
                 });
-                
+
                 // Message spécifique selon le format
                 if (requestedFormat === 'docx') {
-                    return { 
-                        success: true, 
-                        message: `Document Word (DOCX) généré et téléchargé automatiquement : ${args.type} pour ${args.recipient}. Le fichier est maintenant disponible dans vos téléchargements.` 
+                    return {
+                        success: true,
+                        message: `Document Word (DOCX) généré et téléchargé automatiquement : ${args.type} pour ${args.recipient}. Le fichier est maintenant disponible dans vos téléchargements.`
                     };
                 } else {
-                    return { 
-                        success: true, 
-                        message: `Document PDF généré : ${args.type} pour ${args.recipient}. Le document est affiché dans le chat et téléchargé automatiquement.` 
+                    return {
+                        success: true,
+                        message: `Document PDF généré : ${args.type} pour ${args.recipient}. Le document est affiché dans le chat et téléchargé automatiquement.`
                     };
                 }
 
@@ -195,33 +196,56 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                 });
                 return { success: true, message: `Section ${sectionId} ouverte` };
 
+            // Intelligence Search (RAG)
+            case 'search_knowledge':
+                console.log('🧠 [Super Admin Context] Searching intelligence:', args.query);
+                try {
+                    const { data, error } = await supabase.functions.invoke('search-intelligence', {
+                        body: { query: args.query }
+                    });
+
+                    if (error) throw error;
+
+                    if (data.results && data.results.length > 0) {
+                        const formattedResults = data.results.map((r: any) =>
+                            `- [${r.category?.toUpperCase() || 'INFO'}] ${r.summary || r.content.substring(0, 100)}... (Source: ${r.author})`
+                        ).join('\n');
+                        return { success: true, message: `Voici les informations trouvées :\n${formattedResults}` };
+                    } else {
+                        return { success: true, message: "Aucune information pertinente trouvée dans la base de connaissances." };
+                    }
+                } catch (err: any) {
+                    console.error('❌ [Super Admin Context] Search error:', err);
+                    return { success: false, message: "Erreur lors de la recherche d'informations." };
+                }
+
             // UI Control
             case 'control_ui':
                 console.log('🎨 [Super Admin Context] UI Control:', args);
-                
+
                 // Dispatch event for theme changes
                 if (args.action === 'toggle_theme' || args.action === 'set_theme_dark' || args.action === 'set_theme_light') {
                     const themeEvent = new CustomEvent('iasted-control-ui', {
                         detail: { action: args.action, value: args.value }
                     });
                     window.dispatchEvent(themeEvent);
-                    
-                    const actionMsg = args.action === 'set_theme_dark' ? 'Mode sombre activé' : 
-                                      args.action === 'set_theme_light' ? 'Mode clair activé' : 
-                                      'Thème basculé';
+
+                    const actionMsg = args.action === 'set_theme_dark' ? 'Mode sombre activé' :
+                        args.action === 'set_theme_light' ? 'Mode clair activé' :
+                            'Thème basculé';
                     toast({
                         title: 'Thème',
                         description: actionMsg,
                     });
                     return { success: true, message: actionMsg };
                 }
-                
+
                 // Sidebar toggle
                 if (args.action === 'toggle_sidebar') {
                     window.dispatchEvent(new CustomEvent('iasted-sidebar-toggle'));
                     return { success: true, message: 'Menu latéral basculé' };
                 }
-                
+
                 return { success: false, message: 'Action UI non reconnue' };
 
             default:
