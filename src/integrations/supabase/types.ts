@@ -905,6 +905,62 @@ export type Database = {
         }
         Relationships: []
       }
+      intelligence_items: {
+        Row: {
+          author: string | null
+          category: string | null
+          content: string
+          created_at: string | null
+          embedding: string | null
+          entities: Json | null
+          external_id: string | null
+          id: string
+          published_at: string | null
+          sentiment: string | null
+          source_id: string | null
+          summary: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          content: string
+          created_at?: string | null
+          embedding?: string | null
+          entities?: Json | null
+          external_id?: string | null
+          id?: string
+          published_at?: string | null
+          sentiment?: string | null
+          source_id?: string | null
+          summary?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          embedding?: string | null
+          entities?: Json | null
+          external_id?: string | null
+          id?: string
+          published_at?: string | null
+          sentiment?: string | null
+          source_id?: string | null
+          summary?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intelligence_items_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "intelligence_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intelligence_reports: {
         Row: {
           classification: string
@@ -938,6 +994,39 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      intelligence_sources: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_crawled_at: string | null
+          name: string
+          status: string
+          type: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_crawled_at?: string | null
+          name: string
+          status?: string
+          type: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_crawled_at?: string | null
+          name?: string
+          status?: string
+          type?: string
+          updated_at?: string | null
+          url?: string
         }
         Relationships: []
       }
@@ -2284,6 +2373,24 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      query_intelligence: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          author: string
+          category: string
+          content: string
+          entities: Json
+          id: string
+          published_at: string
+          sentiment: string
+          similarity: number
+          summary: string
+        }[]
       }
     }
     Enums: {
