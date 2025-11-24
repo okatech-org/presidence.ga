@@ -62,7 +62,8 @@ interface Feedback {
 }
 
 const AdminSpace = () => {
-    const { profile, role, isLoading } = useUserContext({ spaceName: 'AdminSpace' });
+    const userContext = useUserContext({ spaceName: 'AdminSpace' });
+    const { profile, role, isLoading } = userContext;
     const [isIAstedOpen, setIsIAstedOpen] = useState(false);
     const [activeSection, setActiveSection] = useState('dashboard');
     const [expandedSections, setExpandedSections] = useState({
@@ -775,6 +776,32 @@ const AdminSpace = () => {
                     feedbackId={selectedFeedback.id}
                 />
             )}
+
+            {/* iAsted Integration */}
+            {userContext.hasIAstedAccess && (
+                <IAstedButtonFull
+                    onClick={async () => {
+                        if (openaiRTC.isConnected) {
+                            openaiRTC.disconnect();
+                        } else {
+                            const systemPrompt = generateSystemPrompt(userContext);
+                            await openaiRTC.connect(selectedVoice, systemPrompt);
+                        }
+                    }}
+                    onDoubleClick={() => setIsIAstedOpen(true)}
+                    audioLevel={openaiRTC.audioLevel}
+                    voiceListening={openaiRTC.voiceState === 'listening'}
+                    voiceSpeaking={openaiRTC.voiceState === 'speaking'}
+                    voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
+                />
+            )}
+
+            <IAstedChatModal
+                isOpen={isIAstedOpen}
+                onClose={() => setIsIAstedOpen(false)}
+                openaiRTC={openaiRTC}
+                currentVoice={selectedVoice}
+            />
 
         </div>
     );

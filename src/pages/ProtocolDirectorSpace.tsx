@@ -818,9 +818,23 @@ const ProtocolDirectorSpace = () => {
                 </main>
 
                 {/* iAsted Integration */}
-                <IAstedButtonFull
-                    onClick={() => setIastedOpen(true)}
-                />
+                {userContext.hasIAstedAccess && (
+                    <IAstedButtonFull
+                        onClick={async () => {
+                            if (openaiRTC.isConnected) {
+                                openaiRTC.disconnect();
+                            } else {
+                                const systemPrompt = generateSystemPrompt(userContext);
+                                await openaiRTC.connect(selectedVoice, systemPrompt);
+                            }
+                        }}
+                        onDoubleClick={() => setIastedOpen(true)}
+                        audioLevel={openaiRTC.audioLevel}
+                        voiceListening={openaiRTC.voiceState === 'listening'}
+                        voiceSpeaking={openaiRTC.voiceState === 'speaking'}
+                        voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
+                    />
+                )}
 
                 {iastedOpen && (
                     <IAstedChatModal
