@@ -196,44 +196,82 @@ export default function PresidentSpace() {
       case 'control_ui':
         console.log('🎛️ [PresidentSpace] Contrôle UI demandé:', args);
         if (args.action === 'toggle_theme') {
-          toggleTheme();
+          const newTheme = theme === 'dark' ? 'light' : 'dark';
+          console.log(`🎨 Basculement thème: ${theme} -> ${newTheme}`);
+          setTheme(newTheme);
+          toast({ title: "Thème", description: `Mode ${newTheme === 'dark' ? 'sombre' : 'clair'} activé` });
+          return { success: true, message: `Mode ${newTheme === 'dark' ? 'sombre' : 'clair'} activé` };
         } else if (args.action === 'set_theme_dark') {
+          console.log('🎨 Activation mode sombre');
           setTheme("dark");
+          toast({ title: "Thème", description: "Mode sombre activé" });
+          return { success: true, message: "Mode sombre activé" };
         } else if (args.action === 'set_theme_light') {
+          console.log('🎨 Activation mode clair');
           setTheme("light");
+          toast({ title: "Thème", description: "Mode clair activé" });
+          return { success: true, message: "Mode clair activé" };
+        } else if (args.action === 'toggle_sidebar') {
+          window.dispatchEvent(new CustomEvent('iasted-sidebar-toggle'));
+          return { success: true, message: 'Menu latéral basculé' };
         } else if (args.action === 'set_volume') {
-          // Volume is handled by system/hardware, but we can acknowledge
           toast({ title: "Volume", description: `Volume ajusté à ${args.value || 'niveau demandé'}` });
+          return { success: true, message: 'Volume ajusté' };
         } else if (args.action === 'set_speech_rate') {
           if (args.value) openaiRTC.setSpeechRate(parseFloat(args.value));
           toast({ title: "Vitesse", description: `Vitesse de parole ajustée` });
+          return { success: true, message: 'Vitesse ajustée' };
         }
-        break;
+        return { success: false, message: 'Action UI non reconnue' };
 
       case 'change_voice':
         console.log('🎙️ [PresidentSpace] Changement de voix demandé:', args);
         if (args.voice_id) {
+          const voiceName = args.voice_id === 'ash' ? 'Homme (Ash)' : args.voice_id === 'shimmer' ? 'Femme (Shimmer)' : 'Standard (Echo)';
           setSelectedVoice(args.voice_id as any);
           toast({
             title: "Voix modifiée",
-            description: `Passage à la voix ${args.voice_id === 'ash' ? 'Homme (Ash)' : args.voice_id === 'shimmer' ? 'Femme (Shimmer)' : 'Standard (Echo)'}`,
+            description: `Passage à la voix ${voiceName}`,
           });
+          return { success: true, message: `Voix modifiée : ${voiceName}` };
+        } else {
+          // Alternance automatique homme ↔ femme
+          const isCurrentlyMale = selectedVoice === 'ash' || selectedVoice === 'echo';
+          const newVoice = isCurrentlyMale ? 'shimmer' : 'ash';
+          const voiceName = newVoice === 'shimmer' ? 'Femme (Shimmer)' : 'Homme (Ash)';
+          console.log(`🎙️ Alternance: ${selectedVoice} (${isCurrentlyMale ? 'homme' : 'femme'}) -> ${newVoice}`);
+          setSelectedVoice(newVoice);
+          toast({
+            title: "Voix modifiée",
+            description: `Passage à la voix ${voiceName}`,
+          });
+          return { success: true, message: `Voix changée : ${voiceName}` };
         }
-        break;
 
       case 'navigate_to_section':
         console.log('🧭 [PresidentSpace] Navigation demandée:', args);
         const sectionId = args.section_id;
 
-        // Sections accordéon (toggle)
+        // Sections accordéon (toggle ou ouverture explicite)
         const accordionSections = ['navigation', 'gouvernance', 'economie', 'affaires', 'infrastructures'];
 
         if (accordionSections.includes(sectionId)) {
-          toggleSection(sectionId as keyof typeof expandedSections);
-          toast({ title: "Navigation", description: `Section ${sectionId} basculée` });
-          return { success: true, message: `Section ${sectionId} basculée` };
+          // Vérifier l'état actuel et basculer
+          const currentState = expandedSections[sectionId as keyof typeof expandedSections];
+          const newState = !currentState;
+          console.log(`📂 Section "${sectionId}": ${currentState ? 'fermée' : 'ouverte'} -> ${newState ? 'ouverte' : 'fermée'}`);
+          
+          setExpandedSections(prev => ({
+            ...prev,
+            [sectionId]: newState,
+          }));
+          
+          const actionMsg = newState ? 'dépliée' : 'repliée';
+          toast({ title: "Navigation", description: `Section ${sectionId} ${actionMsg}` });
+          return { success: true, message: `Section ${sectionId} ${actionMsg}` };
         } else {
           // Pages (navigation directe)
+          console.log(`📄 Navigation vers page: ${sectionId}`);
           setActiveSection(sectionId);
 
           // Ouvrir la section parente si nécessaire
@@ -259,6 +297,7 @@ export default function PresidentSpace() {
 
           const parent = parentSectionMap[sectionId];
           if (parent) {
+            console.log(`📂 Ouverture section parente: ${parent}`);
             setExpandedSections(prev => ({ ...prev, [parent]: true }));
           }
 
@@ -272,7 +311,7 @@ export default function PresidentSpace() {
           title: "Document",
           description: `Action ${args.action} demandée sur ${args.document_id || 'le document'}`
         });
-        break;
+        return { success: true, message: `Action ${args.action} exécutée` };
 
       case 'generate_document':
         console.log('📝 [PresidentSpace] Génération document:', args);
@@ -288,20 +327,20 @@ export default function PresidentSpace() {
           title: "Génération",
           description: `Création de ${args.type} pour ${args.recipient}...`
         });
-        break;
+        return { success: true, message: `Génération de ${args.type} lancée` };
 
       case 'open_chat':
         setIastedOpen(true);
-        break;
+        return { success: true, message: 'Interface chat ouverte' };
 
       case 'close_chat':
         setIastedOpen(false);
-        break;
+        return { success: true, message: 'Interface chat fermée' };
 
       case 'stop_conversation':
         openaiRTC.disconnect();
         setIastedOpen(false);
-        break;
+        return { success: true, message: 'Conversation arrêtée' };
     }
   });
 
