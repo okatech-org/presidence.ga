@@ -44,11 +44,10 @@ def scrape_rss_feed(feed_url, source_name):
             # Vérifier si au moins un mot-clé prioritaire est présent
             if any(kw.lower() in content for kw in PRIORITY_KEYWORDS):
                 results.append({
-                    'source_type': 'rss_feed',
                     'content': f"{entry.get('title', '')} - {entry.get('summary', '')}",
                     'author': source_name,
                     'external_id': entry.get('link', entry.get('id', '')),
-                    'published_at': entry.get('published', 'now()')
+                    'published_at': entry.get('published', datetime.now().isoformat())
                 })
         
         return results

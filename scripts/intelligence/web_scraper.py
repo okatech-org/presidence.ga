@@ -53,11 +53,10 @@ def scrape_web_news(queries, max_results_per_query=3):
                     # Filtrer les résultats hors contexte gabonais
                     if 'gabon' in result.get('body', '').lower() or 'gabon' in result.get('title', '').lower():
                         results.append({
-                            'source_type': 'web_search',
                             'content': f"{result.get('title', '')} - {result.get('body', '')}",
                             'author': result.get('link', 'Unknown'),
                             'external_id': result.get('link', ''),
-                            'published_at': 'now()'
+                            'published_at': datetime.now().isoformat()
                         })
                 
             print(f"  [{i}/{len(queries)}] {query}: {len(search_results)} résultats")
@@ -83,11 +82,10 @@ def scrape_youtube(queries, max_results_per_query=2):
             
             for video in search_results.get('result', []):
                 results.append({
-                    'source_type': 'youtube',
                     'content': f"{video.get('title', '')} - {video.get('descriptionSnippet', [{}])[0].get('text', '')}",
                     'author': video.get('channel', {}).get('name', 'Unknown'),
                     'external_id': video.get('id', ''),
-                    'published_at': 'now()'
+                    'published_at': datetime.now().isoformat()
                 })
             
             print(f"  [{i}/{len(queries)}] {search_query}: {len(search_results.get('result', []))} vidéos")
