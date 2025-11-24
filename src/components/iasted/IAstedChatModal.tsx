@@ -747,31 +747,52 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
             let blob: Blob, url: string, filename: string;
             
             if (requestedFormat === 'docx') {
-              // Génération DOCX avec le service
+              // Génération DOCX locale sans upload vers Supabase
+              console.log('📄 [generateDOCX] Génération locale du DOCX');
+              
+              const { Document, Paragraph, AlignmentType, HeadingLevel, Packer } = await import('docx');
+              
               const title = `${args.type} - ${args.recipient}`;
-              const content = `Objet : ${args.subject}\n\n${(args.content_points || []).map((p: string, i: number) => `${i + 1}. ${p}`).join('\n\n')}`;
+              const contentPoints = args.content_points || [];
               
-              // Mapping des types de documents vers les templates
-              const templateMap: Record<string, 'decret' | 'rapport' | 'note'> = {
-                'lettre': 'rapport',
-                'decret': 'decret',
-                'rapport': 'rapport',
-                'circulaire': 'note',
-                'note': 'note',
-                'nomination': 'decret',
-                'communique': 'rapport'
-              };
-              
-              const template = templateMap[args.type] || 'rapport';
-              
-              const result = await documentGenerationService.generateDocument({
-                title,
-                content,
-                template,
-                format: 'docx',
+              const doc = new Document({
+                sections: [{
+                  properties: {},
+                  children: [
+                    new Paragraph({
+                      text: "RÉPUBLIQUE GABONAISE",
+                      heading: HeadingLevel.HEADING_1,
+                      alignment: AlignmentType.CENTER,
+                    }),
+                    new Paragraph({
+                      text: title,
+                      heading: HeadingLevel.HEADING_2,
+                      alignment: AlignmentType.CENTER,
+                      spacing: { before: 400, after: 400 },
+                    }),
+                    new Paragraph({
+                      text: `Destinataire: ${args.recipient}`,
+                      spacing: { before: 200, after: 200 },
+                    }),
+                    new Paragraph({
+                      text: `Objet: ${args.subject}`,
+                      spacing: { after: 200 },
+                    }),
+                    new Paragraph({
+                      text: `Date: ${new Date().toLocaleDateString('fr-FR')}`,
+                      spacing: { after: 400 },
+                    }),
+                    ...contentPoints.map((point: string) => 
+                      new Paragraph({
+                        text: point,
+                        spacing: { before: 200, after: 200 },
+                      })
+                    ),
+                  ],
+                }],
               });
-              
-              blob = result.blob;
+
+              blob = await Packer.toBlob(doc);
               filename = `${args.type}_${args.recipient.replace(/\s+/g, '_')}_${Date.now()}.docx`;
               url = URL.createObjectURL(blob);
               
