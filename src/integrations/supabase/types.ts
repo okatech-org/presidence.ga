@@ -961,6 +961,44 @@ export type Database = {
           },
         ]
       }
+      intelligence_processing_logs: {
+        Row: {
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          item_id: string | null
+          processing_time_ms: number | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          item_id?: string | null
+          processing_time_ms?: number | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          item_id?: string | null
+          processing_time_ms?: number | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intelligence_processing_logs_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "intelligence_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intelligence_reports: {
         Row: {
           classification: string
