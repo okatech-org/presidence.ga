@@ -166,6 +166,55 @@ const CabinetDirectorSpace = () => {
     checkAccess();
   }, [navigate, toast]);
 
+  // Écouter les événements de navigation et contrôle UI depuis SuperAdminContext
+  useEffect(() => {
+    const handleNavigationEvent = (e: CustomEvent) => {
+      const { sectionId } = e.detail;
+      console.log('📍 [CabinetDirectorSpace] Événement navigation reçu:', sectionId);
+
+      const accordionSections = ['navigation', 'operations', 'coordination'];
+
+      if (accordionSections.includes(sectionId)) {
+        toggleSection(sectionId);
+      } else {
+        setActiveSection(sectionId);
+        const parentSectionMap: Record<string, string> = {
+          'dashboard': 'navigation',
+          'documents': 'navigation',
+          'projects': 'operations',
+          'instructions': 'operations',
+          'interministerial': 'coordination',
+          'council': 'coordination'
+        };
+        const parent = parentSectionMap[sectionId];
+        if (parent) {
+          setExpandedSections(prev => ({ ...prev, [parent]: true }));
+        }
+      }
+    };
+
+    const handleUIControlEvent = (e: CustomEvent) => {
+      const { action } = e.detail;
+      console.log('🎨 [CabinetDirectorSpace] Événement UI Control reçu:', action);
+      
+      if (action === 'toggle_theme') {
+        setTheme(theme === 'dark' ? 'light' : 'dark');
+      } else if (action === 'set_theme_dark') {
+        setTheme('dark');
+      } else if (action === 'set_theme_light') {
+        setTheme('light');
+      }
+    };
+
+    window.addEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+    window.addEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+      window.removeEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+    };
+  }, [theme, setTheme, toast]);
+
   // Data Fetching - COMMENTED OUT: These tables don't exist yet
   // TODO: Create these tables in Supabase or remove this functionality
   /*

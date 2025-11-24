@@ -255,6 +255,74 @@ const AdminSpace = () => {
         setMounted(true);
     }, []);
 
+    // Écouter les événements de navigation et contrôle UI depuis SuperAdminContext
+    useEffect(() => {
+        const handleNavigationEvent = (e: CustomEvent) => {
+            const { sectionId } = e.detail;
+            console.log('📍 [AdminSpace] Événement navigation reçu:', sectionId);
+
+            // Map section IDs to valid sections
+            const sectionMap: Record<string, string> = {
+                'dashboard': 'dashboard',
+                'tableau-de-bord': 'dashboard',
+                'users': 'users',
+                'utilisateurs': 'users',
+                'feedbacks': 'feedbacks',
+                'retours': 'feedbacks',
+                'ai': 'ai',
+                'ia': 'ai',
+                'knowledge': 'knowledge',
+                'base-connaissances': 'knowledge',
+                'connaissances': 'knowledge',
+                'audit': 'audit',
+                'logs': 'audit',
+                'config': 'config',
+                'configuration': 'config',
+                'documents': 'documents'
+            };
+
+            const targetSection = sectionMap[sectionId] || sectionId;
+            
+            // Determine which accordion to open
+            const generalSections = ['dashboard', 'users', 'feedbacks'];
+            const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
+            
+            if (generalSections.includes(targetSection)) {
+                setExpandedSections(prev => ({ ...prev, general: true }));
+            } else if (systemSections.includes(targetSection)) {
+                setExpandedSections(prev => ({ ...prev, systeme: true }));
+            }
+            
+            setActiveSection(targetSection);
+            
+            toast({
+                title: "Navigation",
+                description: `Section ${targetSection} ouverte`,
+            });
+        };
+
+        const handleUIControlEvent = (e: CustomEvent) => {
+            const { action, value } = e.detail;
+            console.log('🎨 [AdminSpace] Événement UI Control reçu:', action);
+            
+            if (action === 'toggle_theme') {
+                setTheme(theme === 'dark' ? 'light' : 'dark');
+            } else if (action === 'set_theme_dark') {
+                setTheme('dark');
+            } else if (action === 'set_theme_light') {
+                setTheme('light');
+            }
+        };
+
+        window.addEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+        window.addEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+
+        return () => {
+            window.removeEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+            window.removeEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+        };
+    }, [theme, setTheme, toast]);
+
     // Fetch real statistics
     useEffect(() => {
         const fetchStats = async () => {

@@ -89,6 +89,74 @@ const ServiceReceptionSpace = () => {
     checkAccess();
   }, [navigate, toast]);
 
+  // Écouter les événements de navigation et contrôle UI depuis SuperAdminContext
+  useEffect(() => {
+    const handleNavigationEvent = (e: CustomEvent) => {
+      const { sectionId } = e.detail;
+      console.log('📍 [ServiceReceptionSpace] Événement navigation reçu:', sectionId);
+
+      const accordionSections = ['navigation', 'visitors', 'accreditations', 'courrier'];
+      const sectionMap: Record<string, string> = {
+        'dashboard': 'dashboard',
+        'tableau-de-bord': 'dashboard',
+        'visitors': 'visitors',
+        'visiteurs': 'visitors',
+        'registre': 'visitors',
+        'accreditations': 'accreditations',
+        'accréditations': 'accreditations',
+        'badges': 'accreditations',
+        'mail-ingestion': 'mail-ingestion',
+        'courrier': 'mail-ingestion',
+        'nouveau-pli': 'mail-ingestion',
+        'scan': 'mail-ingestion',
+        'depot': 'mail-ingestion',
+        'mail-history': 'mail-history',
+        'historique': 'mail-history',
+        'traitement': 'mail-history'
+      };
+
+      const targetSection = sectionMap[sectionId] || sectionId;
+
+      if (accordionSections.includes(targetSection)) {
+        toggleSection(targetSection);
+      } else {
+        setActiveSection(targetSection);
+        const parentSectionMap: Record<string, string> = {
+          'dashboard': 'navigation',
+          'visitors': 'visitors',
+          'accreditations': 'accreditations',
+          'mail-ingestion': 'courrier',
+          'mail-history': 'courrier'
+        };
+        const parent = parentSectionMap[targetSection];
+        if (parent) {
+          setExpandedSections(prev => ({ ...prev, [parent]: true }));
+        }
+      }
+    };
+
+    const handleUIControlEvent = (e: CustomEvent) => {
+      const { action } = e.detail;
+      console.log('🎨 [ServiceReceptionSpace] Événement UI Control reçu:', action);
+      
+      if (action === 'toggle_theme') {
+        setTheme(theme === 'dark' ? 'light' : 'dark');
+      } else if (action === 'set_theme_dark') {
+        setTheme('dark');
+      } else if (action === 'set_theme_light') {
+        setTheme('light');
+      }
+    };
+
+    window.addEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+    window.addEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+      window.removeEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
+    };
+  }, [theme, setTheme, toast]);
+
   // Data Fetching
   const { data: visitors = [], isLoading: visitorsLoading } = useQuery({
     queryKey: ["visitor_logs"],
