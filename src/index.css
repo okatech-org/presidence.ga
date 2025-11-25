@@ -9,30 +9,31 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* === DESIGN NEOMORPHIQUE ASTED === */
-    /* Arrière-plans neomorphiques - Nuances de gris clairs avec plus de contraste */
-    --background: 0 0% 85%;
-    --foreground: 0 0% 8%;
+    /* Arrière-plans neomorphiques - Nuances optimisées pour mode clair */
+    --background: 0 0% 96%;
+    --foreground: 0 0% 12%;
     
-    --card: 0 0% 95%;
-    --card-foreground: 0 0% 8%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 12%;
     
-    --popover: 0 0% 95%;
-    --popover-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 12%;
     
-    /* Gris moyen-foncé pour couleur principale - plus de contraste */
-    --primary: 0 0% 35%;
-    --primary-foreground: 0 0% 100%;
+    /* Gris très foncé pour couleur principale - excellent contraste avec blanc */
+    --primary: 0 0% 18%;
+    --primary-foreground: 0 0% 98%;
     
-    /* Gris foncé pour secondaire - plus de contraste */
-    --secondary: 0 0% 25%;
-    --secondary-foreground: 0 0% 100%;
+    /* Gris foncé pour secondaire - bon contraste */
+    --secondary: 0 0% 30%;
+    --secondary-foreground: 0 0% 98%;
     
-    /* Gris moyen pour accent - plus de contraste */
-    --accent: 0 0% 45%;
-    --accent-foreground: 0 0% 8%;
+    /* Gris clair pour accent - contraste avec texte foncé */
+    --accent: 0 0% 92%;
+    --accent-foreground: 0 0% 12%;
     
-    --muted: 0 0% 75%;
-    --muted-foreground: 0 0% 35%;
+    /* Muted - fond gris très clair, texte gris moyen-foncé */
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 40%;
     
     /* Rouge pour alertes critiques */
     --destructive: 0 84% 60%;
@@ -40,42 +41,44 @@ All colors MUST be HSL.
     
     /* Orange pour alertes moyennes */
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 8%;
+    --warning-foreground: 0 0% 12%;
     
     /* Vert pour statut OK */
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     
-    --border: 0 0% 70%;
-    --input: 0 0% 78%;
-    --ring: 0 0% 35%;
+    /* Bordures et inputs plus contrastés */
+    --border: 0 0% 85%;
+    --input: 0 0% 94%;
+    --ring: 0 0% 20%;
     
     --radius: 1rem;
     
-    /* === OMBRES NEOMORPHIQUES - Plus de contraste === */
-    --neo-shadow-sm: 4px 4px 8px rgba(150, 150, 150, 0.5), -4px -4px 8px rgba(255, 255, 255, 1);
-    --neo-shadow-md: 8px 8px 16px rgba(140, 140, 140, 0.6), -8px -8px 16px rgba(255, 255, 255, 1);
-    --neo-shadow-lg: 12px 12px 24px rgba(130, 130, 130, 0.7), -12px -12px 24px rgba(255, 255, 255, 1);
-    --neo-shadow-inset: inset 4px 4px 8px rgba(150, 150, 150, 0.5), inset -4px -4px 8px rgba(255, 255, 255, 1);
-    --neo-shadow-inset-lg: inset 8px 8px 16px rgba(140, 140, 140, 0.6), inset -8px -8px 16px rgba(255, 255, 255, 1);
+    /* === OMBRES NEOMORPHIQUES - Optimisées pour mode clair === */
+    --neo-shadow-sm: 3px 3px 6px rgba(0, 0, 0, 0.12), -3px -3px 6px rgba(255, 255, 255, 0.9);
+    --neo-shadow-md: 6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.9);
+    --neo-shadow-lg: 10px 10px 20px rgba(0, 0, 0, 0.18), -10px -10px 20px rgba(255, 255, 255, 0.9);
+    --neo-shadow-inset: inset 3px 3px 6px rgba(0, 0, 0, 0.12), inset -3px -3px 6px rgba(255, 255, 255, 0.9);
+    --neo-shadow-inset-lg: inset 6px 6px 12px rgba(0, 0, 0, 0.15), inset -6px -6px 12px rgba(255, 255, 255, 0.9);
     
-    /* Gradients en nuances de gris avec plus de contraste */
-    --gradient-primary: linear-gradient(135deg, hsl(0 0% 35%), hsl(0 0% 50%));
-    --gradient-secondary: linear-gradient(135deg, hsl(0 0% 25%), hsl(0 0% 40%));
-    --gradient-gold: linear-gradient(135deg, hsl(0 0% 45%), hsl(0 0% 60%));
+    /* Gradients en nuances de gris avec bon contraste */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 18%), hsl(0 0% 30%));
+    --gradient-secondary: linear-gradient(135deg, hsl(0 0% 30%), hsl(0 0% 45%));
+    --gradient-gold: linear-gradient(135deg, hsl(0 0% 40%), hsl(0 0% 55%));
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     
-    --sidebar-background: 0 0% 80%;
-    --sidebar-foreground: 0 0% 8%;
-    --sidebar-primary: 0 0% 35%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 75%;
-    --sidebar-accent-foreground: 0 0% 8%;
-    --sidebar-border: 0 0% 65%;
-    --sidebar-ring: 0 0% 45%;
+    /* Sidebar - couleurs optimisées */
+    --sidebar-background: 0 0% 94%;
+    --sidebar-foreground: 0 0% 12%;
+    --sidebar-primary: 0 0% 18%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 90%;
+    --sidebar-accent-foreground: 0 0% 12%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 0 0% 20%;
   }
 
   .dark {
@@ -219,13 +222,13 @@ All colors MUST be HSL.
   .neu-card {
     background: hsl(var(--card));
     box-shadow: 
-      4px 4px 8px rgba(150, 150, 150, 0.5),
-      -4px -4px 8px rgba(255, 255, 255, 1),
-      inset 1px 1px 2px rgba(255, 255, 255, 0.8),
-      inset -1px -1px 2px rgba(150, 150, 150, 0.3);
+      3px 3px 6px rgba(0, 0, 0, 0.12),
+      -3px -3px 6px rgba(255, 255, 255, 0.9),
+      inset 1px 1px 2px rgba(255, 255, 255, 0.5),
+      inset -1px -1px 2px rgba(0, 0, 0, 0.08);
     border-radius: var(--radius);
     transition: var(--transition-smooth);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
   
   .dark .neu-card {
@@ -239,10 +242,10 @@ All colors MUST be HSL.
   
   .neu-card:hover {
     box-shadow: 
-      6px 6px 12px rgba(140, 140, 140, 0.6),
-      -6px -6px 12px rgba(255, 255, 255, 1),
-      inset 1px 1px 2px rgba(255, 255, 255, 0.9),
-      inset -1px -1px 2px rgba(140, 140, 140, 0.35);
+      5px 5px 10px rgba(0, 0, 0, 0.15),
+      -5px -5px 10px rgba(255, 255, 255, 0.9),
+      inset 1px 1px 2px rgba(255, 255, 255, 0.6),
+      inset -1px -1px 2px rgba(0, 0, 0, 0.1);
   }
   
   .dark .neu-card:hover {
@@ -256,13 +259,13 @@ All colors MUST be HSL.
   .neu-raised {
     background: hsl(var(--card));
     box-shadow: 
-      3px 3px 6px rgba(150, 150, 150, 0.4),
-      -3px -3px 6px rgba(255, 255, 255, 0.9),
-      inset 1px 1px 1px rgba(255, 255, 255, 0.7),
-      inset -1px -1px 1px rgba(150, 150, 150, 0.25);
+      2px 2px 5px rgba(0, 0, 0, 0.1),
+      -2px -2px 5px rgba(255, 255, 255, 0.8),
+      inset 1px 1px 1px rgba(255, 255, 255, 0.4),
+      inset -1px -1px 1px rgba(0, 0, 0, 0.06);
     border-radius: var(--radius);
     transition: var(--transition-fast);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(0, 0, 0, 0.06);
   }
   
   .dark .neu-raised {
@@ -276,10 +279,10 @@ All colors MUST be HSL.
   
   .neu-raised:hover {
     box-shadow: 
-      4px 4px 8px rgba(140, 140, 140, 0.5),
-      -4px -4px 8px rgba(255, 255, 255, 1),
-      inset 1px 1px 1px rgba(255, 255, 255, 0.8),
-      inset -1px -1px 1px rgba(140, 140, 140, 0.3);
+      3px 3px 7px rgba(0, 0, 0, 0.13),
+      -3px -3px 7px rgba(255, 255, 255, 0.9),
+      inset 1px 1px 1px rgba(255, 255, 255, 0.5),
+      inset -1px -1px 1px rgba(0, 0, 0, 0.08);
   }
   
   .dark .neu-raised:hover {
