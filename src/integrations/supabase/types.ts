@@ -1037,31 +1037,37 @@ export type Database = {
       }
       intelligence_scraping_config: {
         Row: {
+          ai_providers: string[] | null
           created_at: string | null
           enabled: boolean | null
           frequency_hours: number | null
           id: string
           last_run_at: string | null
+          max_cost_limit: number | null
           next_run_at: string | null
           social_networks: Json | null
           updated_at: string | null
         }
         Insert: {
+          ai_providers?: string[] | null
           created_at?: string | null
           enabled?: boolean | null
           frequency_hours?: number | null
           id?: string
           last_run_at?: string | null
+          max_cost_limit?: number | null
           next_run_at?: string | null
           social_networks?: Json | null
           updated_at?: string | null
         }
         Update: {
+          ai_providers?: string[] | null
           created_at?: string | null
           enabled?: boolean | null
           frequency_hours?: number | null
           id?: string
           last_run_at?: string | null
+          max_cost_limit?: number | null
           next_run_at?: string | null
           social_networks?: Json | null
           updated_at?: string | null
