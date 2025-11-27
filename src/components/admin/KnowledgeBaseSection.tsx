@@ -33,6 +33,9 @@ export const KnowledgeBaseSection = () => {
     const [newDocPath, setNewDocPath] = useState('');
     const [selectedRoles, setSelectedRoles] = useState<AppRole[]>(['admin', 'president']);
 
+    const [uploading, setUploading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     useEffect(() => {
         fetchDocuments();
     }, []);
@@ -59,23 +62,47 @@ export const KnowledgeBaseSection = () => {
         }
     };
 
-    const handleAddDocument = async () => {
-        if (!newDocTitle || !newDocPath) return;
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0]);
+            // Auto-fill title if empty
+            if (!newDocTitle) {
+                setNewDocTitle(e.target.files[0].name.split('.')[0]);
+            }
+        }
+    };
 
-        setLoading(true);
+    const handleAddDocument = async () => {
+        if (!newDocTitle || !selectedFile) return;
+
+        setUploading(true);
         try {
-            const { error } = await (supabase as any)
+            // 1. Upload file to storage
+            const fileExt = selectedFile.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('knowledge-base')
+                .upload(filePath, selectedFile);
+
+            if (uploadError) throw uploadError;
+
+            // 2. Create record in knowledge_base table
+            const { error: dbError } = await (supabase as any)
                 .from('knowledge_base')
                 .insert({
                     title: newDocTitle,
-                    content: '',
-                    file_path: newDocPath,
-                    file_type: newDocPath.split('.').pop() || 'unknown',
+                    file_path: filePath,
+                    file_type: fileExt,
                     status: 'indexing',
                     access_level: selectedRoles
                 });
 
-            if (error) throw error;
+            if (dbError) throw dbError;
+
+            // 3. Trigger indexing (could be automatic via trigger, but for now we just notify)
+            // In a real scenario, an Edge Function would pick this up via webhook or trigger
 
             toast({
                 title: "Document ajouté",
@@ -83,23 +110,32 @@ export const KnowledgeBaseSection = () => {
             });
             setIsAddDialogOpen(false);
             setNewDocTitle('');
-            setNewDocPath('');
+            setSelectedFile(null);
             fetchDocuments();
         } catch (error: any) {
+            console.error('Upload error:', error);
             toast({
                 title: "Erreur",
                 description: error.message,
                 variant: "destructive"
             });
         } finally {
-            setLoading(false);
+            setUploading(false);
         }
     };
 
-    const handleDeleteDocument = async (id: string) => {
+    const handleDeleteDocument = async (id: string, filePath: string) => {
         if (!confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) return;
 
         try {
+            // 1. Delete from storage
+            const { error: storageError } = await supabase.storage
+                .from('knowledge-base')
+                .remove([filePath]);
+
+            if (storageError) console.warn('Storage delete error:', storageError);
+
+            // 2. Delete from database
             const { error } = await (supabase as any)
                 .from('knowledge_base')
                 .delete()
@@ -144,6 +180,30 @@ export const KnowledgeBaseSection = () => {
         }
     };
 
+    const handleIndexHistory = async () => {
+        try {
+            setLoading(true);
+            // Call Edge Function to process pending items
+            const { data, error } = await supabase.functions.invoke('process-intelligence-batch');
+
+            if (error) throw error;
+
+            toast({
+                title: "Indexation lancée",
+                description: `${data.processed || 0} éléments envoyés pour indexation.`
+            });
+        } catch (error: any) {
+            console.error('Indexing error:', error);
+            toast({
+                title: "Erreur",
+                description: "Échec du lancement de l'indexation de l'historique",
+                variant: "destructive"
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'ready':
@@ -174,67 +234,72 @@ export const KnowledgeBaseSection = () => {
                         Gérez les documents de référence utilisés par l'IA pour répondre aux questions.
                     </p>
                 </div>
-                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Upload className="mr-2 h-4 w-4" /> Ajouter un document
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px]">
-                        <DialogHeader>
-                            <DialogTitle>Ajouter un document</DialogTitle>
-                            <CardDescription>
-                                Référencez un document pour l'indexation vectorielle.
-                            </CardDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="title">Titre du document</Label>
-                                <Input
-                                    id="title"
-                                    value={newDocTitle}
-                                    onChange={(e) => setNewDocTitle(e.target.value)}
-                                    placeholder="ex: Constitution Gabonaise"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="path">Chemin du fichier / URL</Label>
-                                <Input
-                                    id="path"
-                                    value={newDocPath}
-                                    onChange={(e) => setNewDocPath(e.target.value)}
-                                    placeholder="ex: /docs/constitution.pdf"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Rôles autorisés</Label>
-                                <div className="grid grid-cols-2 gap-2 border p-4 rounded-md max-h-[200px] overflow-y-auto">
-                                    {IASTED_AUTHORIZED_ROLES.map(role => (
-                                        <div key={role} className="flex items-center space-x-2">
-                                            <Checkbox
-                                                id={`role-${role}`}
-                                                checked={selectedRoles.includes(role)}
-                                                onCheckedChange={() => toggleRole(role)}
-                                            />
-                                            <label
-                                                htmlFor={`role-${role}`}
-                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                                            >
-                                                {role}
-                                            </label>
-                                        </div>
-                                    ))}
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleIndexHistory} disabled={loading}>
+                        <Database className="mr-2 h-4 w-4" /> Indexer l'historique
+                    </Button>
+                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Upload className="mr-2 h-4 w-4" /> Ajouter un document
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[500px]">
+                            <DialogHeader>
+                                <DialogTitle>Ajouter un document</DialogTitle>
+                                <CardDescription>
+                                    Référencez un document pour l'indexation vectorielle.
+                                </CardDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="title">Titre du document</Label>
+                                    <Input
+                                        id="title"
+                                        value={newDocTitle}
+                                        onChange={(e) => setNewDocTitle(e.target.value)}
+                                        placeholder="ex: Constitution Gabonaise"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="file">Fichier (PDF, DOCX, TXT)</Label>
+                                    <Input
+                                        id="file"
+                                        type="file"
+                                        accept=".pdf,.docx,.txt"
+                                        onChange={handleFileChange}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Rôles autorisés</Label>
+                                    <div className="grid grid-cols-2 gap-2 border p-4 rounded-md max-h-[200px] overflow-y-auto">
+                                        {IASTED_AUTHORIZED_ROLES.map(role => (
+                                            <div key={role} className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id={`role-${role}`}
+                                                    checked={selectedRoles.includes(role)}
+                                                    onCheckedChange={() => toggleRole(role)}
+                                                />
+                                                <label
+                                                    htmlFor={`role-${role}`}
+                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                                >
+                                                    {role}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
-                            <Button onClick={handleAddDocument} disabled={loading || !newDocTitle || !newDocPath}>
-                                Ajouter
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
+                                <Button onClick={handleAddDocument} disabled={uploading || !newDocTitle || !selectedFile}>
+                                    {uploading ? 'Upload...' : 'Ajouter'}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
 
             <Card>
@@ -306,7 +371,7 @@ export const KnowledgeBaseSection = () => {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="text-destructive hover:text-destructive"
-                                                    onClick={() => handleDeleteDocument(doc.id)}
+                                                    onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
                                                     title="Supprimer"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
