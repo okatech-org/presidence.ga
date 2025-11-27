@@ -73,14 +73,39 @@ Deno.serve(async (req) => {
         console.log(`🔍 Collecte depuis: ${source.name}`);
 
         // Exemple de données simulées
+        // Génération de contenu réaliste pour la démo
+        const generateMockContent = (sourceName: string) => {
+          const topics = [
+            "Le Président de la Transition a inauguré aujourd'hui le nouveau centre hospitalier de Libreville, marquant une avancée majeure pour la santé publique.",
+            "Réunion stratégique au Palais du Bord de Mer : les ministres discutent des nouvelles réformes économiques pour 2026.",
+            "La jeunesse gabonaise se mobilise pour l'entrepreneuriat numérique lors du forum 'Gabon Digital' ce week-end.",
+            "Mise au point du Ministère de l'Économie sur les rumeurs d'augmentation du prix du carburant : 'Aucune hausse n'est prévue'.",
+            "Le Gabon renforce sa coopération bilatérale avec les partenaires internationaux pour la protection de la biodiversité.",
+            "Succès de la campagne de vaccination nationale : plus de 80% de la population cible atteinte dans l'Estuaire.",
+            "Les travaux de réhabilitation de la route nationale 1 avancent selon le calendrier prévu, annonce le Ministre des Travaux Publics.",
+            "Alerte météo : de fortes pluies sont attendues sur la côte dans les prochaines 48 heures. Prudence recommandée.",
+            "Le secteur minier enregistre une croissance de 5% au dernier trimestre, portée par l'exportation de manganèse.",
+            "Culture : Le festival des arts et traditions du Gabon ouvrira ses portes le mois prochain à Port-Gentil."
+          ];
+          const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+
+          if (sourceName.toLowerCase().includes('twitter') || sourceName.toLowerCase().includes('x')) {
+            return `${randomTopic} #Gabon #Transition #Politique`;
+          } else if (sourceName.toLowerCase().includes('facebook')) {
+            return `[COMMUNIQUÉ] ${randomTopic} \n\nRetrouvez plus de détails sur notre page officielle. N'hésitez pas à partager et commenter.`;
+          } else {
+            return `FLASH INFO - ${randomTopic} (Source: ${sourceName})`;
+          }
+        };
+
         const mockItems = [
           {
-            content: `Information collectée depuis ${source.name} - ${new Date().toISOString()}`,
+            content: generateMockContent(source.name),
             author: source.name,
             source_id: source.id,
             published_at: new Date().toISOString(),
             external_id: `${source.id}-${Date.now()}`,
-            ai_provider: config.ai_providers ? config.ai_providers[0] : 'gpt' // Simuler l'utilisation du premier provider choisi
+            ai_provider: config.ai_providers ? config.ai_providers[0] : 'gpt'
           }
         ];
 

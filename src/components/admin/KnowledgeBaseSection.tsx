@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { FileText, Upload, Trash2, RefreshCw, Search, Database } from 'lucide-react';
+import { Upload, Trash2, RefreshCw, FileText, Database, Brain } from 'lucide-react';
 import { IASTED_AUTHORIZED_ROLES, type AppRole } from '@/config/role-contexts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { KnowledgeExplorer } from './intelligence/KnowledgeExplorer';
 
 interface KnowledgeDoc {
     id: string;
@@ -36,9 +38,27 @@ export const KnowledgeBaseSection = () => {
     const [uploading, setUploading] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+    const [intelligenceCount, setIntelligenceCount] = useState<number>(0);
+
     useEffect(() => {
         fetchDocuments();
+        fetchIntelligenceStats();
     }, []);
+
+    const fetchIntelligenceStats = async () => {
+        try {
+            // Count items with embeddings (indexed)
+            const { count, error } = await supabase
+                .from('intelligence_items')
+                .select('*', { count: 'exact', head: true })
+                .not('embedding', 'is', null);
+
+            if (error) throw error;
+            setIntelligenceCount(count || 0);
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+    };
 
     const fetchDocuments = async () => {
         setLoading(true);
@@ -192,6 +212,9 @@ export const KnowledgeBaseSection = () => {
                 title: "Indexation lancée",
                 description: `${data.processed || 0} éléments envoyés pour indexation.`
             });
+
+            // Refresh stats after a short delay to allow processing to start
+            setTimeout(fetchIntelligenceStats, 2000);
         } catch (error: any) {
             console.error('Indexing error:', error);
             toast({
@@ -225,13 +248,19 @@ export const KnowledgeBaseSection = () => {
         }
     };
 
+    // ... (keep existing imports and state)
+    // Add import for KnowledgeExplorer
+    // import { KnowledgeExplorer } from './intelligence/KnowledgeExplorer'; // This will be added at top of file by auto-import or manual edit if needed.
+    // Since I can't easily add import at top with replace_file_content if I target the bottom, I will assume I need to add the import separately or rewrite the file.
+    // Actually, I'll rewrite the return statement to use Tabs.
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight">Base de Connaissances (RAG)</h2>
                     <p className="text-muted-foreground">
-                        Gérez les documents de référence utilisés par l'IA pour répondre aux questions.
+                        Gérez les documents de référence et explorez la mémoire de l'IA.
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -302,89 +331,144 @@ export const KnowledgeBaseSection = () => {
                 </div>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                            <Database className="h-5 w-5" /> Documents Indexés
-                        </CardTitle>
-                        <Button variant="ghost" size="sm" onClick={fetchDocuments}>
-                            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                        </Button>
+            <Tabs defaultValue="explorer" className="space-y-4">
+                <TabsList>
+                    <TabsTrigger value="explorer" className="flex items-center gap-2">
+                        <Brain className="h-4 w-4" /> Explorateur
+                    </TabsTrigger>
+                    <TabsTrigger value="documents" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" /> Gestion des Documents
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="explorer" className="space-y-4">
+                    <KnowledgeExplorer />
+                </TabsContent>
+
+                <TabsContent value="documents" className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <Card className="bg-primary/5 border-primary/20">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Database className="h-5 w-5 text-primary" />
+                                    Mémoire de Veille (Automatique)
+                                </CardTitle>
+                                <CardDescription>
+                                    Informations collectées automatiquement (Web, Réseaux Sociaux)
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold text-primary">{intelligenceCount}</div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Éléments vectorisés et accessibles par l'IA
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <FileText className="h-5 w-5" />
+                                    Documents de Référence (Manuel)
+                                </CardTitle>
+                                <CardDescription>
+                                    Fichiers officiels uploadés manuellement
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold">{documents.length}</div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Documents indexés dans la base
+                                </p>
+                            </CardContent>
+                        </Card>
                     </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Titre</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Accès</TableHead>
-                                <TableHead>Statut</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {documents.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                        Aucun document dans la base de connaissances.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                documents.map((doc) => (
-                                    <TableRow key={doc.id}>
-                                        <TableCell className="font-medium">
-                                            <div className="flex items-center gap-2">
-                                                <FileText className="h-4 w-4 text-muted-foreground" />
-                                                {doc.title}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground ml-6">{doc.file_path}</div>
-                                        </TableCell>
-                                        <TableCell className="uppercase text-xs">{doc.file_type}</TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-wrap gap-1">
-                                                {doc.access_level.slice(0, 2).map(role => (
-                                                    <Badge key={role} variant="outline" className="text-[10px]">{role}</Badge>
-                                                ))}
-                                                {doc.access_level.length > 2 && (
-                                                    <Badge variant="outline" className="text-[10px]">+{doc.access_level.length - 2}</Badge>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>{getStatusBadge(doc.status)}</TableCell>
-                                        <TableCell className="text-xs text-muted-foreground">
-                                            {new Date(doc.created_at).toLocaleDateString()}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => handleReindex(doc.id)}
-                                                    title="Ré-indexer"
-                                                >
-                                                    <RefreshCw className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-destructive hover:text-destructive"
-                                                    onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
-                                                    title="Supprimer"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
+
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="flex items-center gap-2">
+                                    <FileText className="h-5 w-5" /> Liste des Documents
+                                </CardTitle>
+                                <Button variant="ghost" size="sm" onClick={() => { fetchDocuments(); fetchIntelligenceStats(); }}>
+                                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Titre</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Accès</TableHead>
+                                        <TableHead>Statut</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                </TableHeader>
+                                <TableBody>
+                                    {documents.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                                Aucun document manuel. La base de connaissances utilise également les {intelligenceCount} éléments de veille.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        documents.map((doc) => (
+                                            <TableRow key={doc.id}>
+                                                <TableCell className="font-medium">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                                        {doc.title}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground ml-6">{doc.file_path}</div>
+                                                </TableCell>
+                                                <TableCell className="uppercase text-xs">{doc.file_type}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {doc.access_level.slice(0, 2).map(role => (
+                                                            <Badge key={role} variant="outline" className="text-[10px]">{role}</Badge>
+                                                        ))}
+                                                        {doc.access_level.length > 2 && (
+                                                            <Badge variant="outline" className="text-[10px]">+{doc.access_level.length - 2}</Badge>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>{getStatusBadge(doc.status)}</TableCell>
+                                                <TableCell className="text-xs text-muted-foreground">
+                                                    {new Date(doc.created_at).toLocaleDateString()}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => handleReindex(doc.id)}
+                                                            title="Ré-indexer"
+                                                        >
+                                                            <RefreshCw className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-destructive hover:text-destructive"
+                                                            onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
+                                                            title="Supprimer"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };
