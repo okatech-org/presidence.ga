@@ -46,16 +46,32 @@ Deno.serve(async (req) => {
     if (sourcesError) throw sourcesError;
 
     console.log(`📡 ${sources?.length || 0} sources actives trouvées`);
+    console.log(`💰 Limite de coût: ${config.max_cost_limit || 10}$`);
+    console.log(`🤖 Modèles IA: ${config.ai_providers || ['gpt']}`);
+
+    // Simulation du coût estimé (dans un cas réel, cela dépendrait du volume de données)
+    const estimatedCost = (sources?.length || 0) * 0.5; // 0.5$ par source
+
+    if (config.max_cost_limit && estimatedCost > config.max_cost_limit) {
+      console.error(`❌ Coût estimé (${estimatedCost}$) dépasse la limite (${config.max_cost_limit}$)`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: `Coût estimé (${estimatedCost}$) dépasse la limite (${config.max_cost_limit}$)`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Pour chaque source, on va simuler la collecte
     // Dans une vraie implémentation, vous appelleriez des APIs ou des scrapers externes
     const results = [];
-    
+
     for (const source of sources || []) {
       try {
         // Simuler la collecte (à remplacer par de vraies API calls)
         console.log(`🔍 Collecte depuis: ${source.name}`);
-        
+
         // Exemple de données simulées
         const mockItems = [
           {
@@ -63,7 +79,8 @@ Deno.serve(async (req) => {
             author: source.name,
             source_id: source.id,
             published_at: new Date().toISOString(),
-            external_id: `${source.id}-${Date.now()}`
+            external_id: `${source.id}-${Date.now()}`,
+            ai_provider: config.ai_providers ? config.ai_providers[0] : 'gpt' // Simuler l'utilisation du premier provider choisi
           }
         ];
 
@@ -121,7 +138,7 @@ Deno.serve(async (req) => {
     console.error('❌ Erreur:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
+      {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }

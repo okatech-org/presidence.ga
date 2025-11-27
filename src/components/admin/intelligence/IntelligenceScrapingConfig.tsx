@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Play, Clock } from "lucide-react";
+import { Loader2, Play, Clock, DollarSign, Bot } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ScrapingConfig {
   id: string;
@@ -14,6 +15,8 @@ interface ScrapingConfig {
   frequency_hours: number;
   next_run_at: string | null;
   last_run_at: string | null;
+  max_cost_limit: number;
+  ai_providers: string[];
   social_networks: {
     facebook: boolean;
     tiktok: boolean;
@@ -40,13 +43,15 @@ export function IntelligenceScrapingConfig() {
         .single();
 
       if (error) throw error;
-      
+
       // Conversion du type Json en objet typé
       const typedConfig: ScrapingConfig = {
         ...data,
-        social_networks: data.social_networks as unknown as ScrapingConfig['social_networks']
-      };
-      
+        social_networks: (data as any).social_networks as unknown as ScrapingConfig['social_networks'],
+        max_cost_limit: (data as any).max_cost_limit || 10.0,
+        ai_providers: (data as any).ai_providers || ['gpt']
+      } as unknown as ScrapingConfig;
+
       setConfig(typedConfig);
     } catch (error: any) {
       console.error("Error loading config:", error);
@@ -67,6 +72,8 @@ export function IntelligenceScrapingConfig() {
           enabled: config.enabled,
           frequency_hours: config.frequency_hours,
           social_networks: config.social_networks,
+          max_cost_limit: config.max_cost_limit,
+          ai_providers: config.ai_providers,
         })
         .eq("id", config.id);
 
@@ -152,6 +159,57 @@ export function IntelligenceScrapingConfig() {
             Actuellement: tous les {config.frequency_hours} heures (
             {Math.round(config.frequency_hours / 24)} jours)
           </p>
+        </div>
+
+        {/* Limite de Coût */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Limite de coût par exécution ($)
+          </Label>
+          <Input
+            type="number"
+            min="0"
+            step="0.1"
+            value={config.max_cost_limit || 0}
+            onChange={(e) =>
+              setConfig({
+                ...config,
+                max_cost_limit: parseFloat(e.target.value) || 0,
+              })
+            }
+          />
+          <p className="text-xs text-muted-foreground">
+            Le scraping s'arrêtera si le coût estimé dépasse ce montant.
+          </p>
+        </div>
+
+        {/* Fournisseurs IA */}
+        <div className="space-y-3">
+          <Label className="flex items-center gap-2">
+            <Bot className="h-4 w-4" />
+            Modèles d'IA à utiliser
+          </Label>
+          <div className="grid grid-cols-2 gap-4">
+            {['gpt', 'gemini', 'claude', 'mistral'].map((provider) => (
+              <div key={provider} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`provider-${provider}`}
+                  checked={config.ai_providers?.includes(provider)}
+                  onCheckedChange={(checked) => {
+                    const current = config.ai_providers || [];
+                    const updated = checked
+                      ? [...current, provider]
+                      : current.filter((p) => p !== provider);
+                    setConfig({ ...config, ai_providers: updated });
+                  }}
+                />
+                <Label htmlFor={`provider-${provider}`} className="capitalize cursor-pointer">
+                  {provider}
+                </Label>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Réseaux sociaux */}
