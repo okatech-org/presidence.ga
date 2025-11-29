@@ -240,6 +240,37 @@ export const KnowledgeBaseSection = () => {
         }
     };
 
+
+
+    const handlePurgeIntelligence = async () => {
+        if (!confirm("Êtes-vous sûr de vouloir supprimer TOUTE la mémoire de veille ? Cette action est irréversible.")) return;
+
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('intelligence_items')
+                .delete()
+                .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+
+            if (error) throw error;
+
+            toast({
+                title: "Mémoire effacée",
+                description: "Tout l'historique de veille a été supprimé.",
+            });
+            fetchIntelligenceStats();
+        } catch (error) {
+            console.error('Error purging intelligence:', error);
+            toast({
+                variant: "destructive",
+                title: "Erreur",
+                description: "Impossible de supprimer l'historique.",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const toggleRole = (role: AppRole) => {
         if (selectedRoles.includes(role)) {
             setSelectedRoles(selectedRoles.filter(r => r !== role));
@@ -264,6 +295,9 @@ export const KnowledgeBaseSection = () => {
                     </p>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="outline" onClick={handlePurgeIntelligence} disabled={loading} className="text-destructive hover:bg-destructive/10 border-destructive/20">
+                        <Trash2 className="mr-2 h-4 w-4" /> Réinitialiser
+                    </Button>
                     <Button variant="outline" onClick={handleIndexHistory} disabled={loading}>
                         <Database className="mr-2 h-4 w-4" /> Indexer l'historique
                     </Button>
