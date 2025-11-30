@@ -45,6 +45,10 @@ import { AuditLogSection } from '@/components/admin/AuditLogSection';
 import { ConfigSection } from '@/components/admin/ConfigSection';
 import { ProjectDocumentation } from '@/components/admin/ProjectDocumentation';
 import { IntelligenceDashboard } from '@/components/admin/intelligence/IntelligenceDashboard';
+import { MobileBottomNav, NavItem } from '@/components/layout/MobileBottomNav';
+import { AdminSpaceLayout } from '@/components/layout/AdminSpaceLayout';
+import { useSuperAdmin } from '@/contexts/SuperAdminContext';
+import { generateSystemPrompt } from '@/utils/generateSystemPrompt';
 
 interface Feedback {
     id: string;
@@ -61,6 +65,15 @@ interface Feedback {
 const AdminSpace = () => {
     const userContext = useUserContext({ spaceName: 'AdminSpace' });
     const { profile, role, isLoading } = userContext;
+    const { openaiRTC, selectedVoice } = useSuperAdmin();
+    // mobileMenuOpen is handled by AdminSpaceLayout
+
+    const navItems: NavItem[] = useMemo(() => [
+        { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard },
+        { id: 'users', label: 'Utilisateurs', icon: Users },
+        { id: 'feedbacks', label: 'Feedbacks', icon: MessageSquare },
+        { id: 'intelligence', label: 'Intel', icon: ShieldAlert },
+    ], []);
 
     const [activeSection, setActiveSection] = useState('dashboard');
     const [expandedSections, setExpandedSections] = useState({
@@ -151,48 +164,7 @@ const AdminSpace = () => {
         const handleNavigationEvent = (e: CustomEvent) => {
             const { sectionId } = e.detail;
             console.log('📍 [AdminSpace] Événement navigation reçu:', sectionId);
-
-            // Map section IDs to valid sections
-            const sectionMap: Record<string, string> = {
-                'dashboard': 'dashboard',
-                'tableau-de-bord': 'dashboard',
-                'users': 'users',
-                'utilisateurs': 'users',
-                'feedbacks': 'feedbacks',
-                'retours': 'feedbacks',
-                'ai': 'ai',
-                'ia': 'ai',
-                'knowledge': 'knowledge',
-                'base-connaissances': 'knowledge',
-                'connaissances': 'knowledge',
-                'audit': 'audit',
-                'logs': 'audit',
-                'config': 'config',
-                'configuration': 'config',
-                'documents': 'documents',
-                'projet': 'projet',
-                'project': 'projet',
-                'documentation': 'projet'
-            };
-
-            const targetSection = sectionMap[sectionId] || sectionId;
-
-            // Determine which accordion to open
-            const generalSections = ['dashboard', 'users', 'feedbacks', 'projet'];
-            const systemSections = ['ai', 'knowledge', 'audit', 'config', 'documents'];
-
-            if (generalSections.includes(targetSection)) {
-                setExpandedSections(prev => ({ ...prev, general: true }));
-            } else if (systemSections.includes(targetSection)) {
-                setExpandedSections(prev => ({ ...prev, systeme: true }));
-            }
-
-            setActiveSection(targetSection);
-
-            toast({
-                title: "Navigation",
-                description: `Section ${targetSection} ouverte`,
-            });
+            handleNavigationLocally(sectionId);
         };
 
         const handleUIControlEvent = (e: CustomEvent) => {
@@ -215,7 +187,7 @@ const AdminSpace = () => {
             window.removeEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
             window.removeEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
         };
-    }, [theme, setTheme, toast]);
+    }, [theme, setTheme, toast, handleNavigationLocally]);
 
     // Fetch real statistics
     useEffect(() => {
@@ -266,20 +238,11 @@ const AdminSpace = () => {
         });
     }
 
-    const handleLogout = useCallback(async () => {
-        await supabase.auth.signOut();
-        navigate("/auth");
-    }, [navigate]);
-
     const toggleSection = (section: keyof typeof expandedSections) => {
         setExpandedSections(prev => ({
             ...prev,
             [section]: !prev[section]
         }));
-    };
-
-    const toggleTheme = () => {
-        setTheme(theme === "dark" ? "light" : "dark");
     };
 
     const getStatusBadge = (status: string | null) => {
@@ -366,395 +329,340 @@ const AdminSpace = () => {
         return <div className="flex items-center justify-center h-screen text-red-500">Accès refusé. Réservé aux administrateurs.</div>;
     }
 
+    const customSidebarNav = (
+        <>
+            {/* Navigation Générale */}
+            <div className="mb-4">
+                <button
+                    onClick={() => toggleSection('general')}
+                    className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+                >
+                    GÉNÉRAL
+                    {expandedSections.general ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                </button>
+                {expandedSections.general && (
+                    <nav className="space-y-1 ml-2">
+                        <button
+                            onClick={() => setActiveSection('dashboard')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'dashboard' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                        >
+                            <LayoutDashboard className="w-4 h-4" />
+                            Tableau de Bord
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('feedbacks')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'feedbacks' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                            Feedbacks
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('users')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'users' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                        >
+                            <Users className="w-4 h-4" />
+                            Utilisateurs
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('projet')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'projet' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                        >
+                            <FileText className="w-4 h-4" />
+                            Projet
+                        </button>
+                    </nav>
+                )}
+            </div>
+
+            {/* Navigation Intelligence */}
+            <div className="mb-4">
+                <button
+                    onClick={() => toggleSection('intelligence')}
+                    className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+                >
+                    INTELLIGENCE
+                    {expandedSections.intelligence ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                </button>
+                {expandedSections.intelligence && (
+                    <nav className="space-y-1 ml-2">
+                        <button
+                            onClick={() => setActiveSection('intelligence')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'intelligence' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                        >
+                            <ShieldAlert className="w-4 h-4" />
+                            Oeil de Lynx
+                        </button>
+                    </nav>
+                )}
+            </div>
+
+            {/* Navigation Système */}
+            <div className="mb-4 flex-1">
+                <button
+                    onClick={() => toggleSection('systeme')}
+                    className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+                >
+                    SYSTÈME
+                    {expandedSections.systeme ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                </button>
+                {expandedSections.systeme && (
+                    <nav className="space-y-1 ml-2">
+                        <button
+                            onClick={() => setActiveSection('ai')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'ai' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                        >
+                            <Bot className="w-4 h-4" />
+                            IA & Voix
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('knowledge')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'knowledge' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                        >
+                            <Database className="w-4 h-4" />
+                            Connaissances
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('documents')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'documents' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                        >
+                            <FileCog className="w-4 h-4" />
+                            Gestion Documents
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('audit')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'audit' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                        >
+                            <ShieldAlert className="w-4 h-4" />
+                            Audit & Logs
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('config')}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'config' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
+                        >
+                            <Settings className="w-4 h-4" />
+                            Configuration
+                        </button>
+                    </nav>
+                )}
+            </div>
+        </>
+    );
+
     return (
-        <div className="min-h-screen bg-background p-4 md:p-6">
-            <div className="flex gap-6 max-w-[1600px] mx-auto">
-                {/* Sidebar détachée */}
-                <aside className="neu-card w-60 flex-shrink-0 p-6 flex flex-col min-h-[calc(100vh-3rem)] overflow-hidden">
-                    {/* Logo et titre */}
-                    <div className="flex items-center gap-3 mb-8">
-                        <div className="neu-raised w-12 h-12 rounded-full flex items-center justify-center p-2">
-                            <img
-                                src={emblemGabon}
-                                alt="Emblème"
-                                className="w-full h-full object-contain"
-                            />
+        <AdminSpaceLayout
+            navItems={navItems}
+            activeSection={activeSection}
+            setActiveSection={setActiveSection}
+            userContext={userContext}
+            pageTitle="Administration"
+            headerTitle="Administration Système"
+            headerSubtitle="Gestion globale de la plateforme iAsted"
+            customSidebarNav={customSidebarNav}
+        >
+            <div className="space-y-6">
+                {activeSection === 'dashboard' && (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <Card className="neu-raised border-none">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Utilisateurs Totaux</CardTitle>
+                                    <Users className="h-4 w-4 text-muted-foreground" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold">{stats.activeUsers}</div>
+                                    <p className="text-xs text-muted-foreground">Comptes enregistrés</p>
+                                </CardContent>
+                            </Card>
+                            <Card className="neu-raised border-none">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Santé Système</CardTitle>
+                                    <Server className="h-4 w-4 text-green-500" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold text-green-600">{stats.systemHealth}</div>
+                                    <p className="text-xs text-muted-foreground">Tous les services actifs</p>
+                                </CardContent>
+                            </Card>
+                            <Card className="neu-raised border-none">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Alertes Sécurité</CardTitle>
+                                    <ShieldAlert className="h-4 w-4 text-yellow-500" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold">{stats.securityAlerts}</div>
+                                    <p className="text-xs text-muted-foreground">7 derniers jours</p>
+                                </CardContent>
+                            </Card>
+                            <Card className="neu-raised border-none">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Requêtes iAsted</CardTitle>
+                                    <Activity className="h-4 w-4 text-blue-500" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold">{stats.iastedRequests.toLocaleString()}</div>
+                                    <p className="text-xs text-muted-foreground">Cette semaine</p>
+                                </CardContent>
+                            </Card>
                         </div>
-                        <div>
-                            <div className="font-bold text-sm">ADMIN.GA</div>
-                            <div className="text-xs text-muted-foreground">Super Admin</div>
-                        </div>
-                    </div>
 
-                    {/* Navigation Générale */}
-                    <div className="mb-4">
-                        <button
-                            onClick={() => toggleSection('general')}
-                            className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
-                        >
-                            GÉNÉRAL
-                            {expandedSections.general ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                        </button>
-                        {expandedSections.general && (
-                            <nav className="space-y-1 ml-2">
-                                <button
-                                    onClick={() => setActiveSection('dashboard')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'dashboard' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
-                                >
-                                    <LayoutDashboard className="w-4 h-4" />
-                                    Tableau de Bord
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('feedbacks')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'feedbacks' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
-                                >
-                                    <MessageSquare className="w-4 h-4" />
-                                    Feedbacks
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('users')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'users' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
-                                >
-                                    <Users className="w-4 h-4" />
-                                    Utilisateurs
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('projet')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'projet' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
-                                >
-                                    <FileText className="w-4 h-4" />
-                                    Projet
-                                </button>
-                            </nav>
-                        )}
+                        <Card className="neu-raised border-none">
+                            <CardHeader>
+                                <CardTitle>Activités Récentes</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <AuditLogSection />
+                            </CardContent>
+                        </Card>
                     </div>
+                )}
 
-                    {/* Navigation Intelligence */}
-                    <div className="mb-4">
-                        <button
-                            onClick={() => toggleSection('intelligence')}
-                            className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
-                        >
-                            INTELLIGENCE
-                            {expandedSections.intelligence ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                        </button>
-                        {expandedSections.intelligence && (
-                            <nav className="space-y-1 ml-2">
-                                <button
-                                    onClick={() => setActiveSection('intelligence')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'intelligence' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
-                                >
-                                    <ShieldAlert className="w-4 h-4" />
-                                    Oeil de Lynx
-                                </button>
-                            </nav>
-                        )}
-                    </div>
-
-                    {/* Navigation Système */}
-                    <div className="mb-4 flex-1">
-                        <button
-                            onClick={() => toggleSection('systeme')}
-                            className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
-                        >
-                            SYSTÈME
-                            {expandedSections.systeme ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                        </button>
-                        {expandedSections.systeme && (
-                            <nav className="space-y-1 ml-2">
-                                <button
-                                    onClick={() => setActiveSection('ai')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'ai' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
-                                >
-                                    <Bot className="w-4 h-4" />
-                                    IA & Voix
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('knowledge')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'knowledge' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
-                                >
-                                    <Database className="w-4 h-4" />
-                                    Connaissances
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('documents')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'documents' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
-                                >
-                                    <FileCog className="w-4 h-4" />
-                                    Gestion Documents
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('audit')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'audit' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
-                                >
-                                    <ShieldAlert className="w-4 h-4" />
-                                    Audit & Logs
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('config')}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === 'config' ? "neu-inset text-primary font-semibold" : "neu-raised hover:shadow-neo-md"}`}
-                                >
-                                    <Settings className="w-4 h-4" />
-                                    Configuration
-                                </button>
-                            </nav>
-                        )}
-                    </div>
-
-                    {/* Footer Sidebar */}
-                    <div className="mt-auto pt-4 border-t border-border">
-                        <button
-                            onClick={toggleTheme}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm neu-raised hover:shadow-neo-md transition-all mb-1"
-                        >
-                            {mounted && theme === "dark" ? (
-                                <>
-                                    <Sun className="w-4 h-4" /> Mode clair
-                                </>
-                            ) : (
-                                <>
-                                    <Moon className="w-4 h-4" /> Mode sombre
-                                </>
-                            )}
-                        </button>
-                        <button
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-destructive neu-raised hover:shadow-neo-md transition-all"
-                        >
-                            <LogOut className="w-4 h-4" />
-                            Déconnexion
-                        </button>
-                    </div>
-                </aside>
-
-                {/* Contenu Principal */}
-                <main className="flex-1">
-                    <div className="neu-card p-8 min-h-[calc(100vh-3rem)]">
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-10">
-                            <div className="flex items-start gap-4">
-                                <div className="neu-raised w-16 h-16 rounded-full flex items-center justify-center p-3 shrink-0">
-                                    <img
-                                        src={emblemGabon}
-                                        alt="Emblème"
-                                        className="w-full h-full object-contain"
-                                    />
+                {activeSection === 'feedbacks' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <Card className="neu-raised border-none p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-lg bg-primary/10">
+                                        <FileText className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Total Feedbacks</p>
+                                        <p className="text-2xl font-bold">{feedbacks.length}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h1 className="text-3xl font-bold mb-1">Administration Système</h1>
-                                    <p className="text-sm text-muted-foreground">Gestion globale de la plateforme iAsted</p>
+                            </Card>
+                            <Card className="neu-raised border-none p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-lg bg-secondary/10">
+                                        <Eye className="h-6 w-6 text-secondary" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">En attente</p>
+                                        <p className="text-2xl font-bold">
+                                            {feedbacks.filter((f) => !f.status || f.status === "pending").length}
+                                        </p>
+                                    </div>
+                                </div>
+                            </Card>
+                            <Card className="neu-raised border-none p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-lg bg-accent/10">
+                                        <Download className="h-6 w-6 text-accent" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Traités</p>
+                                        <p className="text-2xl font-bold">
+                                            {feedbacks.filter((f) => f.status === "processed").length}
+                                        </p>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+
+                        <Card className="neu-raised border-none p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-2xl font-bold">Feedbacks des responsables</h2>
+                                <div className="flex gap-2">
+                                    <Button variant="outline" onClick={exportToCSV} className="gap-2">
+                                        <FileSpreadsheet className="h-4 w-4" /> Exporter CSV
+                                    </Button>
+                                    <Button variant="outline" onClick={exportToPDF} className="gap-2">
+                                        <FileText className="h-4 w-4" /> Exporter PDF
+                                    </Button>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Contenu Dynamique */}
-                        <div className="space-y-6">
-                            {activeSection === 'dashboard' && (
-                                <div className="space-y-6">
-                                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                                        <Card className="neu-raised border-none">
-                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                <CardTitle className="text-sm font-medium">Utilisateurs Totaux</CardTitle>
-                                                <Users className="h-4 w-4 text-muted-foreground" />
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="text-2xl font-bold">{stats.activeUsers}</div>
-                                                <p className="text-xs text-muted-foreground">Comptes enregistrés</p>
-                                            </CardContent>
-                                        </Card>
-                                        <Card className="neu-raised border-none">
-                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                <CardTitle className="text-sm font-medium">Santé Système</CardTitle>
-                                                <Server className="h-4 w-4 text-green-500" />
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="text-2xl font-bold text-green-600">{stats.systemHealth}</div>
-                                                <p className="text-xs text-muted-foreground">Tous les services actifs</p>
-                                            </CardContent>
-                                        </Card>
-                                        <Card className="neu-raised border-none">
-                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                <CardTitle className="text-sm font-medium">Alertes Sécurité</CardTitle>
-                                                <ShieldAlert className="h-4 w-4 text-yellow-500" />
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="text-2xl font-bold">{stats.securityAlerts}</div>
-                                                <p className="text-xs text-muted-foreground">7 derniers jours</p>
-                                            </CardContent>
-                                        </Card>
-                                        <Card className="neu-raised border-none">
-                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                <CardTitle className="text-sm font-medium">Requêtes iAsted</CardTitle>
-                                                <Activity className="h-4 w-4 text-blue-500" />
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="text-2xl font-bold">{stats.iastedRequests.toLocaleString()}</div>
-                                                <p className="text-xs text-muted-foreground">Cette semaine</p>
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-
-                                    <Card className="neu-raised border-none">
-                                        <CardHeader>
-                                            <CardTitle>Activités Récentes</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <AuditLogSection />
-                                        </CardContent>
-                                    </Card>
+                            {loadingFeedbacks ? (
+                                <p className="text-center text-muted-foreground py-8">Chargement...</p>
+                            ) : feedbacks.length === 0 ? (
+                                <p className="text-center text-muted-foreground py-8">Aucun feedback pour le moment</p>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Date</TableHead>
+                                                <TableHead>Rôle</TableHead>
+                                                <TableHead>Email</TableHead>
+                                                <TableHead>Description</TableHead>
+                                                <TableHead>Suggestions</TableHead>
+                                                <TableHead>Docs</TableHead>
+                                                <TableHead>Statut</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {feedbacks.map((feedback) => (
+                                                <TableRow key={feedback.id}>
+                                                    <TableCell className="whitespace-nowrap">
+                                                        {new Date(feedback.created_at).toLocaleDateString("fr-FR")}
+                                                    </TableCell>
+                                                    <TableCell className="font-medium">{feedback.role_name}</TableCell>
+                                                    <TableCell>{feedback.user_email}</TableCell>
+                                                    <TableCell className="max-w-xs truncate">{feedback.role_description}</TableCell>
+                                                    <TableCell className="max-w-xs truncate">{feedback.implementation_suggestions || "-"}</TableCell>
+                                                    <TableCell>
+                                                        {feedback.document_paths && feedback.document_paths.length > 0 ? (
+                                                            <Button variant="outline" size="sm" onClick={() => handleViewDocuments(feedback)}>
+                                                                <Paperclip className="h-4 w-4 mr-2" /> {feedback.document_paths.length}
+                                                            </Button>
+                                                        ) : (
+                                                            <span className="text-muted-foreground">-</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>{getStatusBadge(feedback.status)}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
                                 </div>
                             )}
-
-                            {activeSection === 'feedbacks' && (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <div className="grid md:grid-cols-3 gap-6 mb-8">
-                                        <Card className="neu-raised border-none p-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-3 rounded-lg bg-primary/10">
-                                                    <FileText className="h-6 w-6 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm text-muted-foreground">Total Feedbacks</p>
-                                                    <p className="text-2xl font-bold">{feedbacks.length}</p>
-                                                </div>
-                                            </div>
-                                        </Card>
-                                        <Card className="neu-raised border-none p-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-3 rounded-lg bg-secondary/10">
-                                                    <Eye className="h-6 w-6 text-secondary" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm text-muted-foreground">En attente</p>
-                                                    <p className="text-2xl font-bold">
-                                                        {feedbacks.filter((f) => !f.status || f.status === "pending").length}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </Card>
-                                        <Card className="neu-raised border-none p-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-3 rounded-lg bg-accent/10">
-                                                    <Download className="h-6 w-6 text-accent" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm text-muted-foreground">Traités</p>
-                                                    <p className="text-2xl font-bold">
-                                                        {feedbacks.filter((f) => f.status === "processed").length}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    </div>
-
-                                    <Card className="neu-raised border-none p-6">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h2 className="text-2xl font-bold">Feedbacks des responsables</h2>
-                                            <div className="flex gap-2">
-                                                <Button variant="outline" onClick={exportToCSV} className="gap-2">
-                                                    <FileSpreadsheet className="h-4 w-4" /> Exporter CSV
-                                                </Button>
-                                                <Button variant="outline" onClick={exportToPDF} className="gap-2">
-                                                    <FileText className="h-4 w-4" /> Exporter PDF
-                                                </Button>
-                                            </div>
-                                        </div>
-                                        {loadingFeedbacks ? (
-                                            <p className="text-center text-muted-foreground py-8">Chargement...</p>
-                                        ) : feedbacks.length === 0 ? (
-                                            <p className="text-center text-muted-foreground py-8">Aucun feedback pour le moment</p>
-                                        ) : (
-                                            <div className="overflow-x-auto">
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead>Date</TableHead>
-                                                            <TableHead>Rôle</TableHead>
-                                                            <TableHead>Email</TableHead>
-                                                            <TableHead>Description</TableHead>
-                                                            <TableHead>Suggestions</TableHead>
-                                                            <TableHead>Docs</TableHead>
-                                                            <TableHead>Statut</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {feedbacks.map((feedback) => (
-                                                            <TableRow key={feedback.id}>
-                                                                <TableCell className="whitespace-nowrap">
-                                                                    {new Date(feedback.created_at).toLocaleDateString("fr-FR")}
-                                                                </TableCell>
-                                                                <TableCell className="font-medium">{feedback.role_name}</TableCell>
-                                                                <TableCell>{feedback.user_email}</TableCell>
-                                                                <TableCell className="max-w-xs truncate">{feedback.role_description}</TableCell>
-                                                                <TableCell className="max-w-xs truncate">{feedback.implementation_suggestions || "-"}</TableCell>
-                                                                <TableCell>
-                                                                    {feedback.document_paths && feedback.document_paths.length > 0 ? (
-                                                                        <Button variant="outline" size="sm" onClick={() => handleViewDocuments(feedback)}>
-                                                                            <Paperclip className="h-4 w-4 mr-2" /> {feedback.document_paths.length}
-                                                                        </Button>
-                                                                    ) : (
-                                                                        <span className="text-muted-foreground">-</span>
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell>{getStatusBadge(feedback.status)}</TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                        )}
-                                    </Card>
-                                </div>
-                            )}
-
-                            {activeSection === 'users' && (
-                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <UserManagementSection />
-                                </div>
-                            )}
-
-                            {activeSection === 'projet' && (
-                                <ProjectDocumentation />
-                            )}
-
-                            {activeSection === 'ai' && (
-                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <AIConfigSection />
-                                </div>
-                            )}
-
-                            {activeSection === 'intelligence' && (
-                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <IntelligenceDashboard />
-                                </div>
-                            )}
-
-                            {activeSection === 'knowledge' && (
-                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <KnowledgeBaseSection />
-                                </div>
-                            )}
-
-                            {activeSection === 'documents' && (
-                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <DocumentSettingsManager />
-                                </div>
-                            )}
-
-                            {activeSection === 'audit' && (
-                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <AuditLogSection />
-                                </div>
-                            )}
-
-                            {activeSection === 'config' && (
-                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <ConfigSection />
-                                </div>
-                            )}
-                        </div>
+                        </Card>
                     </div>
-                </main>
+                )}
+
+                {activeSection === 'users' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <UserManagementSection />
+                    </div>
+                )}
+
+                {activeSection === 'projet' && (
+                    <ProjectDocumentation />
+                )}
+
+                {activeSection === 'ai' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <AIConfigSection />
+                    </div>
+                )}
+
+                {activeSection === 'intelligence' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <IntelligenceDashboard />
+                    </div>
+                )}
+
+                {activeSection === 'knowledge' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <KnowledgeBaseSection />
+                    </div>
+                )}
+
+                {activeSection === 'documents' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <DocumentSettingsManager />
+                    </div>
+                )}
+
+                {activeSection === 'audit' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <AuditLogSection />
+                    </div>
+                )}
+
+                {activeSection === 'config' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <ConfigSection />
+                    </div>
+                )}
             </div>
 
             {/* Documents Viewer Modal */}
@@ -769,9 +677,7 @@ const AdminSpace = () => {
                     feedbackId={selectedFeedback.id}
                 />
             )}
-
-
-        </div>
+        </AdminSpaceLayout>
     );
 };
 

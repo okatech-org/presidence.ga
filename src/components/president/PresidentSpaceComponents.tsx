@@ -35,12 +35,12 @@ type StatCardProps = {
 export const StatCard = React.memo<StatCardProps>(({ title, value, subtitle, icon: Icon, color, trend, theme }) => {
   return (
     <div
+      className="p-4 md:p-6"
       style={{
         position: "relative",
         backgroundColor: theme.bgCard,
         border: `1px solid ${theme.border}`,
         borderRadius: "16px",
-        padding: "24px",
         boxShadow: theme.shadow,
         transition: "all 0.3s ease",
         cursor: "pointer",
@@ -54,13 +54,15 @@ export const StatCard = React.memo<StatCardProps>(({ title, value, subtitle, ico
       <p style={{ color: theme.textSecondary, fontSize: "14px", marginBottom: "8px", fontWeight: 500 }}>{title}</p>
       <h2 style={{ color: theme.text, fontSize: "32px", fontWeight: 700, marginBottom: "4px" }}>{value}</h2>
       {subtitle && <p style={{ color: theme.textTertiary, fontSize: "13px" }}>{subtitle}</p>}
-      {trend && (
-        <div style={{ display: "flex", alignItems: "center", marginTop: "8px", gap: "4px" }}>
-          <TrendingUpIcon size={16} style={{ color: theme.success }} />
-          <span style={{ color: theme.success, fontSize: "13px", fontWeight: 500 }}>{trend}</span>
-        </div>
-      )}
-    </div>
+      {
+        trend && (
+          <div style={{ display: "flex", alignItems: "center", marginTop: "8px", gap: "4px" }}>
+            <TrendingUpIcon size={16} style={{ color: theme.success }} />
+            <span style={{ color: theme.success, fontSize: "13px", fontWeight: 500 }}>{trend}</span>
+          </div>
+        )
+      }
+    </div >
   );
 });
 
@@ -188,10 +190,10 @@ type SectionCardProps = {
 export const SectionCard = React.memo<SectionCardProps>(({ title, children, theme, right }) => {
   return (
     <div
+      className="p-4 md:p-6"
       style={{
         backgroundColor: theme.bgCard,
         borderRadius: "16px",
-        padding: "24px",
         boxShadow: theme.shadow,
         border: `1px solid ${theme.border}`,
       }}
@@ -201,7 +203,7 @@ export const SectionCard = React.memo<SectionCardProps>(({ title, children, them
         {right}
       </div>
       {children}
-    </div>
+    </div >
   );
 });
 

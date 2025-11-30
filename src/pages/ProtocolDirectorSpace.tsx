@@ -39,6 +39,9 @@ import emblemGabon from "@/assets/emblem_gabon.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { OfficialEvent, Guest, ProtocolProcedure } from "@/types/protocol";
 import { protocolService } from "@/services/protocolService";
+import { NavItem } from '@/components/layout/MobileBottomNav';
+import { AdminSpaceLayout } from '@/components/layout/AdminSpaceLayout';
+import { useSuperAdmin } from "@/contexts/SuperAdminContext";
 
 
 const ProtocolDirectorSpace = () => {
@@ -46,9 +49,8 @@ const ProtocolDirectorSpace = () => {
     const { toast } = useToast();
     const { theme, setTheme } = useTheme();
     const queryClient = useQueryClient();
+    const { setIsChatOpen } = useSuperAdmin();
 
-    const [mounted, setMounted] = useState(false);
-    const [iastedOpen, setIastedOpen] = useState(false);
     const [activeSection, setActiveSection] = useState("dashboard");
     const [expandedSections, setExpandedSections] = useState({
         navigation: true,
@@ -56,12 +58,18 @@ const ProtocolDirectorSpace = () => {
         guests: false,
     });
 
+    const navItems: NavItem[] = [
+        { id: 'dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
+        { id: 'events', label: 'Événements', icon: Calendar },
+        { id: 'procedures', label: 'Procédures', icon: ScrollText },
+        { id: 'guest_list', label: 'Invités', icon: Users },
+    ];
+
     const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('echo');
     const userContext = useUserContext({ spaceName: 'ProtocolDirectorSpace' });
 
     // Access Control
     useEffect(() => {
-        setMounted(true);
         const checkAccess = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
@@ -133,7 +141,7 @@ const ProtocolDirectorSpace = () => {
         const handleUIControlEvent = (e: CustomEvent) => {
             const { action } = e.detail;
             console.log('🎨 [ProtocolDirectorSpace] Événement UI Control reçu:', action);
-            
+
             if (action === 'toggle_theme') {
                 setTheme(theme === 'dark' ? 'light' : 'dark');
             } else if (action === 'set_theme_dark') {
@@ -202,10 +210,7 @@ const ProtocolDirectorSpace = () => {
         },
     });
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        navigate("/");
-    };
+
 
     const toggleSection = (section: string) => {
         setExpandedSections(prev => ({
@@ -285,15 +290,15 @@ const ProtocolDirectorSpace = () => {
                 break;
 
             case 'open_chat':
-                setIastedOpen(true);
+                setIsChatOpen(true);
                 break;
 
             case 'close_chat':
-                setIastedOpen(false);
+                setIsChatOpen(false);
                 break;
 
             case 'stop_conversation':
-                setIastedOpen(false);
+                setIsChatOpen(false);
                 break;
 
             default:
@@ -339,578 +344,504 @@ const ProtocolDirectorSpace = () => {
         );
     }
 
-    return (
-        <div className="min-h-screen bg-background p-4 md:p-6 transition-colors duration-300">
-            <div className="flex gap-6 max-w-[1600px] mx-auto">
-                {/* Sidebar */}
-                <aside className="neu-card w-64 flex-shrink-0 p-6 flex flex-col min-h-[calc(100vh-3rem)] overflow-hidden sticky top-6">
-                    <div className="flex items-center gap-3 mb-8">
-                        <div className="neu-raised w-12 h-12 rounded-full flex items-center justify-center p-2">
-                            <img
-                                src={emblemGabon}
-                                alt="Emblème de la République Gabonaise"
-                                className="w-full h-full object-contain"
-                            />
-                        </div>
-                        <div>
-                            <div className="font-bold text-sm">PROTOCOLE D'ÉTAT</div>
-                            <div className="text-xs text-muted-foreground">Présidence</div>
-                        </div>
-                    </div>
-
-                    {/* Navigation */}
-                    <div className="mb-4">
+    const customSidebarNav = (
+        <>
+            {/* Navigation */}
+            <div className="mb-4">
+                <button
+                    onClick={() => toggleSection('navigation')}
+                    className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+                >
+                    NAVIGATION
+                    {expandedSections.navigation ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                </button>
+                {expandedSections.navigation && (
+                    <nav className="space-y-1 ml-2 animate-fade-in">
                         <button
-                            onClick={() => toggleSection('navigation')}
-                            className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+                            onClick={() => setActiveSection("dashboard")}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "dashboard"
+                                ? "neu-inset text-primary font-semibold scale-105"
+                                : "neu-raised hover:shadow-neo-md hover:scale-105"
+                                } `}
                         >
-                            NAVIGATION
-                            {expandedSections.navigation ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            <LayoutDashboard className="w-4 h-4" />
+                            Tableau de Bord
                         </button>
-                        {expandedSections.navigation && (
-                            <nav className="space-y-1 ml-2 animate-fade-in">
-                                <button
-                                    onClick={() => setActiveSection("dashboard")}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "dashboard"
-                                        ? "neu-inset text-primary font-semibold scale-105"
-                                        : "neu-raised hover:shadow-neo-md hover:scale-105"
-                                        } `}
-                                >
-                                    <LayoutDashboard className="w-4 h-4" />
-                                    Tableau de Bord
-                                </button>
-                            </nav>
-                        )}
-                    </div>
-
-                    {/* Agenda */}
-                    <div className="mb-4">
-                        <button
-                            onClick={() => toggleSection('agenda')}
-                            className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
-                        >
-                            AGENDA & CÉRÉMONIAL
-                            {expandedSections.agenda ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                        </button>
-                        {expandedSections.agenda && (
-                            <nav className="space-y-1 ml-2 animate-fade-in">
-                                <button
-                                    onClick={() => setActiveSection("events")}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "events"
-                                        ? "neu-inset text-primary font-semibold scale-105"
-                                        : "neu-raised hover:shadow-neo-md hover:scale-105"
-                                        } `}
-                                >
-                                    <Calendar className="w-4 h-4" />
-                                    Événements Officiels
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection("procedures")}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "procedures"
-                                        ? "neu-inset text-primary font-semibold scale-105"
-                                        : "neu-raised hover:shadow-neo-md hover:scale-105"
-                                        } `}
-                                >
-                                    <ScrollText className="w-4 h-4" />
-                                    Procédures
-                                </button>
-                            </nav>
-                        )}
-                    </div>
-
-                    {/* Invités */}
-                    <div className="mb-4 flex-1">
-                        <button
-                            onClick={() => toggleSection('guests')}
-                            className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
-                        >
-                            INVITÉS
-                            {expandedSections.guests ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                        </button>
-                        {expandedSections.guests && (
-                            <nav className="space-y-1 ml-2 animate-fade-in">
-                                <button
-                                    onClick={() => setActiveSection("guest_list")}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "guest_list"
-                                        ? "neu-inset text-primary font-semibold scale-105"
-                                        : "neu-raised hover:shadow-neo-md hover:scale-105"
-                                        } `}
-                                >
-                                    <Users className="w-4 h-4" />
-                                    Listes d'Invités
-                                </button>
-                            </nav>
-                        )}
-                    </div>
-
-                    {/* Settings */}
-                    <div className="mt-auto pt-4 border-t border-border">
-                        <button
-                            onClick={toggleTheme}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm neu-raised hover:shadow-neo-md transition-all mb-1"
-                        >
-                            {mounted && theme === "dark" ? (
-                                <>
-                                    <Sun className="w-4 h-4" />
-                                    Mode clair
-                                </>
-                            ) : (
-                                <>
-                                    <Moon className="w-4 h-4" />
-                                    Mode sombre
-                                </>
-                            )}
-                        </button>
-                        <button
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-destructive neu-raised hover:shadow-neo-md transition-all"
-                        >
-                            <LogOut className="w-4 h-4" />
-                            Déconnexion
-                        </button>
-                    </div>
-                </aside>
-
-                {/* Main Content */}
-                <main className="flex-1 min-w-0">
-                    <div className="neu-card p-8 min-h-[calc(100vh-3rem)]">
-                        {/* Header */}
-                        <div className="flex items-start gap-4 mb-10">
-                            <div className="neu-raised w-20 h-20 rounded-full flex items-center justify-center p-3 shrink-0">
-                                <img
-                                    src={emblemGabon}
-                                    alt="Emblème"
-                                    className="w-full h-full object-contain"
-                                />
-                            </div>
-                            <div>
-                                <h1 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-                                    Espace Directeur du Protocole
-                                </h1>
-                                <p className="text-base text-muted-foreground">
-                                    Gestion de l'agenda officiel, du cérémonial et des invités
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Dashboard */}
-                        {activeSection === "dashboard" && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                {/* KPIs */}
-                                <div className="neu-card p-6 mb-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-0 lg:divide-x lg:divide-border">
-                                        <div className="px-6 first:pl-0">
-                                            <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4 rounded-xl">
-                                                <Calendar className="w-6 h-6 text-primary" />
-                                            </div>
-                                            <div className="text-4xl font-bold mb-2">{stats.upcomingEvents}</div>
-                                            <div className="text-sm font-medium">Événements à venir</div>
-                                            <div className="text-xs text-muted-foreground">Confirmés</div>
-                                        </div>
-                                        <div className="px-6">
-                                            <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4 rounded-xl">
-                                                <Users className="w-6 h-6 text-orange-500" />
-                                            </div>
-                                            <div className="text-4xl font-bold mb-2">{stats.pendingRSVPs}</div>
-                                            <div className="text-sm font-medium">RSVP en attente</div>
-                                            <div className="text-xs text-muted-foreground">Invités</div>
-                                        </div>
-                                        <div className="px-6">
-                                            <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4 rounded-xl">
-                                                <CheckCircle2 className="w-6 h-6 text-green-500" />
-                                            </div>
-                                            <div className="text-4xl font-bold mb-2">{stats.confirmedGuests}</div>
-                                            <div className="text-sm font-medium">Invités Confirmés</div>
-                                            <div className="text-xs text-muted-foreground">Prochains événements</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Upcoming Events */}
-                                <div className="grid gap-6 md:grid-cols-2">
-                                    <div className="neu-card p-6">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h3 className="text-xl font-semibold flex items-center gap-2">
-                                                <Calendar className="w-5 h-5 text-primary" />
-                                                Prochains Événements
-                                            </h3>
-                                            <Button onClick={() => setActiveSection("events")} variant="ghost" size="sm" className="text-xs">
-                                                Voir tout
-                                            </Button>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {events.slice(0, 3).map(event => (
-                                                <div key={event.id} className="neu-inset p-4 rounded-lg">
-                                                    <div className="flex items-start justify-between mb-2">
-                                                        <div className="flex-1">
-                                                            <p className="font-medium text-sm line-clamp-2">{event.title}</p>
-                                                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                                                <MapPin className="h-3 w-3" />
-                                                                {event.location}
-                                                            </div>
-                                                        </div>
-                                                        {getStatusBadge(event.status)}
-                                                    </div>
-                                                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                                                        <Clock className="h-3 w-3" />
-                                                        {new Date(event.date).toLocaleString('fr-FR')}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            {events.length === 0 && (
-                                                <div className="text-center py-8 text-muted-foreground text-sm">
-                                                    Aucun événement prévu
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Recent Guests */}
-                                    <div className="neu-card p-6">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h3 className="text-xl font-semibold flex items-center gap-2">
-                                                <Users className="w-5 h-5 text-primary" />
-                                                Derniers Invités Ajoutés
-                                            </h3>
-                                            <Button onClick={() => setActiveSection("guest_list")} variant="ghost" size="sm" className="text-xs">
-                                                Voir tout
-                                            </Button>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {guests.slice(0, 3).map(guest => (
-                                                <div key={guest.id} className="neu-raised p-4 rounded-lg">
-                                                    <div className="flex items-start justify-between mb-2">
-                                                        <div className="flex-1">
-                                                            <p className="font-medium text-sm">{guest.name}</p>
-                                                            <p className="text-xs text-muted-foreground mt-1">{guest.title || guest.organization}</p>
-                                                        </div>
-                                                        {getStatusBadge(guest.status)}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            {guests.length === 0 && (
-                                                <div className="text-center py-8 text-muted-foreground text-sm">
-                                                    Aucun invité récent
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Events Section */}
-                        {activeSection === "events" && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-2xl font-bold">Événements Officiels</h2>
-                                        <p className="text-muted-foreground">Gestion de l'agenda présidentiel et cérémonial</p>
-                                    </div>
-                                    <Dialog>
-                                        <DialogTrigger asChild>
-                                            <Button className="neu-raised hover:shadow-neo-md transition-all">
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                Nouvel événement
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Créer un événement</DialogTitle>
-                                            </DialogHeader>
-                                            <form
-                                                onSubmit={(e) => {
-                                                    e.preventDefault();
-                                                    const formData = new FormData(e.currentTarget);
-                                                    createEventMutation.mutate({
-                                                        title: formData.get("title") as string,
-                                                        date: formData.get("date") as string,
-                                                        location: formData.get("location") as string,
-                                                        type: formData.get("type") as any,
-                                                        status: "upcoming",
-                                                        description: formData.get("description") as string,
-                                                    });
-                                                }}
-                                                className="space-y-4 py-4"
-                                            >
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="title">Titre de l'événement</Label>
-                                                    <Input id="title" name="title" placeholder="Ex: Cérémonie des vœux" required />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="type">Type</Label>
-                                                    <Select name="type" required>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Sélectionner le type" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="ceremony">Cérémonie</SelectItem>
-                                                            <SelectItem value="meeting">Réunion</SelectItem>
-                                                            <SelectItem value="visit">Visite Officielle</SelectItem>
-                                                            <SelectItem value="gala">Gala / Dîner</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="date">Date et Heure</Label>
-                                                    <Input id="date" name="date" type="datetime-local" required />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="location">Lieu</Label>
-                                                    <Input id="location" name="location" placeholder="Ex: Palais du Bord de Mer" required />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="description">Description</Label>
-                                                    <Input id="description" name="description" placeholder="Détails supplémentaires..." />
-                                                </div>
-                                                <Button type="submit" className="w-full">Créer l'événement</Button>
-                                            </form>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
-
-                                <div className="grid gap-4">
-                                    {events.map((event) => (
-                                        <div key={event.id} className="neu-card p-6 hover:translate-y-[-2px] transition-all duration-300">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <Badge variant="outline" className="bg-background/50 uppercase">{event.type}</Badge>
-                                                        <span className="text-sm text-muted-foreground flex items-center gap-1">
-                                                            <MapPin className="h-3 w-3" /> {event.location}
-                                                        </span>
-                                                    </div>
-                                                    <h3 className="font-semibold text-lg">{event.title}</h3>
-                                                </div>
-                                                {getStatusBadge(event.status)}
-                                            </div>
-
-                                            <div className="flex items-center gap-4 text-sm text-muted-foreground pt-4 border-t border-border">
-                                                <div className="flex items-center gap-1">
-                                                    <Calendar className="h-4 w-4" />
-                                                    {new Date(event.date).toLocaleString('fr-FR')}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Guests Section */}
-                        {activeSection === "guest_list" && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-2xl font-bold">Listes d'Invités</h2>
-                                        <p className="text-muted-foreground">Gestion des invitations et des présences</p>
-                                    </div>
-                                    <Dialog>
-                                        <DialogTrigger asChild>
-                                            <Button className="neu-raised hover:shadow-neo-md transition-all">
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                Ajouter un invité
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Ajouter un invité</DialogTitle>
-                                            </DialogHeader>
-                                            <form
-                                                onSubmit={(e) => {
-                                                    e.preventDefault();
-                                                    const formData = new FormData(e.currentTarget);
-                                                    addGuestMutation.mutate({
-                                                        event_id: formData.get("event_id") as string,
-                                                        name: formData.get("name") as string,
-                                                        title: formData.get("title") as string,
-                                                        organization: formData.get("organization") as string,
-                                                        category: formData.get("category") as any,
-                                                        status: "invited",
-                                                    });
-                                                }}
-                                                className="space-y-4 py-4"
-                                            >
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="event_id">Événement</Label>
-                                                    <Select name="event_id" required>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Sélectionner l'événement" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {events.filter(e => e.status === 'upcoming').map(event => (
-                                                                <SelectItem key={event.id} value={event.id}>{event.title}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="name">Nom complet</Label>
-                                                    <Input id="name" name="name" placeholder="Ex: Jean Dupont" required />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="title">Titre / Fonction</Label>
-                                                    <Input id="title" name="title" placeholder="Ex: Ambassadeur" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="organization">Organisation</Label>
-                                                    <Input id="organization" name="organization" placeholder="Ex: Ambassade de France" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="category">Catégorie</Label>
-                                                    <Select name="category" required>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Sélectionner la catégorie" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="vip">VIP</SelectItem>
-                                                            <SelectItem value="press">Presse</SelectItem>
-                                                            <SelectItem value="staff">Staff</SelectItem>
-                                                            <SelectItem value="general">Général</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <Button type="submit" className="w-full">Ajouter à la liste</Button>
-                                            </form>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
-
-                                <div className="grid gap-4">
-                                    {guests.map((guest) => (
-                                        <div key={guest.id} className="neu-card p-6 hover:translate-y-[-2px] transition-all duration-300">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Badge variant="outline" className="text-xs">{guest.category.toUpperCase()}</Badge>
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {events.find(e => e.id === guest.event_id)?.title || 'Événement inconnu'}
-                                                        </span>
-                                                    </div>
-                                                    <p className="font-medium text-lg">{guest.name}</p>
-                                                    <p className="text-sm text-muted-foreground">{guest.title} - {guest.organization}</p>
-                                                </div>
-                                                {getStatusBadge(guest.status)}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Procedures Section */}
-                        {activeSection === "procedures" && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-2xl font-bold">Procédures Protocolaires</h2>
-                                        <p className="text-muted-foreground">Référentiel des procédures et usages</p>
-                                    </div>
-                                    <Dialog>
-                                        <DialogTrigger asChild>
-                                            <Button className="neu-raised hover:shadow-neo-md transition-all">
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                Nouvelle procédure
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Créer une procédure</DialogTitle>
-                                            </DialogHeader>
-                                            <form
-                                                onSubmit={(e) => {
-                                                    e.preventDefault();
-                                                    const formData = new FormData(e.currentTarget);
-                                                    createProcedureMutation.mutate({
-                                                        title: formData.get("title") as string,
-                                                        description: formData.get("description") as string,
-                                                        category: formData.get("category") as any,
-                                                    });
-                                                }}
-                                                className="space-y-4 py-4"
-                                            >
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="title">Titre</Label>
-                                                    <Input id="title" name="title" placeholder="Ex: Accueil Chef d'État" required />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="category">Catégorie</Label>
-                                                    <Select name="category" required>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Sélectionner la catégorie" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="ceremonial">Cérémonial</SelectItem>
-                                                            <SelectItem value="diplomatic">Diplomatique</SelectItem>
-                                                            <SelectItem value="security">Sécurité</SelectItem>
-                                                            <SelectItem value="logistics">Logistique</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="description">Description</Label>
-                                                    <Input id="description" name="description" placeholder="Détails de la procédure..." required />
-                                                </div>
-                                                <Button type="submit" className="w-full">Créer la procédure</Button>
-                                            </form>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
-
-                                <div className="grid gap-4">
-                                    {procedures.map((procedure) => (
-                                        <div key={procedure.id} className="neu-card p-6 hover:translate-y-[-2px] transition-all duration-300">
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <Badge variant="outline" className="bg-background/50 uppercase">{procedure.category}</Badge>
-                                                    </div>
-                                                    <h3 className="font-semibold text-lg">{procedure.title}</h3>
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-muted-foreground">{procedure.description}</p>
-                                        </div>
-                                    ))}
-                                    {procedures.length === 0 && (
-                                        <div className="text-center py-8 text-muted-foreground text-sm">
-                                            Aucune procédure enregistrée
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </main>
-
-                {/* iAsted Integration */}
-                {userContext.hasIAstedAccess && (
-                    <IAstedButtonFull
-                        onClick={async () => {
-                            if (openaiRTC.isConnected) {
-                                openaiRTC.disconnect();
-                            } else {
-                                const systemPrompt = generateSystemPrompt(userContext);
-                                await openaiRTC.connect(selectedVoice, systemPrompt);
-                            }
-                        }}
-                        onDoubleClick={() => setIastedOpen(true)}
-                        audioLevel={openaiRTC.audioLevel}
-                        voiceListening={openaiRTC.voiceState === 'listening'}
-                        voiceSpeaking={openaiRTC.voiceState === 'speaking'}
-                        voiceProcessing={openaiRTC.voiceState === 'connecting' || openaiRTC.voiceState === 'thinking'}
-                    />
-                )}
-
-                {iastedOpen && (
-                    <IAstedChatModal
-                        isOpen={iastedOpen}
-                        onClose={() => setIastedOpen(false)}
-                        systemPrompt={generateSystemPrompt(userContext)}
-                        openaiRTC={openaiRTC}
-                    />
+                    </nav>
                 )}
             </div>
-        </div>
+
+            {/* Agenda */}
+            <div className="mb-4">
+                <button
+                    onClick={() => toggleSection('agenda')}
+                    className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+                >
+                    AGENDA & CÉRÉMONIAL
+                    {expandedSections.agenda ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                </button>
+                {expandedSections.agenda && (
+                    <nav className="space-y-1 ml-2 animate-fade-in">
+                        <button
+                            onClick={() => setActiveSection("events")}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "events"
+                                ? "neu-inset text-primary font-semibold scale-105"
+                                : "neu-raised hover:shadow-neo-md hover:scale-105"
+                                } `}
+                        >
+                            <Calendar className="w-4 h-4" />
+                            Événements Officiels
+                        </button>
+                        <button
+                            onClick={() => setActiveSection("procedures")}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "procedures"
+                                ? "neu-inset text-primary font-semibold scale-105"
+                                : "neu-raised hover:shadow-neo-md hover:scale-105"
+                                } `}
+                        >
+                            <ScrollText className="w-4 h-4" />
+                            Procédures
+                        </button>
+                    </nav>
+                )}
+            </div>
+
+            {/* Invités */}
+            <div className="mb-4 flex-1">
+                <button
+                    onClick={() => toggleSection('guests')}
+                    className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
+                >
+                    INVITÉS
+                    {expandedSections.guests ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                </button>
+                {expandedSections.guests && (
+                    <nav className="space-y-1 ml-2 animate-fade-in">
+                        <button
+                            onClick={() => setActiveSection("guest_list")}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeSection === "guest_list"
+                                ? "neu-inset text-primary font-semibold scale-105"
+                                : "neu-raised hover:shadow-neo-md hover:scale-105"
+                                } `}
+                        >
+                            <Users className="w-4 h-4" />
+                            Listes d'Invités
+                        </button>
+                    </nav>
+                )}
+            </div>
+        </>
+    );
+
+    return (
+        <AdminSpaceLayout
+            navItems={navItems}
+            activeSection={activeSection}
+            setActiveSection={setActiveSection}
+            userContext={userContext}
+            pageTitle="PROTOCOLE D'ÉTAT"
+            headerTitle="Espace Directeur du Protocole"
+            headerSubtitle="Gestion de l'agenda officiel, du cérémonial et des invités"
+            customSidebarNav={customSidebarNav}
+            rtc={openaiRTC}
+            onOpenIasted={async () => {
+                if (openaiRTC.isConnected) {
+                    openaiRTC.disconnect();
+                } else {
+                    const systemPrompt = generateSystemPrompt(userContext);
+                    await openaiRTC.connect(selectedVoice, systemPrompt);
+                }
+            }}
+        >
+
+            {/* Dashboard */}
+            {activeSection === "dashboard" && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {/* KPIs */}
+                    <div className="neu-card p-6 mb-8">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-0 lg:divide-x lg:divide-border">
+                            <div className="px-6 first:pl-0">
+                                <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4 rounded-xl">
+                                    <Calendar className="w-6 h-6 text-primary" />
+                                </div>
+                                <div className="text-4xl font-bold mb-2">{stats.upcomingEvents}</div>
+                                <div className="text-sm font-medium">Événements à venir</div>
+                                <div className="text-xs text-muted-foreground">Confirmés</div>
+                            </div>
+                            <div className="px-6">
+                                <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4 rounded-xl">
+                                    <Users className="w-6 h-6 text-orange-500" />
+                                </div>
+                                <div className="text-4xl font-bold mb-2">{stats.pendingRSVPs}</div>
+                                <div className="text-sm font-medium">RSVP en attente</div>
+                                <div className="text-xs text-muted-foreground">Invités</div>
+                            </div>
+                            <div className="px-6">
+                                <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4 rounded-xl">
+                                    <CheckCircle2 className="w-6 h-6 text-green-500" />
+                                </div>
+                                <div className="text-4xl font-bold mb-2">{stats.confirmedGuests}</div>
+                                <div className="text-sm font-medium">Invités Confirmés</div>
+                                <div className="text-xs text-muted-foreground">Prochains événements</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Upcoming Events */}
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <div className="neu-card p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-semibold flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-primary" />
+                                    Prochains Événements
+                                </h3>
+                                <Button onClick={() => setActiveSection("events")} variant="ghost" size="sm" className="text-xs">
+                                    Voir tout
+                                </Button>
+                            </div>
+                            <div className="space-y-3">
+                                {events.slice(0, 3).map(event => (
+                                    <div key={event.id} className="neu-inset p-4 rounded-lg">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div className="flex-1">
+                                                <p className="font-medium text-sm line-clamp-2">{event.title}</p>
+                                                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                                    <MapPin className="h-3 w-3" />
+                                                    {event.location}
+                                                </div>
+                                            </div>
+                                            {getStatusBadge(event.status)}
+                                        </div>
+                                        <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                                            <Clock className="h-3 w-3" />
+                                            {new Date(event.date).toLocaleString('fr-FR')}
+                                        </div>
+                                    </div>
+                                ))}
+                                {events.length === 0 && (
+                                    <div className="text-center py-8 text-muted-foreground text-sm">
+                                        Aucun événement prévu
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Recent Guests */}
+                        <div className="neu-card p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-semibold flex items-center gap-2">
+                                    <Users className="w-5 h-5 text-primary" />
+                                    Derniers Invités Ajoutés
+                                </h3>
+                                <Button onClick={() => setActiveSection("guest_list")} variant="ghost" size="sm" className="text-xs">
+                                    Voir tout
+                                </Button>
+                            </div>
+                            <div className="space-y-3">
+                                {guests.slice(0, 3).map(guest => (
+                                    <div key={guest.id} className="neu-raised p-4 rounded-lg">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div className="flex-1">
+                                                <p className="font-medium text-sm">{guest.name}</p>
+                                                <p className="text-xs text-muted-foreground mt-1">{guest.title || guest.organization}</p>
+                                            </div>
+                                            {getStatusBadge(guest.status)}
+                                        </div>
+                                    </div>
+                                ))}
+                                {guests.length === 0 && (
+                                    <div className="text-center py-8 text-muted-foreground text-sm">
+                                        Aucun invité récent
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Events Section */}
+            {activeSection === "events" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold">Événements Officiels</h2>
+                            <p className="text-muted-foreground">Gestion de l'agenda présidentiel et cérémonial</p>
+                        </div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button className="neu-raised hover:shadow-neo-md transition-all">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Nouvel événement
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Créer un événement</DialogTitle>
+                                </DialogHeader>
+                                <form
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const formData = new FormData(e.currentTarget);
+                                        createEventMutation.mutate({
+                                            title: formData.get("title") as string,
+                                            date: formData.get("date") as string,
+                                            location: formData.get("location") as string,
+                                            type: formData.get("type") as any,
+                                            status: "upcoming",
+                                            description: formData.get("description") as string,
+                                        });
+                                    }}
+                                    className="space-y-4 py-4"
+                                >
+                                    <div className="space-y-2">
+                                        <Label htmlFor="title">Titre de l'événement</Label>
+                                        <Input id="title" name="title" placeholder="Ex: Cérémonie des vœux" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="type">Type</Label>
+                                        <Select name="type" required>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Sélectionner le type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="ceremony">Cérémonie</SelectItem>
+                                                <SelectItem value="meeting">Réunion</SelectItem>
+                                                <SelectItem value="visit">Visite Officielle</SelectItem>
+                                                <SelectItem value="gala">Gala / Dîner</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="date">Date et Heure</Label>
+                                        <Input id="date" name="date" type="datetime-local" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="location">Lieu</Label>
+                                        <Input id="location" name="location" placeholder="Ex: Palais du Bord de Mer" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description">Description</Label>
+                                        <Input id="description" name="description" placeholder="Détails supplémentaires..." />
+                                    </div>
+                                    <Button type="submit" className="w-full">Créer l'événement</Button>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+
+                    <div className="grid gap-4">
+                        {events.map((event) => (
+                            <div key={event.id} className="neu-card p-6 hover:translate-y-[-2px] transition-all duration-300">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Badge variant="outline" className="bg-background/50 uppercase">{event.type}</Badge>
+                                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                                <MapPin className="h-3 w-3" /> {event.location}
+                                            </span>
+                                        </div>
+                                        <h3 className="font-semibold text-lg">{event.title}</h3>
+                                    </div>
+                                    {getStatusBadge(event.status)}
+                                </div>
+
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground pt-4 border-t border-border">
+                                    <div className="flex items-center gap-1">
+                                        <Calendar className="h-4 w-4" />
+                                        {new Date(event.date).toLocaleString('fr-FR')}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Guests Section */}
+            {activeSection === "guest_list" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold">Listes d'Invités</h2>
+                            <p className="text-muted-foreground">Gestion des invitations et des présences</p>
+                        </div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button className="neu-raised hover:shadow-neo-md transition-all">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Ajouter un invité
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Ajouter un invité</DialogTitle>
+                                </DialogHeader>
+                                <form
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const formData = new FormData(e.currentTarget);
+                                        addGuestMutation.mutate({
+                                            event_id: formData.get("event_id") as string,
+                                            name: formData.get("name") as string,
+                                            title: formData.get("title") as string,
+                                            organization: formData.get("organization") as string,
+                                            category: formData.get("category") as any,
+                                            status: "invited",
+                                        });
+                                    }}
+                                    className="space-y-4 py-4"
+                                >
+                                    <div className="space-y-2">
+                                        <Label htmlFor="event_id">Événement</Label>
+                                        <Select name="event_id" required>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Sélectionner l'événement" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {events.filter(e => e.status === 'upcoming').map(event => (
+                                                    <SelectItem key={event.id} value={event.id}>{event.title}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name">Nom complet</Label>
+                                        <Input id="name" name="name" placeholder="Ex: Jean Dupont" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="title">Titre / Fonction</Label>
+                                        <Input id="title" name="title" placeholder="Ex: Ambassadeur" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="organization">Organisation</Label>
+                                        <Input id="organization" name="organization" placeholder="Ex: Ambassade de France" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="category">Catégorie</Label>
+                                        <Select name="category" required>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Sélectionner la catégorie" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="vip">VIP</SelectItem>
+                                                <SelectItem value="press">Presse</SelectItem>
+                                                <SelectItem value="staff">Staff</SelectItem>
+                                                <SelectItem value="general">Général</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <Button type="submit" className="w-full">Ajouter à la liste</Button>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+
+                    <div className="grid gap-4">
+                        {guests.map((guest) => (
+                            <div key={guest.id} className="neu-card p-6 hover:translate-y-[-2px] transition-all duration-300">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Badge variant="outline" className="text-xs">{guest.category.toUpperCase()}</Badge>
+                                            <span className="text-xs text-muted-foreground">
+                                                {events.find(e => e.id === guest.event_id)?.title || 'Événement inconnu'}
+                                            </span>
+                                        </div>
+                                        <p className="font-medium text-lg">{guest.name}</p>
+                                        <p className="text-sm text-muted-foreground">{guest.title} - {guest.organization}</p>
+                                    </div>
+                                    {getStatusBadge(guest.status)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Procedures Section */}
+            {activeSection === "procedures" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold">Procédures Protocolaires</h2>
+                            <p className="text-muted-foreground">Référentiel des procédures et usages</p>
+                        </div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button className="neu-raised hover:shadow-neo-md transition-all">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Nouvelle procédure
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Créer une procédure</DialogTitle>
+                                </DialogHeader>
+                                <form
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const formData = new FormData(e.currentTarget);
+                                        createProcedureMutation.mutate({
+                                            title: formData.get("title") as string,
+                                            description: formData.get("description") as string,
+                                            category: formData.get("category") as any,
+                                        });
+                                    }}
+                                    className="space-y-4 py-4"
+                                >
+                                    <div className="space-y-2">
+                                        <Label htmlFor="title">Titre</Label>
+                                        <Input id="title" name="title" placeholder="Ex: Accueil Chef d'État" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="category">Catégorie</Label>
+                                        <Select name="category" required>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Sélectionner la catégorie" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="ceremonial">Cérémonial</SelectItem>
+                                                <SelectItem value="diplomatic">Diplomatique</SelectItem>
+                                                <SelectItem value="security">Sécurité</SelectItem>
+                                                <SelectItem value="logistics">Logistique</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description">Description</Label>
+                                        <Input id="description" name="description" placeholder="Détails de la procédure..." required />
+                                    </div>
+                                    <Button type="submit" className="w-full">Créer la procédure</Button>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+
+                    <div className="grid gap-4">
+                        {procedures.map((procedure) => (
+                            <div key={procedure.id} className="neu-card p-6 hover:translate-y-[-2px] transition-all duration-300">
+                                <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Badge variant="outline" className="bg-background/50 uppercase">{procedure.category}</Badge>
+                                        </div>
+                                        <h3 className="font-semibold text-lg">{procedure.title}</h3>
+                                    </div>
+                                </div>
+                                <p className="text-sm text-muted-foreground">{procedure.description}</p>
+                            </div>
+                        ))}
+                        {procedures.length === 0 && (
+                            <div className="text-center py-8 text-muted-foreground text-sm">
+                                Aucune procédure enregistrée
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+        </AdminSpaceLayout >
     );
 };
 

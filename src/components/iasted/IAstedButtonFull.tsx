@@ -13,6 +13,7 @@ interface IAstedButtonProps {
   audioLevel?: number; // 0 to 1
   size?: 'sm' | 'md' | 'lg'; // Button size variant
   isInterfaceOpen?: boolean;
+  embedded?: boolean; // If true, button is relative and not draggable
 }
 
 interface Shockwave {
@@ -30,6 +31,17 @@ const styles = `
   perspective: 1500px;
   position: fixed;
   z-index: 9999;
+}
+
+.perspective-container.embedded-mode {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .perspective-container.grabbing {
@@ -1024,115 +1036,154 @@ const styles = `
 .thick-matter-button.md { width: 128px; height: 128px; }
 .thick-matter-button.lg { width: 160px; height: 160px; }
 
-/* Responsive mobile - adaptation des tailles et optimisations */
-@media (max-width: 640px) {
+/* Responsive mobile - adaptation des tailles et optimisations AGRESSIVES */
+@media (max-width: 768px) {
   .perspective-container {
     display: flex;
     justify-content: center;
     align-items: center;
+    perspective: none !important; /* Désactiver la 3D coûteuse */
   }
   
-  /* Tailles réduites pour mobile */
-  .thick-matter-button.sm { width: 64px; height: 64px; }
-  .thick-matter-button.md { width: 96px; height: 96px; }
-  .thick-matter-button.lg { width: 120px; height: 120px; }
-  
-  /* Optimisation des animations pour mobile */
-  .thick-matter-button {
-    animation-duration: 3s, 3s, 20s, 5s, 25s;
+  .perspective {
+    perspective: none !important;
+    transform-style: flat !important;
   }
-  
-  .thick-matter-button:hover {
-    animation-duration: 1.6s, 1.6s, 20s, 1.6s, 2.5s;
+
+  /* 1. Réduction drastique des couches de rendu */
+  .vortex-container,
+  .organic-veins,
+  .particle-container,
+  .breathing-bubble,
+  .organic-texture,
+  .satellite-particle,
+  .highlight-layer,
+  .depth-layer,
+  .inner-fluid-layer,
+  .organic-membrane-secondary,
+  .wave-2, 
+  .wave-3 {
+    display: none !important; /* Désactiver les couches coûteuses */
   }
-  
-  /* Réduction de l'intensité des effets pour performance */
-  .wave-layer-1, .wave-layer-2, .wave-layer-3 {
-    opacity: 0.3;
-  }
-  
-  .organic-membrane, .organic-membrane-secondary {
-    opacity: 0.5;
-  }
-  
-  .satellite-particle {
-    width: 6px;
-    height: 6px;
-  }
-  
-  /* Simplification des gradients et ombres */
+
+  /* 2. Simplification du background morphing (le plus lourd) MAIS avec couleurs VIVES et CONTRASTÉES (Identique Desktop) */
   .morphing-bg {
-    filter: saturate(1.8) brightness(1.1);
-  }
-  
-  .thick-matter-button:hover .morphing-bg {
-    filter: saturate(2.5) brightness(1.3) contrast(1.2);
+    /* Reconstruction de l'aspect "Vibrant" (Image 1) */
+    background: 
+      /* Lumière centrale intense */
+      radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.8) 0%, transparent 40%),
+      /* Bleu électrique (Haut-Gauche) */
+      radial-gradient(circle at 20% 20%, rgba(0, 102, 255, 0.95) 0%, transparent 50%),
+      /* Or intense (Milieu-Droit) */
+      radial-gradient(circle at 80% 40%, rgba(255, 204, 0, 0.95) 0%, transparent 50%),
+      /* Cyan lumineux (Bas-Gauche) */
+      radial-gradient(circle at 20% 80%, rgba(0, 255, 255, 0.9) 0%, transparent 50%),
+      /* Magenta vibrant (Bas-Droit) */
+      radial-gradient(circle at 80% 80%, rgba(255, 0, 255, 0.9) 0%, transparent 50%),
+      /* Fond riche et saturé */
+      linear-gradient(135deg, #0066ff 0%, #9400d3 100%);
+      
+    background-size: 200% 200%;
+    animation: mobile-cloud-shift 8s ease-in-out infinite alternate !important;
+    /* Rétablissement du filtre de saturation pour l'éclat */
+    filter: saturate(1.8) brightness(1.2) contrast(1.1) !important;
+    mix-blend-mode: normal !important;
+    opacity: 1 !important; /* Opacité maximale */
+    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.4);
   }
 
-  /* Badge plus petit sur mobile */
+  /* Animation douce de déplacement des couleurs */
+  @keyframes mobile-cloud-shift {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+  }
+
+  /* 3. Simplification des ombres et de la forme */
+  .thick-matter-button {
+    box-shadow: 0 8px 20px rgba(0, 102, 255, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.3) !important;
+    animation: mobile-breathing 4s ease-in-out infinite !important;
+    transform: translateZ(0); /* Force GPU acceleration without 3D overhead */
+    will-change: transform;
+  }
+
+  .thick-matter-button:hover {
+    box-shadow: 0 12px 25px rgba(0, 102, 255, 0.6), inset 0 0 25px rgba(255, 255, 255, 0.4) !important;
+    transform: scale(1.05);
+  }
+
+  @keyframes mobile-breathing {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+
+  /* 4. Simplification des membranes (garder une seule pour l'effet de vie) */
+  .organic-membrane {
+    animation: mobile-membrane 3s ease-in-out infinite !important;
+    background: radial-gradient(circle, transparent 40%, rgba(0, 170, 255, 0.2) 80%);
+    opacity: 0.6;
+  }
+
+  @keyframes mobile-membrane {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+  }
+
+  /* 5. Optimisation des émissions d'ondes */
+  .wave-emission {
+    background: rgba(0, 170, 255, 0.2);
+    border: 1px solid rgba(0, 170, 255, 0.3);
+    animation: mobile-wave 2s infinite !important;
+  }
+
+  @keyframes mobile-wave {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  /* 6. Gestion des états (Listening/Speaking) simplifiée */
+  .thick-matter-button.voice-listening {
+    box-shadow: 0 0 0 4px rgba(0, 170, 255, 0.4), 0 0 20px rgba(0, 170, 255, 0.4) !important;
+    animation: mobile-pulse-fast 1s infinite !important;
+  }
+
+  .thick-matter-button.voice-speaking {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.4) !important;
+    animation: mobile-pulse-fast 0.5s infinite !important;
+  }
+
+  @keyframes mobile-pulse-fast {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  /* 7. Tailles Responsive */
+  .thick-matter-button.sm { width: 60px; height: 60px; }
+  .thick-matter-button.md { width: 90px; height: 90px; }
+  .thick-matter-button.lg { width: 110px; height: 110px; }
+  
+  /* Badge */
   .voice-mode-badge {
-    width: 24px;
-    height: 24px;
-    top: -6px;
-    right: -6px;
-  }
-
-  .voice-mode-badge svg {
-    width: 12px;
-    height: 12px;
-  }
-}
-
-/* Adaptation pour tablette */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .perspective-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: 22px; height: 22px;
+    top: 0; right: 0;
+    animation: none !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   }
   
-  /* Tailles intermédiaires pour tablette */
-  .thick-matter-button.sm { width: 72px; height: 72px; }
-  .thick-matter-button.md { width: 112px; height: 112px; }
-  .thick-matter-button.lg { width: 140px; height: 140px; }
-}
-
-/* Desktop */
-@media (min-width: 1025px) {
-  .perspective-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  .voice-mode-badge svg {
+    width: 12px; height: 12px;
+    animation: none !important;
   }
 }
 
-/* Adaptation pour très petits écrans */
+/* Adaptation pour très petits écrans (ajustements de taille uniquement) */
 @media (max-width: 380px) {
-  .perspective-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+  .thick-matter-button.sm { width: 50px; height: 50px; }
+  .thick-matter-button.md { width: 75px; height: 75px; }
+  .thick-matter-button.lg { width: 90px; height: 90px; }
   
-  .thick-matter-button.sm { width: 56px; height: 56px; }
-  .thick-matter-button.md { width: 80px; height: 80px; }
-  .thick-matter-button.lg { width: 100px; height: 100px; }
-  
-  .satellite-particle {
-    display: none;
-  }
-
-  /* Badge encore plus petit sur très petits écrans */
   .voice-mode-badge {
-    width: 20px;
-    height: 20px;
-    top: -5px;
-    right: -5px;
-  }
-
-  .voice-mode-badge svg {
-    width: 10px;
-    height: 10px;
+    width: 18px; height: 18px;
+    top: -2px; right: -2px;
   }
 }
 `;
@@ -1146,7 +1197,8 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   voiceProcessing = false,
   pulsing = false,
   audioLevel = 0,
-  size = 'md' // Default size
+  size = 'md', // Default size
+  embedded = false
 }) => {
   const [shockwaves, setShockwaves] = useState<Shockwave[]>([]);
   const [isClicked, setIsClicked] = useState(false);
@@ -1162,6 +1214,8 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   const clickCount = useRef(0);
 
   useEffect(() => {
+    if (embedded) return; // Skip positioning logic if embedded
+
     // Restaurer la position sauvegardée ou utiliser la position par défaut
     const savedPosition = localStorage.getItem('iasted-button-position');
     if (savedPosition) {
@@ -1192,16 +1246,17 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   }, []);
 
   useEffect(() => {
+    if (embedded) return;
     if (containerRef.current) {
       containerRef.current.style.left = `${position.x}px`;
       containerRef.current.style.top = `${position.y}px`;
     }
-  }, [position]);
+  }, [position, embedded]);
 
   const voiceStateClass = voiceListening ? 'voice-listening' : voiceSpeaking ? 'voice-speaking' : '';
 
   const handleClick = (e: React.MouseEvent) => {
-    if (isDragging) {
+    if (isDragging && !embedded) {
       return;
     }
 
@@ -1244,6 +1299,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (embedded) return;
     setIsActive(true);
 
     if (containerRef.current) {
@@ -1307,7 +1363,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
 
       <div
         ref={containerRef}
-        className={`perspective-container ${isDragging ? 'grabbing' : ''}`}
+        className={`perspective-container ${isDragging ? 'grabbing' : ''} ${embedded ? 'embedded-mode' : ''}`}
         onMouseMove={handleMouseMove}
       >
         <div className="perspective">

@@ -131,6 +131,11 @@ const themes: Record<"light" | "dark", ThemeConfig> = {
   },
 };
 
+
+
+import { AdminSpaceLayout } from '@/components/layout/AdminSpaceLayout';
+import { NavItem } from '@/components/layout/MobileBottomNav';
+
 export default function PresidentSpace() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -180,167 +185,36 @@ export default function PresidentSpace() {
   // État pour la voix sélectionnée
   const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('ash');
 
-  // État pour la pulsation du bouton
-  const [isPulsing, setIsPulsing] = useState(false);
-
   // Context utilisateur pour personnalisation
   const userContext = useUserContext({ spaceName: 'PresidentSpace' });
-
-  // Ref pour tracker la dernière section ouverte (pour contexte intelligent)
-  const lastOpenedSectionRef = useRef<keyof typeof expandedSections | null>(null);
 
   // Hook pour la conversation OpenAI WebRTC
   const openaiRTC = useRealtimeVoiceWebRTC((toolName, args) => {
     console.log(`🔧 [PresidentSpace] Tool call: ${toolName}`, args);
     switch (toolName) {
       case 'control_ui':
-        console.log('🎛️ [PresidentSpace] Contrôle UI demandé:', args);
         if (args.action === 'toggle_theme') {
-          const newTheme = theme === 'dark' ? 'light' : 'dark';
-          console.log(`🎨 Basculement thème: ${theme} -> ${newTheme}`);
-          setTheme(newTheme);
-          toast({ title: "Thème", description: `Mode ${newTheme === 'dark' ? 'sombre' : 'clair'} activé` });
-          return { success: true, message: `Mode ${newTheme === 'dark' ? 'sombre' : 'clair'} activé` };
-        } else if (args.action === 'set_theme_dark') {
-          console.log('🎨 Activation mode sombre');
-          setTheme("dark");
-          toast({ title: "Thème", description: "Mode sombre activé" });
-          return { success: true, message: "Mode sombre activé" };
-        } else if (args.action === 'set_theme_light') {
-          console.log('🎨 Activation mode clair');
-          setTheme("light");
-          toast({ title: "Thème", description: "Mode clair activé" });
-          return { success: true, message: "Mode clair activé" };
-        } else if (args.action === 'toggle_sidebar') {
-          window.dispatchEvent(new CustomEvent('iasted-sidebar-toggle'));
-          return { success: true, message: 'Menu latéral basculé' };
-        } else if (args.action === 'set_volume') {
-          toast({ title: "Volume", description: `Volume ajusté à ${args.value || 'niveau demandé'}` });
-          return { success: true, message: 'Volume ajusté' };
-        } else if (args.action === 'set_speech_rate') {
-          if (args.value) openaiRTC.setSpeechRate(parseFloat(args.value));
-          toast({ title: "Vitesse", description: `Vitesse de parole ajustée` });
-          return { success: true, message: 'Vitesse ajustée' };
+          setTheme(theme === 'dark' ? 'light' : 'dark');
+          return { success: true, message: 'Thème basculé' };
+        } else if (args.action === 'navigate_to_section') {
+          setActiveSection(args.section_id);
+          return { success: true, message: `Navigation vers ${args.section_id}` };
         }
-        return { success: false, message: 'Action UI non reconnue' };
-
+        return { success: true, message: 'Action UI exécutée' };
       case 'change_voice':
-        console.log('🎙️ [PresidentSpace] Changement de voix demandé:', args);
-        if (args.voice_id) {
-          const voiceName = args.voice_id === 'ash' ? 'Homme (Ash)' : args.voice_id === 'shimmer' ? 'Femme (Shimmer)' : 'Standard (Echo)';
-          setSelectedVoice(args.voice_id as any);
-          toast({
-            title: "Voix modifiée",
-            description: `Passage à la voix ${voiceName}`,
-          });
-          return { success: true, message: `Voix modifiée : ${voiceName}` };
-        } else {
-          // Alternance automatique homme ↔ femme
-          const isCurrentlyMale = selectedVoice === 'ash' || selectedVoice === 'echo';
-          const newVoice = isCurrentlyMale ? 'shimmer' : 'ash';
-          const voiceName = newVoice === 'shimmer' ? 'Femme (Shimmer)' : 'Homme (Ash)';
-          console.log(`🎙️ Alternance: ${selectedVoice} (${isCurrentlyMale ? 'homme' : 'femme'}) -> ${newVoice}`);
-          setSelectedVoice(newVoice);
-          toast({
-            title: "Voix modifiée",
-            description: `Passage à la voix ${voiceName}`,
-          });
-          return { success: true, message: `Voix changée : ${voiceName}` };
-        }
-
-      case 'navigate_to_section':
-        console.log('🧭 [PresidentSpace] Navigation demandée:', args);
-        const sectionId = args.section_id;
-
-        // Sections accordéon (toggle ou ouverture explicite)
-        const accordionSections = ['navigation', 'gouvernance', 'economie', 'affaires', 'infrastructures'];
-
-        if (accordionSections.includes(sectionId)) {
-          // Vérifier l'état actuel et basculer
-          const currentState = expandedSections[sectionId as keyof typeof expandedSections];
-          const newState = !currentState;
-          console.log(`📂 Section "${sectionId}": ${currentState ? 'fermée' : 'ouverte'} -> ${newState ? 'ouverte' : 'fermée'}`);
-          
-          setExpandedSections(prev => ({
-            ...prev,
-            [sectionId]: newState,
-          }));
-          
-          const actionMsg = newState ? 'dépliée' : 'repliée';
-          toast({ title: "Navigation", description: `Section ${sectionId} ${actionMsg}` });
-          return { success: true, message: `Section ${sectionId} ${actionMsg}` };
-        } else {
-          // Pages (navigation directe)
-          console.log(`📄 Navigation vers page: ${sectionId}`);
-          setActiveSection(sectionId);
-
-          // Ouvrir la section parente si nécessaire
-          const parentSectionMap: Record<string, keyof typeof expandedSections> = {
-            'dashboard': 'navigation',
-            'iasted': 'navigation',
-            'documents': 'navigation',
-            'courriers': 'navigation',
-            'conseil-ministres': 'gouvernance',
-            'ministeres': 'gouvernance',
-            'decrets': 'gouvernance',
-            'nominations': 'gouvernance',
-            'budget': 'economie',
-            'indicateurs': 'economie',
-            'investissements': 'economie',
-            'education': 'affaires',
-            'sante': 'affaires',
-            'emploi': 'affaires',
-            'chantiers': 'infrastructures',
-            'projets-presidentiels': 'infrastructures',
-            'projets-etat': 'infrastructures'
-          };
-
-          const parent = parentSectionMap[sectionId];
-          if (parent) {
-            console.log(`📂 Ouverture section parente: ${parent}`);
-            setExpandedSections(prev => ({ ...prev, [parent]: true }));
-          }
-
-          toast({ title: "Navigation", description: `Ouverture de ${sectionId}` });
-          return { success: true, message: `Section ${sectionId} ouverte` };
-        }
-
-      case 'control_document':
-        console.log('📄 [PresidentSpace] Contrôle document:', args);
-        toast({
-          title: "Document",
-          description: `Action ${args.action} demandée sur ${args.document_id || 'le document'}`
-        });
-        return { success: true, message: `Action ${args.action} exécutée` };
-
-      case 'generate_document':
-        console.log('📝 [PresidentSpace] Génération document:', args);
-        setPendingDocument({
-          type: args.type,
-          recipient: args.recipient,
-          subject: args.subject,
-          contentPoints: args.content_points || [],
-          format: args.format || 'pdf'
-        });
-        setIastedOpen(true);
-        toast({
-          title: "Génération",
-          description: `Création de ${args.type} pour ${args.recipient}...`
-        });
-        return { success: true, message: `Génération de ${args.type} lancée` };
-
+        if (args.voice_id) setSelectedVoice(args.voice_id as any);
+        return { success: true, message: 'Voix modifiée' };
       case 'open_chat':
         setIastedOpen(true);
-        return { success: true, message: 'Interface chat ouverte' };
-
+        return { success: true, message: 'Chat ouvert' };
       case 'close_chat':
         setIastedOpen(false);
-        return { success: true, message: 'Interface chat fermée' };
-
+        return { success: true, message: 'Chat fermé' };
       case 'stop_conversation':
         openaiRTC.disconnect();
-        setIastedOpen(false);
         return { success: true, message: 'Conversation arrêtée' };
+      default:
+        return { success: true, message: 'Action traitée' };
     }
   });
 
@@ -348,110 +222,8 @@ export default function PresidentSpace() {
   useEffect(() => {
     const savedVoice = localStorage.getItem('iasted-voice-selection') as 'echo' | 'ash';
     if (savedVoice) setSelectedVoice(savedVoice);
-  }, []);
-
-  // Écouter les changements du mode vocal depuis localStorage
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const newMode = localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai';
-      if (newMode && newMode !== voiceMode) {
-        console.log('🔄 [PresidentSpace] Mode vocal changé:', newMode);
-        setVoiceMode(newMode);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    // Vérifier périodiquement (pour les changements dans le même onglet)
-    const interval = setInterval(handleStorageChange, 500);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [voiceMode]);
-
-  useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Écouter les événements de navigation et contrôle UI depuis iAsted
-  useEffect(() => {
-    const handleNavigationEvent = (e: CustomEvent) => {
-      const { sectionId } = e.detail;
-      console.log('📍 [PresidentSpace] Événement navigation reçu:', sectionId);
-
-      // Sections accordéon
-      const accordionSections = ['navigation', 'gouvernance', 'economie', 'affaires', 'infrastructures'];
-      
-      if (accordionSections.includes(sectionId)) {
-        setExpandedSections(prev => ({
-          ...prev,
-          [sectionId]: !prev[sectionId as keyof typeof prev]
-        }));
-      } else {
-        // Pages
-        setActiveSection(sectionId);
-        
-        // Ouvrir la section parente si nécessaire
-        const parentMap: Record<string, keyof typeof expandedSections> = {
-          'dashboard': 'navigation',
-          'iasted': 'navigation',
-          'documents': 'navigation',
-          'courriers': 'navigation',
-          'conseil-ministres': 'gouvernance',
-          'ministeres': 'gouvernance',
-          'decrets': 'gouvernance',
-          'nominations': 'gouvernance',
-          'budget': 'economie',
-          'indicateurs': 'economie',
-          'investissements': 'economie',
-          'education': 'affaires',
-          'sante': 'affaires',
-          'emploi': 'affaires',
-          'chantiers': 'infrastructures',
-          'projets-presidentiels': 'infrastructures',
-          'projets-etat': 'infrastructures'
-        };
-        
-        const parent = parentMap[sectionId];
-        if (parent) {
-          setExpandedSections(prev => ({ ...prev, [parent]: true }));
-        }
-      }
-    };
-
-    const handleUIControlEvent = (e: CustomEvent) => {
-      const { action, value } = e.detail;
-      console.log('🎨 [PresidentSpace] Événement UI Control reçu:', action);
-      
-      if (action === 'toggle_theme') {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
-      } else if (action === 'set_theme_dark') {
-        setTheme('dark');
-      } else if (action === 'set_theme_light') {
-        setTheme('light');
-      }
-    };
-
-    window.addEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
-    window.addEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
-
-    return () => {
-      window.removeEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
-      window.removeEventListener('iasted-control-ui', handleUIControlEvent as EventListener);
-    };
-  }, [theme, setTheme]);
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section as keyof typeof prev],
-    }));
-  };
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
 
   const currentTheme = useMemo(() => {
     const isDark = theme === "dark";
@@ -477,613 +249,293 @@ export default function PresidentSpace() {
     { name: "Femmes", value: 42, color: "hsl(var(--accent))" },
   ], []);
 
+  const NavButton = ({ id, icon: Icon, label, count }: any) => (
+    <button
+      onClick={() => setActiveSection(id)}
+      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === id
+        ? 'neu-inset text-primary font-semibold'
+        : 'neu-raised hover:shadow-neo-md'
+        }`}
+    >
+      <Icon className="w-4 h-4" />
+      {label}
+      {count !== undefined && count > 0 && (
+        <span className="ml-auto bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">
+          {count}
+        </span>
+      )}
+    </button>
+  );
 
-  const navigationItems = useMemo(() => [
-    { id: "dashboard", label: "Tableau de Bord", icon: LayoutDashboard, section: "navigation" },
-    { id: "documents", label: "Documents", icon: FileText, section: "navigation" },
-    { id: "courriers", label: "Courriers", icon: Inbox, section: "navigation" },
-    { id: "iasted", label: "iAsted", icon: Bot, section: "navigation" },
-  ], []);
+  const NavGroup = ({ id, label, icon: Icon, children }: any) => {
+    const isExpanded = expandedSections[id as keyof typeof expandedSections];
+    return (
+      <div className="space-y-1">
+        <button
+          onClick={() => setExpandedSections(prev => ({ ...prev, [id]: !prev[id as keyof typeof expandedSections] }))}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${isExpanded ? 'neu-inset text-primary font-medium' : 'neu-raised hover:shadow-neo-md'}`}
+        >
+          <div className="flex items-center gap-3">
+            <Icon className="w-4 h-4" />
+            {label}
+          </div>
+          <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+        </button>
+        {isExpanded && (
+          <div className="pl-4 space-y-1 animate-in slide-in-from-top-2 duration-200">
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  };
 
-  const handleLogout = useCallback(async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  }, [navigate]);
+  const customSidebarNav = (
+    <nav className="space-y-2 flex-1">
+      <NavButton id="dashboard" icon={LayoutDashboard} label="Tableau de Bord" />
+      <NavButton id="documents" icon={FileText} label="Documents" />
+      <NavButton id="courriers" icon={Inbox} label="Courriers" />
+
+      <div className="my-4 border-t border-border/50" />
+
+      <NavGroup id="gouvernance" label="Gouvernance" icon={Landmark}>
+        <NavButton id="conseil-ministres" icon={Users} label="Conseil des Ministres" />
+        <NavButton id="ministeres" icon={Building2} label="Ministères & Directions" />
+        <NavButton id="decrets" icon={FileCheck} label="Décrets & Ordonnances" />
+        <NavButton id="nominations" icon={Award} label="Nominations" />
+      </NavGroup>
+
+      <NavGroup id="economie" label="Économie" icon={TrendingUpIcon}>
+        <NavButton id="budget" icon={DollarSign} label="Budget National" />
+        <NavButton id="indicateurs" icon={BarChart3} label="Indicateurs Éco." />
+        <NavButton id="investissements" icon={Briefcase} label="Investissements" />
+      </NavGroup>
+
+      <NavGroup id="affaires" label="Affaires Sociales" icon={Heart}>
+        <NavButton id="education" icon={GraduationCap} label="Éducation & Formation" />
+        <NavButton id="sante" icon={Stethoscope} label="Santé Publique" />
+        <NavButton id="emploi" icon={Users} label="Emploi & Jeunesse" />
+      </NavGroup>
+
+      <NavGroup id="infrastructures" label="Infrastructures" icon={Hammer}>
+        <NavButton id="chantiers" icon={Wrench} label="Grands Chantiers" />
+        <NavButton id="projets-presidentiels" icon={Crown} label="Projets Présidentiels" />
+        <NavButton id="projets-etat" icon={Flag} label="Projets de l'État" />
+      </NavGroup>
+
+      <div className="my-4 border-t border-border/50" />
+
+      <NavButton id="iasted" icon={Bot} label="Assistant iAsted" />
+    </nav>
+  );
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="flex gap-6 max-w-[1600px] mx-auto">
-        {/* Sidebar détachée */}
-        <aside className="neu-card w-60 flex-shrink-0 p-6 flex flex-col min-h-[calc(100vh-3rem)] overflow-hidden">
-          {/* Logo et titre */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="neu-raised w-12 h-12 rounded-full flex items-center justify-center p-2">
-              <img
-                src={emblemGabon}
-                alt="Emblème de la République Gabonaise"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <div className="font-bold text-sm">ADMIN.GA</div>
-              <div className="text-xs text-muted-foreground">Espace Président</div>
-            </div>
+    <AdminSpaceLayout
+      navItems={[]}
+      customSidebarNav={customSidebarNav}
+      activeSection={activeSection}
+      setActiveSection={setActiveSection}
+      userContext={userContext}
+      pageTitle="Espace Président"
+      headerTitle={
+        activeSection === 'dashboard' ? 'Tableau de Bord Présidentiel' :
+          activeSection === 'documents' ? 'Gestion Documentaire' :
+            activeSection === 'courriers' ? 'Courriers & Correspondances' :
+              activeSection === 'iasted' ? 'Assistant IAsted' :
+                'Espace Président'
+      }
+      headerSubtitle={new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+    >
+      {/* Dashboard View */}
+      {activeSection === 'dashboard' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard title="Total Agents" value={stats.totalAgents.toLocaleString()} icon={Users} color={currentTheme.primary} theme={currentTheme} />
+            <StatCard title="Structures" value={stats.structures} icon={Building2} color={currentTheme.primaryBlue} theme={currentTheme} />
+            <StatCard title="Postes Vacants" value={stats.postesVacants} icon={UserCog} color={currentTheme.warning} theme={currentTheme} />
+            <StatCard title="Actes en Attente" value={stats.actesEnAttente} icon={FileText} color={currentTheme.danger} theme={currentTheme} />
           </div>
 
-          {/* Navigation */}
-          <div className="mb-4">
-            <button
-              onClick={() => toggleSection('navigation')}
-              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
-            >
-              NAVIGATION
-              {expandedSections.navigation ? (
-                <ChevronDown className="w-3 h-3" />
-              ) : (
-                <ChevronRight className="w-3 h-3" />
-              )}
-            </button>
-            {expandedSections.navigation && (
-              <nav className="space-y-1 ml-2">
-                {navigationItems.map((item, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      if (item.id === "iasted") {
-                        setIastedOpen(true);
-                      } else {
-                        setActiveSection(item.id);
-                      }
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === item.id || (item.id === "iasted" && iastedOpen)
-                      ? "neu-inset text-primary font-semibold"
-                      : "neu-raised hover:shadow-neo-md"
-                      }`}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
-            )}
-          </div>
-
-          {/* Gouvernance */}
-          <div className="mb-4">
-            <button
-              onClick={() => toggleSection('gouvernance')}
-              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
-            >
-              GOUVERNANCE
-              {expandedSections.gouvernance ? (
-                <ChevronDown className="w-3 h-3" />
-              ) : (
-                <ChevronRight className="w-3 h-3" />
-              )}
-            </button>
-            {expandedSections.gouvernance && (
-              <nav className="space-y-1 ml-2">
-                <button
-                  onClick={() => setActiveSection("conseil-ministres")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "conseil-ministres"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <UserCog className="w-4 h-4" />
-                  Conseil des Ministres
-                </button>
-                <button
-                  onClick={() => setActiveSection("ministeres")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "ministeres"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <Building2 className="w-4 h-4" />
-                  Ministères & Directions
-                </button>
-                <button
-                  onClick={() => setActiveSection("decrets")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "decrets"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <FileCheck className="w-4 h-4" />
-                  Décrets & Ordonnances
-                </button>
-                <button
-                  onClick={() => setActiveSection("nominations")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "nominations"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <Users className="w-4 h-4" />
-                  Nominations
-                </button>
-              </nav>
-            )}
-          </div>
-
-          {/* Économie & Finances */}
-          <div className="mb-4">
-            <button
-              onClick={() => toggleSection('economie')}
-              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
-            >
-              ÉCONOMIE & FINANCES
-              {expandedSections.economie ? (
-                <ChevronDown className="w-3 h-3" />
-              ) : (
-                <ChevronRight className="w-3 h-3" />
-              )}
-            </button>
-            {expandedSections.economie && (
-              <nav className="space-y-1 ml-2">
-                <button
-                  onClick={() => setActiveSection("budget")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "budget"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <DollarSign className="w-4 h-4" />
-                  Budget National
-                </button>
-                <button
-                  onClick={() => setActiveSection("indicateurs")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "indicateurs"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <TrendingUpIcon className="w-4 h-4" />
-                  Indicateurs Économiques
-                </button>
-                <button
-                  onClick={() => setActiveSection("investissements")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "investissements"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <Landmark className="w-4 h-4" />
-                  Investissements
-                </button>
-              </nav>
-            )}
-          </div>
-
-          {/* Affaires Sociales */}
-          <div className="mb-4 flex-1">
-            <button
-              onClick={() => toggleSection('affaires')}
-              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
-            >
-              AFFAIRES SOCIALES
-              {expandedSections.affaires ? (
-                <ChevronDown className="w-3 h-3" />
-              ) : (
-                <ChevronRight className="w-3 h-3" />
-              )}
-            </button>
-            {expandedSections.affaires && (
-              <nav className="space-y-1 ml-2">
-                <button
-                  onClick={() => setActiveSection("education")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "education"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <GraduationCap className="w-4 h-4" />
-                  Éducation
-                </button>
-                <button
-                  onClick={() => setActiveSection("sante")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "sante"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <Stethoscope className="w-4 h-4" />
-                  Santé Publique
-                </button>
-                <button
-                  onClick={() => setActiveSection("emploi")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "emploi"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <Briefcase className="w-4 h-4" />
-                  Emploi & Formation
-                </button>
-              </nav>
-            )}
-          </div>
-
-          {/* Infrastructures & Projets */}
-          <div className="mb-4">
-            <button
-              onClick={() => toggleSection('infrastructures')}
-              className="neu-raised flex items-center justify-between w-full text-xs font-semibold text-primary mb-3 tracking-wider px-3 py-2 rounded-lg transition-all hover:shadow-neo-md"
-            >
-              INFRASTRUCTURES & PROJETS
-              {expandedSections.infrastructures ? (
-                <ChevronDown className="w-3 h-3" />
-              ) : (
-                <ChevronRight className="w-3 h-3" />
-              )}
-            </button>
-            {expandedSections.infrastructures && (
-              <nav className="space-y-1 ml-2">
-                <button
-                  onClick={() => setActiveSection("chantiers")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "chantiers"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <Hammer className="w-4 h-4" />
-                  Suivi des Chantiers
-                </button>
-                <button
-                  onClick={() => setActiveSection("projets-presidentiels")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "projets-presidentiels"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <Crown className="w-4 h-4" />
-                  Projets Présidentiels
-                </button>
-                <button
-                  onClick={() => setActiveSection("projets-etat")}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === "projets-etat"
-                    ? "neu-inset text-primary font-semibold"
-                    : "neu-raised hover:shadow-neo-md"
-                    }`}
-                >
-                  <Target className="w-4 h-4" />
-                  Projets d'État
-                </button>
-              </nav>
-            )}
-          </div>
-
-          {/* Paramètres et Déconnexion */}
-          <div className="mt-auto pt-4 border-t border-border">
-            <button
-              onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm neu-raised hover:shadow-neo-md transition-all mb-1"
-            >
-              {mounted && theme === "dark" ? (
-                <>
-                  <Sun className="w-4 h-4" />
-                  Mode clair
-                </>
-              ) : (
-                <>
-                  <Moon className="w-4 h-4" />
-                  Mode sombre
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm neu-raised hover:shadow-neo-md transition-all mb-1"
-            >
-              <Settings className="w-4 h-4" />
-              Paramètres
-            </button>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-destructive neu-raised hover:shadow-neo-md transition-all"
-            >
-              <LogOut className="w-4 h-4" />
-              Déconnexion
-            </button>
-          </div>
-        </aside>
-
-        {/* Contenu principal */}
-        <main className="flex-1">
-          <div className="neu-card p-8 min-h-[calc(100vh-3rem)]">
-            {/* En-tête */}
-            <div className="flex items-start gap-4 mb-10">
-              <div className="neu-raised w-20 h-20 rounded-full flex items-center justify-center p-3 shrink-0">
-                <img
-                  src={emblemGabon}
-                  alt="Emblème de la République Gabonaise"
-                  className="w-full h-full object-contain"
-                />
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SectionCard title="Répartition par Catégorie" theme={currentTheme}>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={agentTypesData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {agentTypesData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: currentTheme.bgCard, borderColor: currentTheme.border, color: currentTheme.text }}
+                      itemStyle={{ color: currentTheme.text }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold mb-2">
-                  Espace Président
-                </h1>
-                <p className="text-base text-muted-foreground">
-                  Présidence de la République - République Gabonaise
-                </p>
+            </SectionCard>
+
+            <SectionCard title="Répartition Genre" theme={currentTheme}>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={genderData}>
+                    <XAxis dataKey="name" stroke={currentTheme.textSecondary} />
+                    <YAxis stroke={currentTheme.textSecondary} />
+                    <Tooltip
+                      cursor={{ fill: currentTheme.bgTertiary }}
+                      contentStyle={{ backgroundColor: currentTheme.bgCard, borderColor: currentTheme.border, color: currentTheme.text }}
+                    />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                      {genderData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            </div>
+            </SectionCard>
+          </div>
+        </div>
+      )}
 
-            {/* Statistiques principales - Style avec séparateurs */}
-            <div className="neu-card p-6 mb-8">
-              <div className="grid grid-cols-4 divide-x divide-border">
-                <div className="px-6 first:pl-0">
-                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
-                    <Users className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="text-4xl font-bold mb-2">
-                    {stats.totalAgents}
-                  </div>
-                  <div className="text-sm font-medium">Total Agents</div>
-                  <div className="text-xs text-muted-foreground">Fonction publique gabonaise</div>
-                </div>
+      {activeSection === "documents" && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <DocumentsSection userRole="president" />
+        </div>
+      )}
 
-                <div className="px-6">
-                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
-                    <Building2 className="w-6 h-6 text-secondary" />
-                  </div>
-                  <div className="text-4xl font-bold mb-2">
-                    {stats.structures}
-                  </div>
-                  <div className="text-sm font-medium">Structures</div>
-                  <div className="text-xs text-muted-foreground">Ministères et directions</div>
-                </div>
+      {activeSection === "courriers" && (
+        <MailInbox />
+      )}
 
-                <div className="px-6">
-                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
-                    <UserCog className="w-6 h-6 text-warning" />
-                  </div>
-                  <div className="text-4xl font-bold mb-2">
-                    {stats.postesVacants}
-                  </div>
-                  <div className="text-sm font-medium">Postes Vacants</div>
-                  <div className="text-xs text-muted-foreground">Sur 0 postes</div>
-                </div>
+      {activeSection === "conseil-ministres" && (
+        <div className="space-y-6">
+          <ConseilMinistres
+            theme={currentTheme}
+            onOpenSession={(id) => {
+              setSelectedSessionId(id);
+              setConseilModalOpen(true);
+            }}
+          />
+        </div>
+      )}
 
-                <div className="px-6 last:pr-0">
-                  <div className="neu-raised w-12 h-12 flex items-center justify-center mb-4">
-                    <FileCheck className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="text-4xl font-bold mb-2">
-                    {stats.actesEnAttente}
-                  </div>
-                  <div className="text-sm font-medium">Actes en attente</div>
-                  <div className="text-xs text-muted-foreground">Nécessitent votre validation</div>
-                </div>
-              </div>
-            </div>
+      {activeSection === "ministeres" && (
+        <div className="space-y-6">
+          <MinisteresDirections theme={currentTheme} />
+        </div>
+      )}
 
-            {/* Contenu conditionnel selon la section active */}
-            {activeSection === "dashboard" && (
-              <div className="space-y-6">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard title="Total Agents" value={stats.totalAgents.toLocaleString()} icon={Users} color={currentTheme.primary} theme={currentTheme} />
-                  <StatCard title="Structures" value={stats.structures} icon={Building2} color={currentTheme.primaryBlue} theme={currentTheme} />
-                  <StatCard title="Postes Vacants" value={stats.postesVacants} icon={UserCog} color={currentTheme.warning} theme={currentTheme} />
-                  <StatCard title="Actes en Attente" value={stats.actesEnAttente} icon={FileText} color={currentTheme.danger} theme={currentTheme} />
-                </div>
+      {activeSection === "decrets" && (
+        <div className="space-y-6">
+          <DecretsOrdonnances
+            theme={currentTheme}
+            onOpenDocument={(id) => {
+              setSelectedDocId(id);
+              setSignerOpen(true);
+            }}
+          />
+        </div>
+      )}
 
-                {/* Charts Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <SectionCard title="Répartition par Catégorie" theme={currentTheme}>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={agentTypesData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
-                            dataKey="value"
-                          >
-                            {agentTypesData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{ backgroundColor: currentTheme.bgCard, borderColor: currentTheme.border, color: currentTheme.text }}
-                            itemStyle={{ color: currentTheme.text }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </SectionCard>
+      {activeSection === "nominations" && (
+        <div className="space-y-6">
+          <Nominations
+            theme={currentTheme}
+            onOpenNomination={(id) => {
+              setSelectedNominationId(id);
+              setNominationModalOpen(true);
+            }}
+          />
+        </div>
+      )}
 
-                  <SectionCard title="Répartition Genre" theme={currentTheme}>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={genderData}>
-                          <XAxis dataKey="name" stroke={currentTheme.textSecondary} />
-                          <YAxis stroke={currentTheme.textSecondary} />
-                          <Tooltip
-                            cursor={{ fill: currentTheme.bgTertiary }}
-                            contentStyle={{ backgroundColor: currentTheme.bgCard, borderColor: currentTheme.border, color: currentTheme.text }}
-                          />
-                          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                            {genderData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </SectionCard>
-                </div >
-              </div >
-            )
-            }
+      {activeSection === "budget" && (
+        <div className="space-y-6">
+          <BudgetNationalSection theme={currentTheme} />
+        </div>
+      )}
 
-            {
-              activeSection === "documents" && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <DocumentsSection userRole="president" />
-                </div>
-              )
-            }
+      {activeSection === "indicateurs" && (
+        <div className="space-y-6">
+          <IndicateursEconomiquesSection theme={currentTheme} />
+        </div>
+      )}
 
-            {
-              activeSection === "courriers" && (
-                <MailInbox />
-              )
-            }
+      {activeSection === "investissements" && (
+        <div className="space-y-6">
+          <InvestissementsSection theme={currentTheme} />
+        </div>
+      )}
 
-            {
-              activeSection === "conseil-ministres" && (
-                <div className="space-y-6">
-                  <ConseilMinistres
-                    theme={currentTheme}
-                    onOpenSession={(id) => {
-                      setSelectedSessionId(id);
-                      setConseilModalOpen(true);
-                    }}
-                  />
-                </div>
-              )
-            }
+      {activeSection === "education" && (
+        <div className="space-y-6">
+          <EducationSection theme={currentTheme} />
+        </div>
+      )}
 
-            {
-              activeSection === "ministeres" && (
-                <div className="space-y-6">
-                  <MinisteresDirections theme={currentTheme} />
-                </div>
-              )
-            }
+      {activeSection === "sante" && (
+        <div className="space-y-6">
+          <SantePubliqueSection theme={currentTheme} />
+        </div>
+      )}
 
-            {
-              activeSection === "decrets" && (
-                <div className="space-y-6">
-                  <DecretsOrdonnances
-                    theme={currentTheme}
-                    onOpenDocument={(id) => {
-                      setSelectedDocId(id);
-                      setSignerOpen(true);
-                    }}
-                  />
-                </div>
-              )
-            }
+      {activeSection === "emploi" && (
+        <div className="space-y-6">
+          <EmploiFormationSection theme={currentTheme} />
+        </div>
+      )}
 
-            {
-              activeSection === "nominations" && (
-                <div className="space-y-6">
-                  <Nominations
-                    theme={currentTheme}
-                    onOpenNomination={(id) => {
-                      setSelectedNominationId(id);
-                      setNominationModalOpen(true);
-                    }}
-                  />
-                </div>
-              )
-            }
+      {activeSection === "chantiers" && (
+        <div className="space-y-6">
+          <ChantiersSection
+            theme={currentTheme}
+            onOpenProject={(id) => {
+              setSelectedProjectId(id);
+              setSelectedProjectType('construction');
+              setProjectModalOpen(true);
+            }}
+          />
+        </div>
+      )}
 
-            {
-              activeSection === "budget" && (
-                <div className="space-y-6">
-                  <BudgetNationalSection theme={currentTheme} />
-                </div>
-              )
-            }
+      {activeSection === "projets-presidentiels" && (
+        <div className="space-y-6">
+          <ProjetsPresidentielsSection
+            theme={currentTheme}
+            onOpenProject={(id) => {
+              setSelectedProjectId(id);
+              setSelectedProjectType('presidential');
+              setProjectModalOpen(true);
+            }}
+          />
+        </div>
+      )}
 
-            {
-              activeSection === "indicateurs" && (
-                <div className="space-y-6">
-                  <IndicateursEconomiquesSection theme={currentTheme} />
-                </div>
-              )
-            }
+      {activeSection === "projets-etat" && (
+        <div className="space-y-6">
+          <ProjetsEtatSection
+            theme={currentTheme}
+            onOpenProject={(id) => {
+              setSelectedProjectId(id);
+              setSelectedProjectType('state');
+              setProjectModalOpen(true);
+            }}
+          />
+        </div>
+      )}
 
-            {
-              activeSection === "investissements" && (
-                <div className="space-y-6">
-                  <InvestissementsSection theme={currentTheme} />
-                </div>
-              )
-            }
-
-            {
-              activeSection === "education" && (
-                <div className="space-y-6">
-                  <EducationSection theme={currentTheme} />
-                </div>
-              )
-            }
-
-            {
-              activeSection === "sante" && (
-                <div className="space-y-6">
-                  <SantePubliqueSection theme={currentTheme} />
-                </div>
-              )
-            }
-
-            {
-              activeSection === "emploi" && (
-                <div className="space-y-6">
-                  <EmploiFormationSection theme={currentTheme} />
-                </div>
-              )
-            }
-
-            {
-              activeSection === "chantiers" && (
-                <div className="space-y-6">
-                  <ChantiersSection
-                    theme={currentTheme}
-                    onOpenProject={(id) => {
-                      setSelectedProjectId(id);
-                      setSelectedProjectType('construction');
-                      setProjectModalOpen(true);
-                    }}
-                  />
-                </div>
-              )
-            }
-            {
-              activeSection === "projets-presidentiels" && (
-                <div className="space-y-6">
-                  <ProjetsPresidentielsSection
-                    theme={currentTheme}
-                    onOpenProject={(id) => {
-                      setSelectedProjectId(id);
-                      setSelectedProjectType('presidential');
-                      setProjectModalOpen(true);
-                    }}
-                  />
-                </div>
-              )
-            }
-            {
-              activeSection === "projets-etat" && (
-                <div className="space-y-6">
-                  <ProjetsEtatSection
-                    theme={currentTheme}
-                    onOpenProject={(id) => {
-                      setSelectedProjectId(id);
-                      setSelectedProjectType('state');
-                      setProjectModalOpen(true);
-                    }}
-                  />
-                </div>
-              )
-            }
-          </div >
-        </main >
-      </div >
-
-
-
-      {/* Interface iAsted avec chat et documents */}
+      {/* Modals */}
       <IAstedChatModal
         isOpen={iastedOpen}
         onClose={() => setIastedOpen(false)}
@@ -1093,14 +545,12 @@ export default function PresidentSpace() {
         currentVoice={selectedVoice}
       />
 
-      {/* Settings Modal */}
       <SettingsModal
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         userRole="president"
       />
 
-      {/* Document Signer Modal */}
       <DocumentSignerModal
         isOpen={signerOpen}
         onClose={() => {
@@ -1109,12 +559,10 @@ export default function PresidentSpace() {
         }}
         documentId={selectedDocId}
         onSigned={() => {
-          // Refresh data if needed, handled by realtime subscription in component
           toast({ title: "Succès", description: "Liste des documents mise à jour" });
         }}
       />
 
-      {/* Nomination Details Modal */}
       <NominationDetailsModal
         isOpen={nominationModalOpen}
         onClose={() => {
@@ -1127,7 +575,6 @@ export default function PresidentSpace() {
         }}
       />
 
-      {/* Conseil Session Modal */}
       <ConseilSessionModal
         isOpen={conseilModalOpen}
         onClose={() => {
@@ -1137,7 +584,6 @@ export default function PresidentSpace() {
         sessionId={selectedSessionId}
       />
 
-      {/* Project Details Modal */}
       <ProjectDetailsModal
         isOpen={projectModalOpen}
         onClose={() => {
@@ -1147,7 +593,7 @@ export default function PresidentSpace() {
         projectId={selectedProjectId}
         projectType={selectedProjectType}
       />
-    </div >
+    </AdminSpaceLayout>
   );
 }
 

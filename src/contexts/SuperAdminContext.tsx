@@ -16,6 +16,10 @@ interface SuperAdminContextValue {
     handleNavigation: (query: string) => void;
     returnToBase: () => void;
     returnToOrigin: () => void;
+    openaiRTC: any; // UseRealtimeVoiceWebRTC type
+    selectedVoice: 'echo' | 'ash' | 'shimmer';
+    isChatOpen: boolean;
+    setIsChatOpen: (open: boolean) => void;
 }
 
 const SuperAdminContext = createContext<SuperAdminContextValue | null>(null);
@@ -47,6 +51,8 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
         if (path.includes('/protocol')) return 'ProtocolDirectorSpace';
         if (path.includes('/private-cabinet')) return 'PrivateCabinetDirectorSpace';
         if (path.includes('/secretariat-general')) return 'SecretariatGeneralSpace';
+        if (path.includes('/service-courriers')) return 'ServiceCourriersSpace';
+        if (path.includes('/service-reception')) return 'ServiceReceptionSpace';
         return 'Global';
     }, [location.pathname]);
 
@@ -276,15 +282,19 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
         originRoute,
         handleNavigation,
         returnToBase,
-        returnToOrigin
-    }), [isAdmin, originRoute, handleNavigation, returnToBase, returnToOrigin]);
+        returnToOrigin,
+        openaiRTC,
+        selectedVoice,
+        isChatOpen,
+        setIsChatOpen
+    }), [isAdmin, originRoute, handleNavigation, returnToBase, returnToOrigin, openaiRTC, selectedVoice, isChatOpen]);
 
     return (
         <SuperAdminContext.Provider value={contextValue}>
             {children}
             {/* Render global iAsted button for all users with access */}
             {userContext.hasIAstedAccess && ReactDOM.createPortal(
-                <div className="fixed bottom-6 right-6 z-[9999]" style={{ pointerEvents: 'auto' }}>
+                <div className={`fixed bottom-6 right-6 z-[9999] ${currentSpaceName === 'Global' ? '' : 'hidden'}`} style={{ pointerEvents: 'auto' }}>
                     <IAstedButtonFull
                         onClick={async () => {
                             if (openaiRTC.isConnected) {
