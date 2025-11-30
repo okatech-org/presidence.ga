@@ -249,6 +249,13 @@ export default function PresidentSpace() {
     { name: "Femmes", value: 42, color: "hsl(var(--accent))" },
   ], []);
 
+  const navigationItems: NavItem[] = useMemo(() => [
+    { id: "dashboard", label: "Tableau de Bord", icon: LayoutDashboard },
+    { id: "documents", label: "Documents", icon: FileText },
+    { id: "courriers", label: "Courriers", icon: Inbox },
+    { id: "iasted", label: "iAsted", icon: Bot },
+  ], []);
+
   const NavButton = ({ id, icon: Icon, label, count }: any) => (
     <button
       onClick={() => setActiveSection(id)}
@@ -331,7 +338,7 @@ export default function PresidentSpace() {
 
   return (
     <AdminSpaceLayout
-      navItems={[]}
+      navItems={navigationItems}
       customSidebarNav={customSidebarNav}
       activeSection={activeSection}
       setActiveSection={setActiveSection}

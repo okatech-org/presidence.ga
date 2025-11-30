@@ -25,36 +25,33 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     navItems,
     embeddedButtonProps
 }) => {
-    // Calculate midpoint to split items around the central button
-    // We want to balance the items. The Menu button is always on the right.
-    // So we have (navItems.length + 1) total buttons excluding iAsted.
-    // We want roughly half on left, half on right.
-    // Total slots = navItems.length + 1 (for Menu).
-    // Left slots = Math.ceil(Total / 2).
+    // Enforce max 3 items to ensure 2+2 layout (3 items + Menu)
+    // Filter out any item with id 'iasted' to avoid duplication
+    const validItems = navItems.filter(item => item.id !== 'iasted');
+    const displayedItems = validItems.slice(0, 3);
 
-    const totalButtons = navItems.length + 1;
-    const leftCount = Math.ceil(totalButtons / 2);
-
-    const leftItems = navItems.slice(0, leftCount);
-    const rightItems = navItems.slice(leftCount);
+    const leftItems = displayedItems.slice(0, 2);
+    const rightItems = displayedItems.slice(2);
 
     return (
-        <div className="fixed bottom-6 left-4 right-4 h-16 neu-raised rounded-2xl flex items-center justify-between px-6 z-50 md:hidden border border-border/20">
-            {/* Left Items */}
-            {leftItems.map((item) => (
-                <button
-                    key={item.id}
-                    onClick={() => setActiveSection(item.id)}
-                    className={`flex flex-col items-center justify-center gap-1 transition-colors ${activeSection === item.id ? 'text-primary font-bold' : 'text-muted-foreground'}`}
-                >
-                    <item.icon size={20} />
-                    <span className="text-[10px] font-medium">{item.label}</span>
-                </button>
-            ))}
+        <div className="fixed bottom-6 left-4 right-4 h-16 neu-raised rounded-2xl flex items-center justify-between px-2 z-50 md:hidden border border-border/20">
+            {/* Left Items Container */}
+            <div className="flex items-center justify-around flex-1">
+                {leftItems.map((item) => (
+                    <button
+                        key={item.id}
+                        onClick={() => setActiveSection(item.id)}
+                        className={`flex flex-col items-center justify-center gap-1 transition-colors w-12 ${activeSection === item.id ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+                    >
+                        <item.icon size={20} />
+                        <span className="text-[10px] font-medium truncate w-full text-center">{item.label}</span>
+                    </button>
+                ))}
+            </div>
 
             {/* Central Floating Button - IAsted Sphere */}
-            <div className="relative -top-8">
-                <div className="w-16 h-16 flex items-center justify-center">
+            <div className="relative -top-6 mx-2 flex-shrink-0">
+                <div className="w-16 h-16 flex items-center justify-center rounded-full bg-background/50 backdrop-blur-sm shadow-lg border border-white/10">
                     <IAstedButtonFull
                         onClick={onOpenIasted}
                         size="md"
@@ -65,26 +62,28 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 </div>
             </div>
 
-            {/* Right Items */}
-            {rightItems.map((item) => (
-                <button
-                    key={item.id}
-                    onClick={() => setActiveSection(item.id)}
-                    className={`flex flex-col items-center justify-center gap-1 transition-colors ${activeSection === item.id ? 'text-primary font-bold' : 'text-muted-foreground'}`}
-                >
-                    <item.icon size={20} />
-                    <span className="text-[10px] font-medium">{item.label}</span>
-                </button>
-            ))}
+            {/* Right Items Container */}
+            <div className="flex items-center justify-around flex-1">
+                {rightItems.map((item) => (
+                    <button
+                        key={item.id}
+                        onClick={() => setActiveSection(item.id)}
+                        className={`flex flex-col items-center justify-center gap-1 transition-colors w-12 ${activeSection === item.id ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+                    >
+                        <item.icon size={20} />
+                        <span className="text-[10px] font-medium truncate w-full text-center">{item.label}</span>
+                    </button>
+                ))}
 
-            {/* Menu Button - Always at the end */}
-            <button
-                onClick={onToggleMenu}
-                className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors"
-            >
-                <Menu size={20} />
-                <span className="text-[10px] font-medium">Menu</span>
-            </button>
+                {/* Menu Button - Always at the end */}
+                <button
+                    onClick={onToggleMenu}
+                    className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors w-12"
+                >
+                    <Menu size={20} />
+                    <span className="text-[10px] font-medium">Menu</span>
+                </button>
+            </div>
         </div>
     );
 };
