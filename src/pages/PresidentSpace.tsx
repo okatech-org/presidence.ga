@@ -196,11 +196,39 @@ export default function PresidentSpace() {
         if (args.action === 'toggle_theme') {
           setTheme(theme === 'dark' ? 'light' : 'dark');
           return { success: true, message: 'Thème basculé' };
-        } else if (args.action === 'navigate_to_section') {
-          setActiveSection(args.section_id);
-          return { success: true, message: `Navigation vers ${args.section_id}` };
         }
         return { success: true, message: 'Action UI exécutée' };
+
+      case 'navigate_to_section':
+        console.log(`📍 [PresidentSpace] Navigation vers section: ${args.section_id}`);
+
+        // Map sections to their parent groups
+        const sectionGroupMap: Record<string, keyof typeof expandedSections> = {
+          'conseil-ministres': 'gouvernance',
+          'ministeres': 'gouvernance',
+          'decrets': 'gouvernance',
+          'nominations': 'gouvernance',
+          'budget': 'economie',
+          'indicateurs': 'economie',
+          'investissements': 'economie',
+          'education': 'affaires',
+          'sante': 'affaires',
+          'emploi': 'affaires',
+          'chantiers': 'infrastructures',
+          'projets-presidentiels': 'infrastructures',
+          'projets-etat': 'infrastructures',
+        };
+
+        // Expand parent group if section is nested
+        const parentGroup = sectionGroupMap[args.section_id];
+        if (parentGroup) {
+          setExpandedSections(prev => ({ ...prev, [parentGroup]: true }));
+          console.log(`📂 [PresidentSpace] Groupe ${parentGroup} déplié`);
+        }
+
+        setActiveSection(args.section_id);
+        return { success: true, message: `Navigation vers ${args.section_id} effectuée` };
+
       case 'change_voice':
         if (args.voice_id) setSelectedVoice(args.voice_id as any);
         return { success: true, message: 'Voix modifiée' };

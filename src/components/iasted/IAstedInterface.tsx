@@ -24,13 +24,13 @@ interface IAstedInterfaceProps {
  */
 export default function IAstedInterface({ userRole = 'user', defaultOpen = false, isOpen: controlledIsOpen, onClose: controlledOnClose, onToolCall }: IAstedInterfaceProps) {
     const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen);
-    
+
     // Use controlled state if provided, otherwise use internal state
     const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
     const setIsOpen = controlledOnClose ? (value: boolean) => {
         if (!value) controlledOnClose();
     } : setInternalIsOpen;
-    
+
     const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>('ash');
     const [pendingDocument, setPendingDocument] = useState<any>(null);
     const { setTheme, theme } = useTheme();
@@ -83,23 +83,23 @@ export default function IAstedInterface({ userRole = 'user', defaultOpen = false
         // 1. Internal Handlers
         if (toolName === 'change_voice') {
             console.log('🎙️ [IAstedInterface] Changement de voix demandé');
-            
+
             // Si voice_id spécifique fourni, l'utiliser
             if (args.voice_id) {
                 setSelectedVoice(args.voice_id as any);
                 toast.success(`Voix modifiée : ${args.voice_id === 'ash' ? 'Homme (Ash)' : args.voice_id === 'shimmer' ? 'Femme (Shimmer)' : 'Standard (Echo)'}`);
-            } 
+            }
             // Sinon, alterner homme↔femme selon voix actuelle
             else {
                 const currentVoice = selectedVoice;
                 const isCurrentlyMale = currentVoice === 'ash' || currentVoice === 'echo';
                 const newVoice = isCurrentlyMale ? 'shimmer' : 'ash';
-                
+
                 console.log(`🎙️ [IAstedInterface] Alternance voix: ${currentVoice} (${isCurrentlyMale ? 'homme' : 'femme'}) -> ${newVoice} (${isCurrentlyMale ? 'femme' : 'homme'})`);
                 setSelectedVoice(newVoice);
                 toast.success(`Voix changée : ${newVoice === 'shimmer' ? 'Femme (Shimmer)' : 'Homme (Ash)'}`);
             }
-            
+
             return { success: true, message: `Voix modifiée` };
         }
 
@@ -174,49 +174,55 @@ export default function IAstedInterface({ userRole = 'user', defaultOpen = false
                 // Ajuster la vitesse de parole (0.5 à 2.0)
                 const rate = parseFloat(args.value || '1.0');
                 const clampedRate = Math.max(0.5, Math.min(2.0, rate));
-                
+
                 console.log(`🎚️ [IAstedInterface] Ajustement vitesse: ${rate} -> ${clampedRate}`);
                 openaiRTC.setSpeechRate(clampedRate);
-                
-                const speedDescription = clampedRate < 0.8 ? 'ralenti' 
-                    : clampedRate > 1.2 ? 'accéléré' 
-                    : 'normal';
-                
+
+                const speedDescription = clampedRate < 0.8 ? 'ralenti'
+                    : clampedRate > 1.2 ? 'accéléré'
+                        : 'normal';
+
                 setTimeout(() => {
                     toast.success(`Vitesse de parole ajustée (${speedDescription}: ${clampedRate}x)`);
                 }, 100);
-                
+
                 return { success: true, message: `Vitesse ajustée à ${clampedRate}x` };
             }
         }
 
-        if (toolName === 'navigate_within_space') {
-            console.log('📍 [IAstedInterface] Navigation dans l\'espace présidentiel:', args);
-            
-            // Scroll vers le module dans la page actuelle (président uniquement)
-            const moduleId = args.module_id;
-            if (moduleId) {
-                const element = document.getElementById(moduleId);
+        if (toolName === 'navigate_to_section') {
+            console.log('📍 [IAstedInterface] Navigation locale:', args);
+
+            // 1. Essayer de scroller vers un élément (comportement original)
+            const sectionId = args.section_id;
+            if (sectionId) {
+                const element = document.getElementById(sectionId);
                 if (element) {
                     element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    toast.success(`Module ${moduleId} affiché`);
-                    console.log(`✅ [IAstedInterface] Scroll vers module: ${moduleId}`);
-                } else {
-                    console.error(`❌ [IAstedInterface] Module non trouvé: ${moduleId}`);
-                    toast.error(`Module ${moduleId} introuvable`);
+                    toast.success(`Section ${sectionId} affichée`);
+                    console.log(`✅ [IAstedInterface] Scroll vers: ${sectionId}`);
+                    return { success: true, message: `Section ${sectionId} affichée` };
                 }
+
+                // 2. Si pas d'élément, dispatcher un événement pour que la page gère (ex: AdminSpace)
+                console.log(`⚠️ [IAstedInterface] Élément non trouvé, dispatch event: ${sectionId}`);
+                const navEvent = new CustomEvent('iasted-navigate-section', {
+                    detail: { sectionId }
+                });
+                window.dispatchEvent(navEvent);
+                return { success: true, message: `Navigation vers ${sectionId} demandée` };
             }
         }
 
         if (toolName === 'navigate_app') {
             console.log('🌍 [IAstedInterface] Navigation Globale (Admin):', args);
-            
+
             // Navigation complète vers une autre route (admin uniquement)
             if (args.route) {
                 navigate(args.route);
                 toast.success(`Navigation vers ${args.route}`);
                 console.log(`✅ [IAstedInterface] Navigation vers: ${args.route}`);
-                
+
                 // Si module_id est spécifié, scroll après navigation
                 if (args.module_id) {
                     setTimeout(() => {
@@ -245,7 +251,7 @@ export default function IAstedInterface({ userRole = 'user', defaultOpen = false
                     console.log(`🦎 [IAstedInterface] Mode Caméléon: ${args.target_role}`);
                     localStorage.setItem('chameleon_role', args.target_role);
                 }
-                
+
                 return { success: true, message: `Navigation vers ${resolvedPath} effectuée` };
             } else {
                 console.error(`❌ [IAstedInterface] Route not found for: "${args.query}"`);
