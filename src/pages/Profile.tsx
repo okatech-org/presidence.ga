@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Save } from "lucide-react";
@@ -14,9 +13,9 @@ const Profile = () => {
     const [loading, setLoading] = useState(false);
     const [profile, setProfile] = useState({
         full_name: "",
-        bio: "",
         email: "",
-        avatar_url: ""
+        preferred_title: "",
+        gender: ""
     });
 
     useEffect(() => {
@@ -41,9 +40,9 @@ const Profile = () => {
             } else if (data) {
                 setProfile({
                     full_name: data.full_name || "",
-                    bio: data.bio || "",
                     email: user.email || "",
-                    avatar_url: data.avatar_url || ""
+                    preferred_title: data.preferred_title || "",
+                    gender: data.gender || ""
                 });
             }
         } catch (error) {
@@ -63,8 +62,8 @@ const Profile = () => {
             const updates = {
                 user_id: user.id,
                 full_name: profile.full_name,
-                bio: profile.bio,
-                avatar_url: profile.avatar_url,
+                preferred_title: profile.preferred_title,
+                gender: profile.gender,
                 updated_at: new Date().toISOString(),
             };
 
@@ -109,12 +108,10 @@ const Profile = () => {
                     <CardContent className="space-y-6">
                         <div className="flex items-center gap-6">
                             <Avatar className="h-24 w-24">
-                                <AvatarImage src={profile.avatar_url} />
                                 <AvatarFallback className="text-lg">
                                     {profile.full_name?.charAt(0) || "U"}
                                 </AvatarFallback>
                             </Avatar>
-                            <Button variant="outline">Changer l'avatar</Button>
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
@@ -138,15 +135,25 @@ const Profile = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="bio">Biographie</Label>
-                            <Textarea
-                                id="bio"
-                                value={profile.bio}
-                                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                                placeholder="Dites-nous en un peu plus sur vous..."
-                                className="min-h-[100px]"
-                            />
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="preferred_title">Titre préféré</Label>
+                                <Input
+                                    id="preferred_title"
+                                    value={profile.preferred_title}
+                                    onChange={(e) => setProfile({ ...profile, preferred_title: e.target.value })}
+                                    placeholder="M., Mme, Dr..."
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="gender">Genre</Label>
+                                <Input
+                                    id="gender"
+                                    value={profile.gender}
+                                    onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
+                                    placeholder="Homme, Femme, Autre..."
+                                />
+                            </div>
                         </div>
 
                         <div className="flex justify-end">
