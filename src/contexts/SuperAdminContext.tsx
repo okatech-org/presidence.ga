@@ -9,6 +9,7 @@ import { generateSystemPrompt } from '@/utils/generateSystemPrompt';
 import { resolveRoute } from '@/utils/route-mapping';
 import { IAstedChatModal } from '@/components/iasted/IAstedChatModal';
 import { supabase } from '@/integrations/supabase/client';
+import { useTheme } from 'next-themes';
 
 interface SuperAdminContextValue {
     isAdmin: boolean;
@@ -39,7 +40,9 @@ interface SuperAdminProviderProps {
 export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
+
     const { toast } = useToast();
+    const { theme, setTheme } = useTheme();
 
     // Detect current space from route
     const currentSpaceName = useMemo(() => {
@@ -225,34 +228,77 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                     return { success: false, message: "Erreur lors de la recherche d'informations." };
                 }
 
+            // Web Search
+            case 'search_web':
+                console.log('🌐 [Super Admin Context] Searching web:', args.query);
+                try {
+                    const { data, error } = await supabase.functions.invoke('search-web', {
+                        body: { query: args.query }
+                    });
+
+                    if (error) throw error;
+
+                    if (data.results && data.results.length > 0) {
+                        const formattedResults = data.results.map((r: any) =>
+                            `- [WEB] ${r.title}: ${r.content} (Source: ${r.url})`
+                        ).join('\n');
+                        return {
+                            success: true,
+                            message: `Voici les résultats de la recherche web :\n${formattedResults}\n\n(Source: Internet)`
+                        };
+                    } else {
+                        return { success: true, message: "Aucun résultat trouvé sur internet pour cette requête." };
+                    }
+                } catch (err: any) {
+                    console.error('❌ [Super Admin Context] Web Search error:', err);
+                    return { success: false, message: "Erreur lors de la recherche sur internet." };
+                }
+
+            // History Management
+            case 'manage_history':
+                console.log('🧹 [Super Admin Context] Manage history:', args);
+                if (args.action === 'clear') {
+                    // Dispatch event for chat modal to handle
+                    window.dispatchEvent(new CustomEvent('iasted-clear-history'));
+                    return { success: true, message: 'Historique effacé' };
+                }
+                return { success: false, message: 'Action historique non reconnue' };
+
+            // UI Control
             // UI Control
             case 'control_ui':
                 console.log('🎨 [Super Admin Context] UI Control:', args);
 
-                // Dispatch event for theme changes
-                if (args.action === 'toggle_theme' || args.action === 'set_theme_dark' || args.action === 'set_theme_light') {
-                    const themeEvent = new CustomEvent('iasted-control-ui', {
-                        detail: { action: args.action, value: args.value }
-                    });
-                    window.dispatchEvent(themeEvent);
+                let actionMsg = '';
 
-                    const actionMsg = args.action === 'set_theme_dark' ? 'Mode sombre activé' :
-                        args.action === 'set_theme_light' ? 'Mode clair activé' :
-                            'Thème basculé';
-                    toast({
-                        title: 'Thème',
-                        description: actionMsg,
-                    });
-                    return { success: true, message: actionMsg };
-                }
-
-                // Sidebar toggle
-                if (args.action === 'toggle_sidebar') {
+                // Theme control
+                if (args.action === 'toggle_theme') {
+                    setTheme(theme === 'dark' ? 'light' : 'dark');
+                    actionMsg = 'Thème basculé';
+                } else if (args.action === 'set_theme_dark') {
+                    setTheme('dark');
+                    actionMsg = 'Mode sombre activé';
+                } else if (args.action === 'set_theme_light') {
+                    setTheme('light');
+                    actionMsg = 'Mode clair activé';
+                } else if (args.action === 'toggle_sidebar') {
                     window.dispatchEvent(new CustomEvent('iasted-sidebar-toggle'));
                     return { success: true, message: 'Menu latéral basculé' };
+                } else {
+                    return { success: false, message: 'Action UI non reconnue' };
                 }
 
-                return { success: false, message: 'Action UI non reconnue' };
+                // Dispatch event for other listeners if needed
+                const uiEvent = new CustomEvent('iasted-control-ui', {
+                    detail: { action: args.action, value: args.value }
+                });
+                window.dispatchEvent(uiEvent);
+
+                toast({
+                    title: 'Interface',
+                    description: actionMsg,
+                });
+                return { success: true, message: actionMsg };
 
             default:
                 console.log('[Super Admin Context] Tool call forwardé:', toolName, args);

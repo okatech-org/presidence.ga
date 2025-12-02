@@ -5,35 +5,35 @@ import { getSectionsForRole } from '@/config/navigation-mapping';
  * Generate a personalized system prompt for iAsted based on user context
  */
 export function generateSystemPrompt(userContext: UserContext): string {
-    const { role, profile, roleContext, spaceContext } = userContext;
+  const { role, profile, roleContext, spaceContext } = userContext;
 
-    // Fallback if no context available
-    if (!roleContext) {
-        return `Tu es iAsted, l'assistant intelligent de la Présidence de la République Gabonaise. Tu es professionnel, efficace et respectueux.`;
-    }
+  // Fallback if no context available
+  if (!roleContext) {
+    return `Tu es iAsted, l'assistant intelligent de la Présidence de la République Gabonaise. Tu es professionnel, efficace et respectueux.`;
+  }
 
-    // Determine how to address the user
-    const userGender = profile?.gender || 'male';
-    const userTitle = profile?.preferred_title || roleContext.defaultTitle[userGender];
+  // Determine how to address the user
+  const userGender = profile?.gender || 'male';
+  const userTitle = profile?.preferred_title || roleContext.defaultTitle[userGender];
 
-    // Determine tone
-    const tone = profile?.tone_preference || roleContext.tone;
-    const toneDescription = tone === 'formal'
-        ? 'extrêmement respectueux et formel'
-        : 'professionnel et efficace';
+  // Determine tone
+  const tone = profile?.tone_preference || roleContext.tone;
+  const toneDescription = tone === 'formal'
+    ? 'extrêmement respectueux et formel'
+    : 'professionnel et efficace';
 
-    // Determine context description
-    const contextDesc = roleContext.contextDescription;
-    const spaceDesc = spaceContext
-        ? `Vous êtes actuellement dans ${spaceContext.description}.`
-        : '';
+  // Determine context description
+  const contextDesc = roleContext.contextDescription;
+  const spaceDesc = spaceContext
+    ? `Vous êtes actuellement dans ${spaceContext.description}.`
+    : '';
 
-    // Get available navigation sections
-    const sections = getSectionsForRole(role);
-    const sectionsDesc = sections.map(s => `- "${s.label}" (ID: ${s.id}): ${s.description}`).join('\n');
+  // Get available navigation sections
+  const sections = getSectionsForRole(role);
+  const sectionsDesc = sections.map(s => `- "${s.label}" (ID: ${s.id}): ${s.description}`).join('\n');
 
-    // Build the system prompt with DETAILED instructions
-    const systemPrompt = `Tu es iAsted, l'assistant vocal intelligent de la Présidence de la République Gabonaise.
+  // Build the system prompt with DETAILED instructions
+  const systemPrompt = `Tu es iAsted, l'assistant vocal intelligent de la Présidence de la République Gabonaise.
 
 **CONTEXTE ET RÔLE**
 ${contextDesc}. ${spaceDesc}
@@ -82,37 +82,31 @@ Il existe DEUX types de navigation. NE LES CONFONDS JAMAIS :
      • "Parle comme un homme" → voice_id='ash'
    - **IMPORTANT** : Ne propose JAMAIS de changer pour une autre voix du même genre !
 
-**ARRÊT ET DÉCONNEXION** ('stop_conversation') :
-   - Utilise CET OUTIL si l'utilisateur demande d'arrêter, se déconnecter, ou fermer
-   - **Exemples** :
-     • "Arrête-toi" → Appelle 'stop_conversation'
-     • "Stop" → Appelle 'stop_conversation'
-     • "Ferme" → Appelle 'stop_conversation'
-     • "Déconnecte-toi" → Appelle 'stop_conversation'
-   - **IMPORTANT** : CONFIRME verbalement AVANT d'appeler l'outil
+**GESTION CONVERSATION (Distinction CRITIQUE)** :
+   - **EFFACER L'HISTORIQUE** (outil 'manage_history', action='clear') :
+     • **Déclencheurs** : "Efface la conversation", "Vide le chat", "Nettoie l'historique".
+     • **Action** : Supprime uniquement les messages textuels de la fenêtre.
+     • **INTERDICTION** : Ne JAMAIS arrêter la connexion vocale pour cette demande.
+   
+   - **ARRÊTER LA SESSION** (outil 'stop_conversation') :
+     • **Déclencheurs** : "Arrête-toi", "Coupe la conversation", "Déconnecte-toi", "Ferme".
+     • **Action** : Coupe la connexion vocale et ferme l'interface.
 
-**CONTRÔLE THÈME ET VITESSE** ('control_ui') :
-   - **Thème** :
-     • "Mode sombre" → action='set_theme_dark'
-     • "Mode clair" → action='set_theme_light'
-     • "Change le thème" → action='toggle_theme'
+**CAPACITÉS DE RECHERCHE WEB** ('search_web') :
+   - Tu disposes désormais d'un outil 'search_web' pour accéder à internet en temps réel.
+   - Utilise cet outil LORSQUE :
+     1. L'information demandée est récente (actualités, données économiques).
+     2. L'information ne figure pas dans ta base de connaissances interne.
    
-   - **VITESSE DE PAROLE PHYSIQUE** (action='set_speech_rate') :
-     • **C'EST POUR ACCÉLÉRER/RALENTIR LA VITESSE RÉELLE DE TA VOIX**
-     • Exemples : "Parle plus vite", "Accélère", "Parle plus rapidement" → value='1.3' à '1.5'
-     • "Parle plus lentement", "Ralentis" → value='0.7' à '0.8'
-     • "Vitesse normale" → value='1.0'
-     • **Plage recommandée** : x1.2 à x1.5 pour accélérer, x0.7 à x0.8 pour ralentir
-   
-   - **⚠️ NE PAS CONFONDRE AVEC :**
-     • "Résume", "Synthétise", "Fais court" → Ce n'est PAS une vitesse, c'est un contenu plus bref
-     • Pour résumer : Réponds simplement de manière plus concise, ne change PAS la vitesse
-   
-   - **IMPORTANT** : Confirme verbalement l'action ("Vitesse augmentée à 1.3x")
+   - **MÉTHODOLOGIE (SUCCÈS)** :
+     1. **Rechercher** : Utilise 'search_web'.
+     2. **Analyser & Vérifier** : Croise les informations pour assurer la fiabilité.
+     3. **Synthétiser** : Présente la réponse en mentionnant EXPLICITEMENT que l'information provient d'internet (ex: "Selon les données récupérées en ligne...").
+     4. **Citer** : Indique la source.
 
-**GESTION DOCUMENTS** ('control_document') :
-   - Pour ouvrir/fermer : action='open_viewer' ou 'close_viewer'
-   - Pour archiver/valider : action='archive' ou 'validate'
+   - **GESTION D'ERREUR (ÉCHEC)** :
+     Si l'outil renvoie une erreur ou aucun résultat, RÉPONDS EXACTEMENT :
+     "Je rencontre une difficulté technique pour accéder aux informations en ligne actuellement. Toutefois, je vous encourage à consulter les rapports économiques ou les publications officielles du ministère de l'Économie pour obtenir ces données. Je reste à votre disposition pour toute autre demande, Excellence."
 
 **INSTRUCTIONS GÉNÉRALES**
 1. Réponds toujours en français.
@@ -123,41 +117,41 @@ Il existe DEUX types de navigation. NE LES CONFONDS JAMAIS :
 
 **TON ET STYLE**
 ${tone === 'formal'
-            ? `- Utilise "vous" exclusivement
+      ? `- Utilise "vous" exclusivement
 - Emploie des formules comme "Excellence", "À votre disposition"
 - Sois déférent sans être obséquieux`
-            : `- Utilise "vous" 
+      : `- Utilise "vous" 
 - Sois direct et efficace
 - Privilégie l'action sur la forme`}
 
 Commence toujours tes interactions de manière appropriée au contexte et au rôle de ${userTitle}.`;
 
-    return systemPrompt;
+  return systemPrompt;
 }
 
 /**
  * Generate a greeting based on time of day and user context
  */
 export function generateGreeting(userContext: UserContext): string {
-    const { profile, roleContext } = userContext;
+  const { profile, roleContext } = userContext;
 
-    if (!roleContext) return "Bonjour";
+  if (!roleContext) return "Bonjour";
 
-    const userGender = profile?.gender || 'male';
-    const userTitle = profile?.preferred_title || roleContext.defaultTitle[userGender];
+  const userGender = profile?.gender || 'male';
+  const userTitle = profile?.preferred_title || roleContext.defaultTitle[userGender];
 
-    const hour = new Date().getHours();
-    const timeOfDay = hour >= 5 && hour < 12
-        ? "Bonjour"
-        : hour >= 12 && hour < 18
-            ? "Bon après-midi"
-            : "Bonsoir";
+  const hour = new Date().getHours();
+  const timeOfDay = hour >= 5 && hour < 12
+    ? "Bonjour"
+    : hour >= 12 && hour < 18
+      ? "Bon après-midi"
+      : "Bonsoir";
 
-    const tone = profile?.tone_preference || roleContext.tone;
+  const tone = profile?.tone_preference || roleContext.tone;
 
-    if (tone === 'formal') {
-        return `${timeOfDay} ${userTitle}. Je suis à votre entière disposition.`;
-    } else {
-        return `${timeOfDay} ${userTitle}. Comment puis-je vous assister ?`;
-    }
+  if (tone === 'formal') {
+    return `${timeOfDay} ${userTitle}. Je suis à votre entière disposition.`;
+  } else {
+    return `${timeOfDay} ${userTitle}. Comment puis-je vous assister ?`;
+  }
 }

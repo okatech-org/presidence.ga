@@ -645,7 +645,7 @@ const CabinetDirectorSpace = () => {
 
       {/* Documents Section */}
       {activeSection === "documents" && (
-        <DocumentsSection />
+        <DocumentsSection userRole="dgr" />
       )}
     </AdminSpaceLayout>
   );

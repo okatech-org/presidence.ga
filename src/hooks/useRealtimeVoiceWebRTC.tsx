@@ -105,7 +105,7 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
     const recorderRef = useRef<AudioRecorder | null>(null);
     const [speechRate, setSpeechRate] = useState(1.0); // 0.5 to 2.0
     const speechRateRef = useRef(1.0); // Ref pour éviter les closures
-    
+
     // Fonction pour appliquer le playbackRate de manière robuste
     const applyPlaybackRate = useCallback((rate: number) => {
         if (audioElRef.current) {
@@ -447,10 +447,10 @@ export const useRealtimeVoiceWebRTC = (onToolCall?: (name: string, args: any) =>
                 console.log('🎵 [WebRTC] Track audio reçu');
                 if (audioElRef.current) {
                     audioElRef.current.srcObject = e.streams[0];
-                    
+
                     // Appliquer immédiatement le playbackRate
                     applyPlaybackRate(speechRateRef.current);
-                    
+
                     // Force l'application après un délai pour s'assurer qu'il est bien pris en compte
                     setTimeout(() => applyPlaybackRate(speechRateRef.current), 100);
                     setTimeout(() => applyPlaybackRate(speechRateRef.current), 500);
@@ -595,6 +595,22 @@ ${controlInstructions}`;
                             },
                             {
                                 type: 'function',
+                                name: 'manage_history',
+                                description: 'Gère l\'historique de la conversation (effacer, archiver).',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        action: {
+                                            type: 'string',
+                                            enum: ['clear', 'archive'],
+                                            description: 'Action à effectuer: "clear" pour effacer les messages visibles sans couper la connexion.'
+                                        }
+                                    },
+                                    required: ['action']
+                                }
+                            },
+                            {
+                                type: 'function',
                                 name: 'change_voice',
                                 description: 'Change la voix et la personnalité de l\'assistant.',
                                 parameters: {
@@ -607,6 +623,21 @@ ${controlInstructions}`;
                                         }
                                     },
                                     required: ['voice_id']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'search_web',
+                                description: 'Recherche des informations sur internet. Utilise cet outil pour obtenir des informations récentes, des actualités, des données économiques ou tout sujet qui ne figure pas dans ta base de connaissances interne.',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        query: {
+                                            type: 'string',
+                                            description: 'La requête de recherche précise.'
+                                        }
+                                    },
+                                    required: ['query']
                                 }
                             },
                             {

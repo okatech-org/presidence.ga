@@ -544,39 +544,41 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
     });
   };
 
-  const handleClearConversation = async () => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer toute la conversation ?')) {
-      setMessages([]);
-      openaiRTC.clearSession(); // Clear WebRTC session history
-      if (sessionId) {
-        // Supprimer tous les messages de la session
-        const { error: deleteError } = await supabase
-          .from('conversation_messages')
-          .delete()
-          .eq('session_id', sessionId);
-
-        if (deleteError) {
-          console.error('Erreur suppression messages:', deleteError);
-        }
-
-        // Marquer la session comme terminée pour ne plus la recharger
-        const { error: updateError } = await supabase
-          .from('conversation_sessions')
-          .update({
-            ended_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', sessionId);
-
-        if (updateError) {
-          console.error('Erreur mise à jour session:', updateError);
-        }
-      }
-      toast({
-        title: "Conversation effacée",
-        duration: 2000,
-      });
+  const handleClearConversation = async (confirm = true) => {
+    if (confirm && !window.confirm('Êtes-vous sûr de vouloir supprimer toute la conversation ?')) {
+      return;
     }
+
+    setMessages([]);
+    openaiRTC.clearSession(); // Clear WebRTC session history
+    if (sessionId) {
+      // Supprimer tous les messages de la session
+      const { error: deleteError } = await supabase
+        .from('conversation_messages')
+        .delete()
+        .eq('session_id', sessionId);
+
+      if (deleteError) {
+        console.error('Erreur suppression messages:', deleteError);
+      }
+
+      // Marquer la session comme terminée pour ne plus la recharger
+      const { error: updateError } = await supabase
+        .from('conversation_sessions')
+        .update({
+          ended_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
+
+      if (updateError) {
+        console.error('Erreur mise à jour session:', updateError);
+      }
+    }
+    toast({
+      title: "Conversation effacée",
+      duration: 2000,
+    });
   };
 
   const handleNewConversation = async () => {
@@ -604,6 +606,17 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
       initializeSession();
     }
   }, [isOpen]);
+
+  // Listen for clear history event from SuperAdminContext
+  useEffect(() => {
+    const handleClearHistory = () => {
+      console.log('🧹 [IAstedChatModal] Clearing history via event');
+      handleClearConversation(false); // false = don't ask for confirmation
+    };
+
+    window.addEventListener('iasted-clear-history', handleClearHistory);
+    return () => window.removeEventListener('iasted-clear-history', handleClearHistory);
+  }, []);
 
   // Gérer la génération de documents déclenchée par commande vocale
   useEffect(() => {
@@ -745,16 +758,16 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
 
           try {
             let blob: Blob, url: string, filename: string;
-            
+
             if (requestedFormat === 'docx') {
               // Génération DOCX locale sans upload vers Supabase
               console.log('📄 [generateDOCX] Génération locale du DOCX');
-              
+
               const { Document, Paragraph, AlignmentType, HeadingLevel, Packer } = await import('docx');
-              
+
               const title = `${args.type} - ${args.recipient}`;
               const contentPoints = args.content_points || [];
-              
+
               const doc = new Document({
                 sections: [{
                   properties: {},
@@ -782,7 +795,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
                       text: `Date: ${new Date().toLocaleDateString('fr-FR')}`,
                       spacing: { after: 400 },
                     }),
-                    ...contentPoints.map((point: string) => 
+                    ...contentPoints.map((point: string) =>
                       new Paragraph({
                         text: point,
                         spacing: { before: 200, after: 200 },
@@ -795,7 +808,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
               blob = await Packer.toBlob(doc);
               filename = `${args.type}_${args.recipient.replace(/\s+/g, '_')}_${Date.now()}.docx`;
               url = URL.createObjectURL(blob);
-              
+
               console.log('✅ [generateDOCX] Document généré:', filename);
             } else {
               // Génération PDF existante
@@ -807,11 +820,11 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
                 signature_authority: args.signature_authority,
                 serviceContext: args.service_context
               });
-              
+
               blob = pdfResult.blob;
               url = pdfResult.url;
               filename = pdfResult.filename;
-              
+
               console.log('✅ [generatePDF] Document généré:', filename);
             }
 
@@ -1045,7 +1058,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
               </button>
 
               <button
-                onClick={handleClearConversation}
+                onClick={() => handleClearConversation(true)}
                 className="neu-button-sm flex items-center gap-2 px-3 py-2 text-sm hover:bg-destructive/10 text-destructive transition-colors"
                 title="Supprimer tout l'historique"
               >

@@ -1,4 +1,3 @@
-import { serve } from "std/http/server.ts";
 import { createClient } from "supabase-js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -11,7 +10,7 @@ const corsHeaders = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
     }

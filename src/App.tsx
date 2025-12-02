@@ -25,6 +25,10 @@ const AdminSystemSettings = lazy(() => import("./pages/AdminSystemSettings"));
 const DocumentGeneratorDemo = lazy(() => import("./pages/DocumentGeneratorDemo"));
 const IAstedPage = lazy(() => import("./pages/IAstedPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const UserSpaceLayout = lazy(() => import("./components/layout/UserSpaceLayout"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Settings = lazy(() => import("./pages/Settings"));
 
 // Configuration optimisée de React Query avec cache intelligent
 const queryClient = new QueryClient({
@@ -78,6 +82,15 @@ const App = () => (
                 <Route path="/admin-system-settings" element={<AdminSystemSettings />} />
                 <Route path="/document-generator" element={<DocumentGeneratorDemo />} />
                 <Route path="/iasted" element={<IAstedPage />} />
+
+
+                {/* User Space Routes */}
+                <Route element={<UserSpaceLayout />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
+
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
