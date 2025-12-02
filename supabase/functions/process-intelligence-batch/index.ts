@@ -1,4 +1,4 @@
-import { createClient } from "supabase-js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -60,9 +60,10 @@ Deno.serve(async (req: Request) => {
                     console.error(`Failed to process item ${item.id}:`, text);
                     results.push({ id: item.id, status: "error", error: text });
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
+                const errorMessage = err instanceof Error ? err.message : 'Unknown error';
                 console.error(`Error processing item ${item.id}:`, err);
-                results.push({ id: item.id, status: "error", error: err.message });
+                results.push({ id: item.id, status: "error", error: errorMessage });
             }
         }
 
@@ -73,9 +74,10 @@ Deno.serve(async (req: Request) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error("Batch processing error:", error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        return new Response(JSON.stringify({ error: errorMessage }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
