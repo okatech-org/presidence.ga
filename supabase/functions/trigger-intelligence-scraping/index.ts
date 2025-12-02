@@ -1,5 +1,4 @@
-import "https://esm.sh/@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "supabase-js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -129,9 +128,10 @@ Deno.serve(async (req: Request) => {
           .update({ last_crawled_at: new Date().toISOString() })
           .eq('id', source.id);
 
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error(`Erreur source ${source.name}:`, error);
-        results.push({ source: source.name, status: 'error', error: error.message });
+        results.push({ source: source.name, status: 'error', error: errorMessage });
       }
     }
 
@@ -159,10 +159,11 @@ Deno.serve(async (req: Request) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('❌ Erreur:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
