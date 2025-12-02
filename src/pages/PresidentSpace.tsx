@@ -200,34 +200,13 @@ export default function PresidentSpace() {
         return { success: true, message: 'Action UI exécutée' };
 
       case 'navigate_to_section':
-        console.log(`📍 [PresidentSpace] Navigation vers section: ${args.section_id}`);
-
-        // Map sections to their parent groups
-        const sectionGroupMap: Record<string, keyof typeof expandedSections> = {
-          'conseil-ministres': 'gouvernance',
-          'ministeres': 'gouvernance',
-          'decrets': 'gouvernance',
-          'nominations': 'gouvernance',
-          'budget': 'economie',
-          'indicateurs': 'economie',
-          'investissements': 'economie',
-          'education': 'affaires',
-          'sante': 'affaires',
-          'emploi': 'affaires',
-          'chantiers': 'infrastructures',
-          'projets-presidentiels': 'infrastructures',
-          'projets-etat': 'infrastructures',
-        };
-
-        // Expand parent group if section is nested
-        const parentGroup = sectionGroupMap[args.section_id];
-        if (parentGroup) {
-          setExpandedSections(prev => ({ ...prev, [parentGroup]: true }));
-          console.log(`📂 [PresidentSpace] Groupe ${parentGroup} déplié`);
-        }
-
-        setActiveSection(args.section_id);
-        return { success: true, message: `Navigation vers ${args.section_id} effectuée` };
+        console.log(`📍 [PresidentSpace LOCAL] Navigation vers section: ${args.section_id}`);
+        // Note: This handler is kept for compatibility but navigation now happens via SuperAdminContext events
+        // Dispatch event pour que le listener ci-dessus le gère
+        window.dispatchEvent(new CustomEvent('iasted-navigate-section', {
+          detail: { sectionId: args.section_id }
+        }));
+        return { success: true, message: `Navigation demandée vers ${args.section_id}` };
 
       case 'change_voice':
         if (args.voice_id) setSelectedVoice(args.voice_id as any);
@@ -252,6 +231,63 @@ export default function PresidentSpace() {
     if (savedVoice) setSelectedVoice(savedVoice);
     setMounted(true);
   }, []);
+
+  // Écouter les événements de navigation depuis SuperAdminContext
+  useEffect(() => {
+    const handleNavigationEvent = (e: CustomEvent) => {
+      const { sectionId } = e.detail;
+      console.log('📍 [PresidentSpace] Event navigation reçu:', sectionId);
+
+      // Check if it's a group name (groups start with lowercase and match our expandedSections keys)
+      const groupNames: (keyof typeof expandedSections)[] = ['gouvernance', 'economie', 'affaires', 'infrastructures'];
+
+      if (groupNames.includes(sectionId as keyof typeof expandedSections)) {
+        // It's a group - just expand it
+        setExpandedSections(prev => ({ ...prev, [sectionId]: true }));
+        console.log(`📂 [PresidentSpace] Groupe ${sectionId} déplié`);
+        toast({
+          title: "Navigation",
+          description: `Groupe ${sectionId} ouvert`,
+        });
+        return;
+      }
+
+      // Map sections to their parent groups
+      const sectionGroupMap: Record<string, keyof typeof expandedSections> = {
+        'conseil-ministres': 'gouvernance',
+        'ministeres': 'gouvernance',
+        'decrets': 'gouvernance',
+        'nominations': 'gouvernance',
+        'budget': 'economie',
+        'indicateurs': 'economie',
+        'investissements': 'economie',
+        'education': 'affaires',
+        'sante': 'affaires',
+        'emploi': 'affaires',
+        'chantiers': 'infrastructures',
+        'projets-presidentiels': 'infrastructures',
+        'projets-etat': 'infrastructures',
+      };
+
+      // Expand parent group if section is nested
+      const parentGroup = sectionGroupMap[sectionId];
+      if (parentGroup) {
+        setExpandedSections(prev => ({ ...prev, [parentGroup]: true }));
+        console.log(`📂 [PresidentSpace] Groupe ${parentGroup} déplié pour ${sectionId}`);
+      }
+
+      setActiveSection(sectionId);
+      toast({
+        title: "Navigation",
+        description: `Section ${sectionId} ouverte`,
+      });
+    };
+
+    window.addEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+    return () => {
+      window.removeEventListener('iasted-navigate-section', handleNavigationEvent as EventListener);
+    };
+  }, [toast]);
 
   const currentTheme = useMemo(() => {
     const isDark = theme === "dark";
