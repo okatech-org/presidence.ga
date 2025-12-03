@@ -247,24 +247,31 @@ export const SuperAdminProvider: React.FC<SuperAdminProviderProps> = ({ children
                             message: `Voici les résultats de la recherche web :\n${formattedResults}\n\n(Source: Internet)`
                         };
                     } else {
-                        return { success: true, message: "Aucun résultat trouvé sur internet pour cette requête." };
+                        // IMPORTANT: Return specific message for "no results" so the model triggers the canned response
+                        return {
+                            success: false,
+                            message: "NO_RESULTS_FOUND_ON_WEB"
+                        };
                     }
                 } catch (err: any) {
                     console.error('❌ [Super Admin Context] Web Search error:', err);
-                    return { success: false, message: "Erreur lors de la recherche sur internet." };
+                    // IMPORTANT: Return specific message for "error" so the model triggers the canned response
+                    return {
+                        success: false,
+                        message: "WEB_SEARCH_TECHNICAL_ERROR"
+                    };
                 }
 
             // History Management
             case 'manage_history':
-                console.log('🧹 [Super Admin Context] Manage history:', args);
                 if (args.action === 'clear') {
-                    // Dispatch event for chat modal to handle
+                    console.log('🧹 [Super Admin Context] Clearing history');
+                    // Dispatch event for IAstedChatModal to handle
                     window.dispatchEvent(new CustomEvent('iasted-clear-history'));
-                    return { success: true, message: 'Historique effacé' };
+                    return { success: true, message: 'Historique de conversation effacé.' };
                 }
-                return { success: false, message: 'Action historique non reconnue' };
+                return { success: false, message: 'Action historique inconnue' };
 
-            // UI Control
             // UI Control
             case 'control_ui':
                 console.log('🎨 [Super Admin Context] UI Control:', args);

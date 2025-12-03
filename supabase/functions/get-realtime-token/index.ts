@@ -48,7 +48,17 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not set');
     }
 
-    console.log('🔑 [get-realtime-token] Demande de token éphémère...');
+    // Parse request body if available
+    let body = {};
+    try {
+      body = await req.json();
+    } catch (e) {
+      // Body might be empty
+    }
+
+    const { voice, systemPrompt } = body as { voice?: string, systemPrompt?: string };
+
+    console.log('🔑 [get-realtime-token] Demande de token éphémère...', { voice, hasSystemPrompt: !!systemPrompt });
 
     const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
@@ -58,8 +68,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview-2024-12-17",
-        voice: "alloy",
-        instructions: `Tu es iAsted, l'assistant stratégique du Président du Gabon. 
+        voice: voice || "alloy",
+        instructions: systemPrompt || `Tu es iAsted, l'assistant stratégique du Président du Gabon. 
 
 CONTEXTE:
 - Tu as accès aux données nationales et aux analyses en temps réel

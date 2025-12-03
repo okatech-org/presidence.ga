@@ -426,6 +426,8 @@ const MessageBubble: React.FC<{
   );
 };
 
+import { commandService } from '@/services/iasted/CommandService';
+
 export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
   isOpen,
   onClose,
@@ -439,6 +441,8 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [aiMode, setAiMode] = useState<'auto-power' | 'auto-cost' | 'manual'>('auto-power');
+  const [manualModel, setManualModel] = useState<string>('gpt-4o');
   const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>(() => {
     return currentVoice || (localStorage.getItem('iasted-voice-selection') as 'echo' | 'ash' | 'shimmer') || 'ash';
   });
@@ -454,6 +458,14 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const { setTheme } = useTheme();
+
+  // Initialize CommandService with context
+  useEffect(() => {
+    commandService.setContext({
+      navigate,
+      setTheme
+    });
+  }, [navigate, setTheme]);
 
   // OpenAI WebRTC integration is now passed via props
   // const openaiRTC = useRealtimeVoiceWebRTC();
@@ -475,6 +487,27 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
   useEffect(() => {
     if (openaiRTC.messages.length > 0) {
       const lastMsg = openaiRTC.messages[openaiRTC.messages.length - 1];
+
+      // Check for voice commands if it's a user message
+      if (lastMsg.role === 'user') {
+        const command = commandService.findCommand(lastMsg.content);
+        if (command) {
+          console.log('🎤 [Voice Command] Detected:', command.name);
+          commandService.execute(command.id);
+
+          // Add system feedback message
+          const feedbackMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `✅ Action exécutée : ${command.name}`,
+            timestamp: new Date().toISOString(),
+            metadata: { responseStyle: 'concis' }
+          };
+          setMessages(prev => [...prev, lastMsg, feedbackMsg]);
+          return;
+        }
+      }
+
       setMessages(prev => {
         const existing = prev.find(m => m.id === lastMsg.id);
         if (!existing) {
@@ -544,41 +577,39 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
     });
   };
 
-  const handleClearConversation = async (confirm = true) => {
-    if (confirm && !window.confirm('Êtes-vous sûr de vouloir supprimer toute la conversation ?')) {
-      return;
-    }
+  const handleClearConversation = async () => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer toute la conversation ?')) {
+      setMessages([]);
+      openaiRTC.clearSession(); // Clear WebRTC session history
+      if (sessionId) {
+        // Supprimer tous les messages de la session
+        const { error: deleteError } = await supabase
+          .from('conversation_messages')
+          .delete()
+          .eq('session_id', sessionId);
 
-    setMessages([]);
-    openaiRTC.clearSession(); // Clear WebRTC session history
-    if (sessionId) {
-      // Supprimer tous les messages de la session
-      const { error: deleteError } = await supabase
-        .from('conversation_messages')
-        .delete()
-        .eq('session_id', sessionId);
+        if (deleteError) {
+          console.error('Erreur suppression messages:', deleteError);
+        }
 
-      if (deleteError) {
-        console.error('Erreur suppression messages:', deleteError);
+        // Marquer la session comme terminée pour ne plus la recharger
+        const { error: updateError } = await supabase
+          .from('conversation_sessions')
+          .update({
+            ended_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', sessionId);
+
+        if (updateError) {
+          console.error('Erreur mise à jour session:', updateError);
+        }
       }
-
-      // Marquer la session comme terminée pour ne plus la recharger
-      const { error: updateError } = await supabase
-        .from('conversation_sessions')
-        .update({
-          ended_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', sessionId);
-
-      if (updateError) {
-        console.error('Erreur mise à jour session:', updateError);
-      }
+      toast({
+        title: "Conversation effacée",
+        duration: 2000,
+      });
     }
-    toast({
-      title: "Conversation effacée",
-      duration: 2000,
-    });
   };
 
   const handleNewConversation = async () => {
@@ -607,17 +638,6 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
     }
   }, [isOpen]);
 
-  // Listen for clear history event from SuperAdminContext
-  useEffect(() => {
-    const handleClearHistory = () => {
-      console.log('🧹 [IAstedChatModal] Clearing history via event');
-      handleClearConversation(false); // false = don't ask for confirmation
-    };
-
-    window.addEventListener('iasted-clear-history', handleClearHistory);
-    return () => window.removeEventListener('iasted-clear-history', handleClearHistory);
-  }, []);
-
   // Gérer la génération de documents déclenchée par commande vocale
   useEffect(() => {
     if (pendingDocument && onClearPendingDocument) {
@@ -642,6 +662,17 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
       onClearPendingDocument();
     }
   }, [pendingDocument, onClearPendingDocument]);
+
+  // Listen for clear history event from SuperAdminContext
+  useEffect(() => {
+    const handleClearEvent = () => {
+      console.log('🧹 [IAstedChatModal] Received clear history event');
+      handleClearConversation();
+    };
+
+    window.addEventListener('iasted-clear-history', handleClearEvent);
+    return () => window.removeEventListener('iasted-clear-history', handleClearEvent);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -946,47 +977,109 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
     setMessages(prev => [...prev, userMessage]);
     if (sessionId) await saveMessage(sessionId, userMessage);
 
-    // 2. Envoyer à l'API (via Edge Function pour streaming ou standard)
-    // Pour l'instant, on utilise une simple simulation ou appel standard si pas en mode vocal
-    // Si on est en mode vocal, on devrait peut-être utiliser le canal de données ?
-    // Mais ici c'est le chat texte.
-
     try {
-      // Si connecté en WebRTC, on peut envoyer un message texte via le data channel si supporté,
-      // mais pour l'instant le hook WebRTC gère surtout l'audio.
-      // On va utiliser l'API standard de chat pour le texte.
+      // Retrieve keys from localStorage
+      const savedKeys = localStorage.getItem('iasted_api_keys');
+      const keys = savedKeys ? JSON.parse(savedKeys) : {};
 
-      const { data, error } = await supabase.functions.invoke('chat-with-iasted', {
+      const { data, error } = await supabase.functions.invoke('chat', {
         body: {
-          message: userContent,
-          conversationHistory: messages.map(m => ({
+          messages: messages.concat(userMessage).map(m => ({
             role: m.role,
             content: m.content
           })),
-          sessionId: sessionId,
-          systemPrompt: "Vous êtes iAsted, l'assistant du Président. Soyez concis et direct.",
-          generateAudio: false // Pas d'audio pour le chat texte
+          mode: aiMode,
+          model: aiMode === 'manual' ? manualModel : undefined
+        },
+        headers: {
+          'x-openai-key': keys.openai || '',
+          'x-anthropic-key': keys.anthropic || '',
+          'x-gemini-key': keys.gemini || ''
         }
       });
 
       if (error) throw error;
 
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
+      // Handle SSE stream or JSON response
+      // The new chat function returns a stream. We need to handle it.
+      // For simplicity in this step, we'll assume the client handles the stream or we adapt the client.
+      // However, supabase.functions.invoke doesn't support streaming easily without custom fetch.
+      // Let's use a custom fetch for streaming support.
+
+      // ... actually, let's stick to the existing pattern but use the new endpoint.
+      // If the endpoint returns a stream, invoke might return a ReadableStream.
+      // But for now, let's assume we want to just get the text for the UI.
+      // Wait, I implemented streaming in the backend.
+      // So I need to handle streaming here.
+
+      // RE-IMPLEMENTATION WITH STREAMING FETCH
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'x-openai-key': keys.openai || '',
+          'x-anthropic-key': keys.anthropic || '',
+          'x-gemini-key': keys.gemini || ''
+        },
+        body: JSON.stringify({
+          messages: messages.concat(userMessage).map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+          mode: aiMode,
+          model: aiMode === 'manual' ? manualModel : undefined
+        })
+      });
+
+      if (!response.ok) throw new Error(await response.text());
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantContent = '';
+      const assistantMsgId = crypto.randomUUID();
+
+      // Create placeholder message
+      setMessages(prev => [...prev, {
+        id: assistantMsgId,
         role: 'assistant',
-        content: data.answer,
-        timestamp: new Date().toISOString(),
-      };
+        content: '',
+        timestamp: new Date().toISOString()
+      }]);
 
-      setMessages(prev => [...prev, assistantMessage]);
-      if (sessionId) await saveMessage(sessionId, assistantMessage);
+      while (true) {
+        const { done, value } = await reader!.read();
+        if (done) break;
 
-      // Vérifier les tool calls
-      if (data.tool_calls) {
-        for (const toolCall of data.tool_calls) {
-          await executeToolCall(toolCall);
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            if (dataStr === '[DONE]') break;
+
+            try {
+              const data = JSON.parse(dataStr);
+              const text = data.choices?.[0]?.delta?.content || '';
+              assistantContent += text;
+
+              setMessages(prev => prev.map(m =>
+                m.id === assistantMsgId ? { ...m, content: assistantContent } : m
+              ));
+            } catch (e) {
+              console.error('Error parsing SSE:', e);
+            }
+          }
         }
       }
+
+      if (sessionId) await saveMessage(sessionId, {
+        id: assistantMsgId,
+        role: 'assistant',
+        content: assistantContent,
+        timestamp: new Date().toISOString()
+      });
 
     } catch (error) {
       console.error('Erreur chat:', error);
@@ -1026,6 +1119,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
 
   if (!isOpen) return null;
 
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <motion.div
@@ -1043,7 +1137,32 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
               </div>
               <div>
                 <h2 className="text-xl font-bold text-foreground">iAsted - Chat Stratégique</h2>
-                <p className="text-sm text-muted-foreground">Agent de Commande Totale</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <select
+                    value={aiMode}
+                    onChange={(e) => setAiMode(e.target.value as any)}
+                    className="text-xs bg-background/50 border border-border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="auto-power">🚀 Auto Power (Max Perf)</option>
+                    <option value="auto-cost">💰 Auto Cost (Éco)</option>
+                    <option value="manual">⚙️ Manuel</option>
+                  </select>
+
+                  {aiMode === 'manual' && (
+                    <select
+                      value={manualModel}
+                      onChange={(e) => setManualModel(e.target.value)}
+                      className="text-xs bg-background/50 border border-border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="gpt-4o">OpenAI GPT-4o</option>
+                      <option value="gpt-4o-mini">OpenAI GPT-4o Mini</option>
+                      <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                      <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                      <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                      <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                    </select>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1058,7 +1177,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
               </button>
 
               <button
-                onClick={() => handleClearConversation(true)}
+                onClick={handleClearConversation}
                 className="neu-button-sm flex items-center gap-2 px-3 py-2 text-sm hover:bg-destructive/10 text-destructive transition-colors"
                 title="Supprimer tout l'historique"
               >

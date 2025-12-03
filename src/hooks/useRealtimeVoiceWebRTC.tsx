@@ -595,22 +595,6 @@ ${controlInstructions}`;
                             },
                             {
                                 type: 'function',
-                                name: 'manage_history',
-                                description: 'Gère l\'historique de la conversation (effacer, archiver).',
-                                parameters: {
-                                    type: 'object',
-                                    properties: {
-                                        action: {
-                                            type: 'string',
-                                            enum: ['clear', 'archive'],
-                                            description: 'Action à effectuer: "clear" pour effacer les messages visibles sans couper la connexion.'
-                                        }
-                                    },
-                                    required: ['action']
-                                }
-                            },
-                            {
-                                type: 'function',
                                 name: 'change_voice',
                                 description: 'Change la voix et la personnalité de l\'assistant.',
                                 parameters: {
@@ -638,6 +622,22 @@ ${controlInstructions}`;
                                         }
                                     },
                                     required: ['query']
+                                }
+                            },
+                            {
+                                type: 'function',
+                                name: 'manage_history',
+                                description: 'Gère l\'historique de la conversation (effacer).',
+                                parameters: {
+                                    type: 'object',
+                                    properties: {
+                                        action: {
+                                            type: 'string',
+                                            enum: ['clear'],
+                                            description: 'Action à effectuer: "clear" pour effacer l\'historique visible.'
+                                        }
+                                    },
+                                    required: ['action']
                                 }
                             },
                             {
