@@ -2,10 +2,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserContext } from "@/hooks/useUserContext";
+import { AlertTriangle } from "lucide-react";
 
 export const OpinionPublique = () => {
+  const { role, isLoading: roleLoading } = useUserContext();
   const [opinion, setOpinion] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Vérifier si l'utilisateur a accès (président ou admin uniquement)
+  const hasAccess = role === 'president' || role === 'admin';
 
   const fetchOpinion = useCallback(async () => {
     try {
@@ -25,8 +31,12 @@ export const OpinionPublique = () => {
   }, []);
 
   useEffect(() => {
-    fetchOpinion();
-  }, [fetchOpinion]);
+    if (hasAccess) {
+      fetchOpinion();
+    } else if (!roleLoading) {
+      setLoading(false);
+    }
+  }, [hasAccess, roleLoading, fetchOpinion]);
 
   const preoccupations = useMemo(() => 
     opinion?.preoccupations || [
@@ -39,8 +49,40 @@ export const OpinionPublique = () => {
     [opinion]
   );
 
-  if (loading) {
-    return <div className="text-center py-8">Chargement des données...</div>;
+  // Si en cours de chargement du rôle ou des données
+  if (roleLoading || loading) {
+    return (
+      <div className="space-y-4">
+        <Card className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 bg-muted rounded w-1/3"></div>
+            <div className="h-4 bg-muted rounded w-2/3"></div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Si l'utilisateur n'a pas accès
+  if (!hasAccess) {
+    return (
+      <div className="space-y-4">
+        <Card className="p-6 border-destructive/50 bg-destructive/5">
+          <div className="flex items-start gap-4">
+            <AlertTriangle className="w-6 h-6 text-destructive flex-shrink-0 mt-1" />
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Accès restreint</h3>
+              <p className="text-muted-foreground">
+                Cette section contient des informations d'opinion publique issues de la veille des réseaux sociaux et du web.
+              </p>
+              <p className="text-muted-foreground mt-2">
+                Seuls le <strong>Président de la République</strong> et les <strong>administrateurs système</strong> peuvent consulter ces données sensibles.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   return (

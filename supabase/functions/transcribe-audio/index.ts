@@ -30,11 +30,13 @@ serve(async (req) => {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    // Créer un Blob et un FormData pour OpenAI
-    const audioBlob = new Blob([bytes], { type: 'audio/webm' });
+    // Créer un Blob WAV et un FormData pour OpenAI
+    const audioBlob = new Blob([bytes], { type: 'audio/wav' });
     const openaiFormData = new FormData();
-    openaiFormData.append('file', audioBlob, 'audio.webm');
+    openaiFormData.append('file', audioBlob, 'audio.wav');
     openaiFormData.append('model', 'whisper-1');
+    
+    console.log('🎤 [transcribe-audio] Envoi à Whisper, taille:', bytes.length, 'bytes');
 
     const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',

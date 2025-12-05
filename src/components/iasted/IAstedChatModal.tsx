@@ -4,12 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { generateOfficialPDFWithURL } from '@/utils/generateOfficialPDF';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
-
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+import { documentGenerationService } from '@/services/documentGenerationService';
 import {
   Send,
   Loader2,
@@ -31,8 +26,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useElevenLabsAgent } from '@/hooks/useElevenLabsAgent';
-import { useRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
+import { useRealtimeVoiceWebRTC, UseRealtimeVoiceWebRTC } from '@/hooks/useRealtimeVoiceWebRTC';
+import { DocumentUploadZone } from '@/components/iasted/DocumentUploadZone';
 
 interface Message {
   id: string;
@@ -53,6 +48,11 @@ interface Message {
 interface IAstedChatModalProps {
   isOpen: boolean;
   onClose: () => void;
+  openaiRTC: UseRealtimeVoiceWebRTC;
+  pendingDocument?: any;
+  onClearPendingDocument?: () => void;
+  currentVoice?: 'echo' | 'ash' | 'shimmer';
+  systemPrompt?: string;
 }
 
 const MessageBubble: React.FC<{
@@ -66,17 +66,9 @@ const MessageBubble: React.FC<{
   const [editedContent, setEditedContent] = useState(message.content);
   const [showActions, setShowActions] = useState(false);
   const [fullscreenDoc, setFullscreenDoc] = useState<any>(null);
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [pdfZoom, setPdfZoom] = useState(100);
+  const [pdfPage, setPdfPage] = useState(1);
   const { toast } = useToast();
-
-  // Réinitialiser la page quand on ouvre un nouveau document
-  useEffect(() => {
-    if (fullscreenDoc) {
-      setPageNumber(1);
-      setNumPages(0);
-    }
-  }, [fullscreenDoc]);
 
   const handleSaveEdit = () => {
     if (onEdit && editedContent.trim() !== message.content) {
@@ -101,6 +93,25 @@ const MessageBubble: React.FC<{
       title: "📥 Téléchargement",
       description: `${doc.name} téléchargé`,
     });
+  };
+
+  const handlePrintDocument = (doc: any) => {
+    const printWindow = window.open(doc.url, '_blank');
+    if (printWindow) {
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+      toast({
+        title: "🖨️ Impression",
+        description: `Ouverture de ${doc.name} pour impression`,
+      });
+    } else {
+      toast({
+        title: "❌ Erreur",
+        description: "Impossible d'ouvrir la fenêtre d'impression. Veuillez autoriser les pop-ups.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -203,7 +214,93 @@ const MessageBubble: React.FC<{
                         <FileText className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">{fullscreenDoc.name}</span>
                       </div>
-                      <div className="flex gap-2">
+
+                      {/* Contrôles */}
+                      <div className="flex items-center gap-4">
+                        {/* Zoom */}
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background/70 border border-border">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfZoom(prev => Math.max(50, prev - 25));
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Zoom arrière"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                            </svg>
+                          </button>
+                          <span className="text-xs font-medium min-w-[3rem] text-center">{pdfZoom}%</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfZoom(prev => Math.min(200, prev + 25));
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Zoom avant"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfZoom(100);
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors ml-1"
+                            title="Réinitialiser"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Pagination */}
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background/70 border border-border">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfPage(prev => Math.max(1, prev - 1));
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Page précédente"
+                            disabled={pdfPage === 1}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          <span className="text-xs font-medium min-w-[4rem] text-center">Page {pdfPage}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPdfPage(prev => prev + 1);
+                            }}
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            title="Page suivante"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintDocument(fullscreenDoc);
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background hover:bg-muted transition-colors"
+                          title="Imprimer"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          </svg>
+                          <span className="text-sm font-medium">Imprimer</span>
+                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -214,88 +311,47 @@ const MessageBubble: React.FC<{
                           <Download className="w-4 h-4" />
                           <span className="text-sm font-medium">Télécharger</span>
                         </button>
+
                         <button
-                          onClick={() => setFullscreenDoc(null)}
+                          onClick={() => {
+                            setFullscreenDoc(null);
+                            setPdfZoom(100);
+                            setPdfPage(1);
+                          }}
                           className="flex items-center justify-center w-10 h-10 rounded-lg bg-background hover:bg-muted transition-colors"
                         >
                           <X className="w-5 h-5" />
                         </button>
                       </div>
                     </div>
-                    
-                    {/* PDF Viewer avec react-pdf pour compatibilité mobile */}
-                    <div className="flex-1 flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                      <Document
-                        file={fullscreenDoc.url}
-                        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                        onLoadError={(error) => {
-                          console.error('Erreur chargement PDF:', error);
-                          toast({
-                            title: "Erreur de chargement",
-                            description: "Impossible de charger le PDF. Veuillez télécharger le fichier.",
-                            variant: "destructive"
-                          });
-                        }}
-                        className="flex-1 flex items-center justify-center"
-                        loading={
-                          <div className="flex items-center justify-center h-full">
-                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                          </div>
-                        }
-                        error={
-                          <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
-                            <FileText className="w-16 h-16 text-muted-foreground" />
-                            <div>
-                              <p className="text-lg font-medium mb-2">Prévisualisation non disponible</p>
-                              <p className="text-sm text-muted-foreground mb-4">
-                                Impossible d'afficher ce PDF. Veuillez le télécharger.
-                              </p>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDownloadDocument(fullscreenDoc);
-                                }}
-                                className="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                              >
-                                Télécharger le PDF
-                              </button>
-                            </div>
-                          </div>
-                        }
+
+                    {/* PDF Viewer avec object au lieu d'iframe */}
+                    <div className="flex-1 p-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                      <object
+                        data={`${fullscreenDoc.url}#page=${pdfPage}&zoom=${pdfZoom}`}
+                        type="application/pdf"
+                        className="w-full h-full rounded-lg border border-border bg-background"
+                        style={{ transform: `scale(${pdfZoom / 100})`, transformOrigin: 'top center' }}
                       >
-                        <div className="overflow-auto max-h-full flex justify-center p-4">
-                          <Page
-                            pageNumber={pageNumber}
-                            renderTextLayer={true}
-                            renderAnnotationLayer={true}
-                            className="shadow-lg"
-                            width={Math.min(window.innerWidth * 0.8, 800)}
-                          />
+                        <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
+                          <FileText className="w-16 h-16 text-muted-foreground" />
+                          <div>
+                            <p className="text-lg font-medium mb-2">Prévisualisation non disponible</p>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Votre navigateur ne peut pas afficher ce PDF directement.
+                            </p>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadDocument(fullscreenDoc);
+                              }}
+                              className="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                            >
+                              Télécharger le PDF
+                            </button>
+                          </div>
                         </div>
-                      </Document>
-                      
-                      {/* Contrôles de pagination */}
-                      {numPages > 1 && (
-                        <div className="flex items-center justify-center gap-4 p-4 border-t border-border bg-background/50">
-                          <button
-                            onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}
-                            disabled={pageNumber <= 1}
-                            className="px-4 py-2 rounded-lg bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            Précédent
-                          </button>
-                          <span className="text-sm font-medium">
-                            Page {pageNumber} / {numPages}
-                          </span>
-                          <button
-                            onClick={() => setPageNumber(Math.min(numPages, pageNumber + 1))}
-                            disabled={pageNumber >= numPages}
-                            className="px-4 py-2 rounded-lg bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            Suivant
-                          </button>
-                        </div>
-                      )}
+                      </object>
                     </div>
                   </motion.div>
                 )}
@@ -336,10 +392,11 @@ const MessageBubble: React.FC<{
                       <Edit className="w-3.5 h-3.5" />
                     </button>
                   )}
+
                   {onCopy && (
                     <button
                       onClick={() => onCopy(message.content)}
-                      className="p-1.5 hover:bg-primary/10 rounded transition-colors"
+                      className="p-1.5 hover:bg-primary/10 text-primary rounded transition-colors"
                       title="Copier"
                     >
                       <Copy className="w-3.5 h-3.5" />
@@ -369,36 +426,54 @@ const MessageBubble: React.FC<{
   );
 };
 
-export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClose }) => {
+export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({
+  isOpen,
+  onClose,
+  openaiRTC,
+  pendingDocument,
+  onClearPendingDocument,
+  currentVoice,
+  systemPrompt
+}) => {
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [voiceMode, setVoiceMode] = useState<'elevenlabs' | 'openai'>(() => {
-    return (localStorage.getItem('iasted-voice-mode') as 'elevenlabs' | 'openai') || 'elevenlabs';
+  const [selectedVoice, setSelectedVoice] = useState<'echo' | 'ash' | 'shimmer'>(() => {
+    return currentVoice || (localStorage.getItem('iasted-voice-selection') as 'echo' | 'ash' | 'shimmer') || 'ash';
   });
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
+
+  // Sync internal state with prop if it changes (e.g. via voice command)
+  useEffect(() => {
+    if (currentVoice && currentVoice !== selectedVoice) {
+      setSelectedVoice(currentVoice);
+    }
+  }, [currentVoice]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { setTheme } = useTheme();
 
-  // ElevenLabs integration
-  const elevenLabs = useElevenLabsAgent({
-    agentId: 'EV6XgOdBELK29O2b4qyM', // iAsted Pro voice
-    userRole: 'president',
-    onSpeakingChange: (speaking) => {
-      console.log('🎙️ ElevenLabs speaking:', speaking);
-    },
-  });
+  // OpenAI WebRTC integration is now passed via props
+  // const openaiRTC = useRealtimeVoiceWebRTC();
 
-  // OpenAI WebRTC integration
-  const openaiRTC = useRealtimeVoiceWebRTC();
+  // Auto-start voice when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Petit délai pour laisser l'UI se monter
+      const timer = setTimeout(() => {
+        if (!openaiRTC.isConnected) {
+          openaiRTC.connect(selectedVoice);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, selectedVoice]); // Reconnect if voice changes while open? Maybe not automatically, let user decide.
 
   // Sync messages from OpenAI WebRTC
   useEffect(() => {
-    if (voiceMode === 'openai' && openaiRTC.messages.length > 0) {
+    if (openaiRTC.messages.length > 0) {
       const lastMsg = openaiRTC.messages[openaiRTC.messages.length - 1];
       setMessages(prev => {
         const existing = prev.find(m => m.id === lastMsg.id);
@@ -408,7 +483,7 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
         return prev.map(m => m.id === lastMsg.id ? lastMsg : m);
       });
     }
-  }, [openaiRTC.messages, voiceMode]);
+  }, [openaiRTC.messages]);
 
   // === Fonctions de gestion de messages ===
 
@@ -469,38 +544,41 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
     });
   };
 
-  const handleClearConversation = async () => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer toute la conversation ?')) {
-      setMessages([]);
-      if (sessionId) {
-        // Supprimer tous les messages de la session
-        const { error: deleteError } = await supabase
-          .from('conversation_messages')
-          .delete()
-          .eq('session_id', sessionId);
-
-        if (deleteError) {
-          console.error('Erreur suppression messages:', deleteError);
-        }
-
-        // Marquer la session comme terminée pour ne plus la recharger
-        const { error: updateError } = await supabase
-          .from('conversation_sessions')
-          .update({
-            ended_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', sessionId);
-
-        if (updateError) {
-          console.error('Erreur mise à jour session:', updateError);
-        }
-      }
-      toast({
-        title: "Conversation effacée",
-        duration: 2000,
-      });
+  const handleClearConversation = async (confirm = true) => {
+    if (confirm && !window.confirm('Êtes-vous sûr de vouloir supprimer toute la conversation ?')) {
+      return;
     }
+
+    setMessages([]);
+    openaiRTC.clearSession(); // Clear WebRTC session history
+    if (sessionId) {
+      // Supprimer tous les messages de la session
+      const { error: deleteError } = await supabase
+        .from('conversation_messages')
+        .delete()
+        .eq('session_id', sessionId);
+
+      if (deleteError) {
+        console.error('Erreur suppression messages:', deleteError);
+      }
+
+      // Marquer la session comme terminée pour ne plus la recharger
+      const { error: updateError } = await supabase
+        .from('conversation_sessions')
+        .update({
+          ended_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
+
+      if (updateError) {
+        console.error('Erreur mise à jour session:', updateError);
+      }
+    }
+    toast({
+      title: "Conversation effacée",
+      duration: 2000,
+    });
   };
 
   const handleNewConversation = async () => {
@@ -528,6 +606,42 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
       initializeSession();
     }
   }, [isOpen]);
+
+  // Listen for clear history event from SuperAdminContext
+  useEffect(() => {
+    const handleClearHistory = () => {
+      console.log('🧹 [IAstedChatModal] Clearing history via event');
+      handleClearConversation(false); // false = don't ask for confirmation
+    };
+
+    window.addEventListener('iasted-clear-history', handleClearHistory);
+    return () => window.removeEventListener('iasted-clear-history', handleClearHistory);
+  }, []);
+
+  // Gérer la génération de documents déclenchée par commande vocale
+  useEffect(() => {
+    if (pendingDocument && onClearPendingDocument) {
+      console.log('📄 [IAstedChatModal] Génération de document depuis voix:', pendingDocument);
+
+      // Créer un tool call simulé pour réutiliser la logique existante
+      const toolCall = {
+        function: {
+          name: 'generate_document',
+          arguments: JSON.stringify({
+            type: pendingDocument.type,
+            recipient: pendingDocument.recipient,
+            subject: pendingDocument.subject,
+            content_points: pendingDocument.contentPoints,
+            format: pendingDocument.format || 'pdf',
+            service_context: pendingDocument.serviceContext
+          })
+        }
+      };
+
+      executeToolCall(toolCall);
+      onClearPendingDocument();
+    }
+  }, [pendingDocument, onClearPendingDocument]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -638,26 +752,88 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
           break;
 
         case 'generate_document':
-          // Générer un VRAI PDF avec pdfmake
-          console.log('📄 [generatePDF] Génération du document...', args);
+          // Gérer le format (PDF ou Docx)
+          const requestedFormat = args.format || 'pdf';
+          console.log(`📄 [generateDocument] Format demandé: ${requestedFormat}`, args);
 
           try {
-            const { blob, url, filename } = await generateOfficialPDFWithURL({
-              type: args.type,
-              recipient: args.recipient,
-              subject: args.subject,
-              content_points: args.content_points || [],
-              signature_authority: args.signature_authority,
-            });
+            let blob: Blob, url: string, filename: string;
 
-            console.log('✅ [generatePDF] Document généré:', filename);
+            if (requestedFormat === 'docx') {
+              // Génération DOCX locale sans upload vers Supabase
+              console.log('📄 [generateDOCX] Génération locale du DOCX');
+
+              const { Document, Paragraph, AlignmentType, HeadingLevel, Packer } = await import('docx');
+
+              const title = `${args.type} - ${args.recipient}`;
+              const contentPoints = args.content_points || [];
+
+              const doc = new Document({
+                sections: [{
+                  properties: {},
+                  children: [
+                    new Paragraph({
+                      text: "RÉPUBLIQUE GABONAISE",
+                      heading: HeadingLevel.HEADING_1,
+                      alignment: AlignmentType.CENTER,
+                    }),
+                    new Paragraph({
+                      text: title,
+                      heading: HeadingLevel.HEADING_2,
+                      alignment: AlignmentType.CENTER,
+                      spacing: { before: 400, after: 400 },
+                    }),
+                    new Paragraph({
+                      text: `Destinataire: ${args.recipient}`,
+                      spacing: { before: 200, after: 200 },
+                    }),
+                    new Paragraph({
+                      text: `Objet: ${args.subject}`,
+                      spacing: { after: 200 },
+                    }),
+                    new Paragraph({
+                      text: `Date: ${new Date().toLocaleDateString('fr-FR')}`,
+                      spacing: { after: 400 },
+                    }),
+                    ...contentPoints.map((point: string) =>
+                      new Paragraph({
+                        text: point,
+                        spacing: { before: 200, after: 200 },
+                      })
+                    ),
+                  ],
+                }],
+              });
+
+              blob = await Packer.toBlob(doc);
+              filename = `${args.type}_${args.recipient.replace(/\s+/g, '_')}_${Date.now()}.docx`;
+              url = URL.createObjectURL(blob);
+
+              console.log('✅ [generateDOCX] Document généré:', filename);
+            } else {
+              // Génération PDF existante
+              const pdfResult = await generateOfficialPDFWithURL({
+                type: args.type,
+                recipient: args.recipient,
+                subject: args.subject,
+                content_points: args.content_points || [],
+                signature_authority: args.signature_authority,
+                serviceContext: args.service_context
+              });
+
+              blob = pdfResult.blob;
+              url = pdfResult.url;
+              filename = pdfResult.filename;
+
+              console.log('✅ [generatePDF] Document généré:', filename);
+            }
 
             // Créer l'objet document pour le chat
             const docPreview = {
               id: crypto.randomUUID(),
               name: filename,
               url: url,  // URL blob pour téléchargement
-              type: 'application/pdf',
+              type: requestedFormat === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf',
             };
 
             // Créer un message assistant dédié avec le document attaché
@@ -684,9 +860,8 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
             });
 
             // Télécharger automatiquement le PDF au lieu de l'ouvrir (évite ERR_BLOCKED_BY_CLIENT)
-            const isVoiceInteraction = isVoiceActive || voiceMode === 'elevenlabs';
-
-            if (isVoiceInteraction) {
+            // Si on est en mode vocal (connecté), on télécharge auto
+            if (openaiRTC.isConnected) {
               console.log('🔊 [generatePDF] Téléchargement automatique (demande vocale)');
               setTimeout(() => {
                 const link = document.createElement('a');
@@ -710,13 +885,8 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
 
         case 'manage_system_settings':
           if (args.setting === 'voice_mode') {
-            const newMode = args.value as 'elevenlabs' | 'openai';
-            setVoiceMode(newMode);
-            localStorage.setItem('iasted-voice-mode', newMode);
-            toast({
-              title: "Mode vocal changé",
-              description: `Nouveau mode: ${newMode === 'elevenlabs' ? 'iAsted Pro' : 'OpenAI RT'}`,
-            });
+            // Legacy support or ignore
+            console.log('Setting voice mode via tool is deprecated');
           } else if (args.setting === 'theme') {
             setTheme(args.value);
             toast({
@@ -724,15 +894,6 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
               description: `Nouveau thème: ${args.value}`,
             });
           }
-          break;
-
-        case 'query_knowledge_base':
-          toast({
-            title: `Base de connaissances: ${args.domain}`,
-            description: "Interrogation en cours...",
-            duration: 2000,
-          });
-          // La réponse sera dans le message de l'assistant
           break;
 
         default:
@@ -748,108 +909,91 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
     }
   };
 
-  const saveMessage = async (sessId: string, message: Message) => {
+  // Sauvegarder le message dans Supabase
+  const saveMessage = async (sessionId: string, message: Message) => {
     try {
-      await supabase.from('conversation_messages').insert({
-        id: message.id,
-        session_id: sessId,
-        role: message.role,
-        content: message.content,
-        created_at: message.timestamp,
-      });
+      const { error } = await supabase
+        .from('conversation_messages')
+        .insert({
+          session_id: sessionId,
+          role: message.role,
+          content: message.content,
+          metadata: message.metadata || {},
+        });
+
+      if (error) throw error;
     } catch (error) {
-      console.error('Erreur sauvegarde message:', error);
+      console.error('❌ [saveMessage] Erreur:', JSON.stringify(error, null, 2));
     }
   };
 
+  // Gestion de l'envoi de message texte
   const handleSendMessage = async () => {
-    if (!inputText.trim() || isProcessing || !sessionId) return;
+    if (!inputText.trim() || isProcessing) return;
 
+    const userContent = inputText.trim();
+    setInputText('');
     setIsProcessing(true);
 
+    // 1. Ajouter message utilisateur
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: userContent,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    if (sessionId) await saveMessage(sessionId, userMessage);
+
+    // 2. Envoyer à l'API (via Edge Function pour streaming ou standard)
+    // Pour l'instant, on utilise une simple simulation ou appel standard si pas en mode vocal
+    // Si on est en mode vocal, on devrait peut-être utiliser le canal de données ?
+    // Mais ici c'est le chat texte.
+
     try {
-      const userMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'user',
-        content: inputText,
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages(prev => [...prev, userMessage]);
-      await saveMessage(sessionId, userMessage);
-      setInputText('');
-
-      // Appeler l'API pour obtenir la réponse
-      const conversationHistory = messages.slice(-10).map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // Si connecté en WebRTC, on peut envoyer un message texte via le data channel si supporté,
+      // mais pour l'instant le hook WebRTC gère surtout l'audio.
+      // On va utiliser l'API standard de chat pour le texte.
 
       const { data, error } = await supabase.functions.invoke('chat-with-iasted', {
         body: {
-          sessionId,
-          transcriptOverride: userMessage.content,
-          conversationHistory: [...conversationHistory, { role: 'user', content: userMessage.content }],
-          userRole: 'president',
-          userGender: 'male', // À récupérer du profil utilisateur
-          settings: { responseStyle: 'strategique' },
-        },
+          message: userContent,
+          conversationHistory: messages.map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+          sessionId: sessionId,
+          systemPrompt: "Vous êtes iAsted, l'assistant du Président. Soyez concis et direct.",
+          generateAudio: false // Pas d'audio pour le chat texte
+        }
       });
 
       if (error) throw error;
 
-      // Traiter les tool_calls si présents
-      const hasToolCalls = data.tool_calls && data.tool_calls.length > 0;
-      if (hasToolCalls) {
-        console.log('🔧 [handleSendMessage] Tool calls détectés:', data.tool_calls);
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: data.answer,
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      if (sessionId) await saveMessage(sessionId, assistantMessage);
+
+      // Vérifier les tool calls
+      if (data.tool_calls) {
         for (const toolCall of data.tool_calls) {
           await executeToolCall(toolCall);
         }
       }
 
-      const hasGenerateDocTool = data.tool_calls?.some((tc: any) => tc.function.name === 'generate_document');
-
-      // Cas 1: uniquement un tool generate_document, sans réponse texte →
-      // le message avec le PDF est déjà ajouté par executeToolCall, on ne duplique pas.
-      if (!data.answer && !data.response && !data.error && hasGenerateDocTool) {
-        console.log('📨 [handleSendMessage] Réponse uniquement via generate_document, aucun message texte ajouté.');
-        return;
-      }
-
-      // Cas 2: réponse texte normale ou erreur → on construit le message assistant
-      let responseContent = data.answer || data.response || data.error || '';
-
-      if (!responseContent) {
-        responseContent = 'Je suis désolé, je ne peux pas répondre pour le moment.';
-      }
-
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: responseContent,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          responseStyle: 'strategique',
-        },
-      };
-
-      console.log('📨 [handleSendMessage] Réponse reçue:', {
-        hasAnswer: !!data.answer,
-        hasResponse: !!data.response,
-        hasError: !!data.error,
-        hasToolCalls: data.tool_calls?.length || 0,
-        finalContent: assistantMessage.content.substring(0, 100)
-      });
-
-      setMessages(prev => [...prev, assistantMessage]);
-      await saveMessage(sessionId, assistantMessage);
-
     } catch (error) {
-      console.error('Erreur envoi message:', error);
+      console.error('Erreur chat:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible d\'envoyer le message',
-        variant: 'destructive',
+        title: "Erreur",
+        description: "Impossible d'envoyer le message",
+        variant: "destructive"
       });
     } finally {
       setIsProcessing(false);
@@ -863,66 +1007,22 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
     }
   };
 
-  const toggleVoiceMode = async () => {
-    if (isVoiceActive) {
-      // Stop current voice session
-      if (voiceMode === 'elevenlabs') {
-        await elevenLabs.stopConversation();
-      } else {
-        openaiRTC.disconnect();
-      }
-      setIsVoiceActive(false);
-    } else {
-      // Start voice session
-      try {
-        if (voiceMode === 'elevenlabs') {
-          await elevenLabs.startConversation();
-          setIsVoiceActive(true);
-        } else {
-          await openaiRTC.connect();
-          setIsVoiceActive(true);
-        }
-      } catch (error) {
-        console.error('❌ Erreur démarrage vocal:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de démarrer le mode vocal',
-          variant: 'destructive',
-        });
-      }
-    }
-  };
-
   // Clean up voice connections on unmount
   useEffect(() => {
     return () => {
-      if (isVoiceActive) {
-        if (voiceMode === 'elevenlabs') {
-          elevenLabs.stopConversation();
-        } else {
-          openaiRTC.disconnect();
-        }
+      if (openaiRTC.isConnected) {
+        openaiRTC.disconnect();
       }
     };
-  }, []);
+  }, [openaiRTC.isConnected]);
 
-  // Handle voice mode switch - stop current session if active
-  useEffect(() => {
-    if (isVoiceActive) {
-      // Stop current session and restart with new mode
-      const switchMode = async () => {
-        if (voiceMode === 'elevenlabs') {
-          openaiRTC.disconnect();
-        } else {
-          await elevenLabs.stopConversation();
-        }
-        setIsVoiceActive(false);
-      };
-      switchMode();
+  const handleConnect = async () => {
+    if (openaiRTC.isConnected) {
+      openaiRTC.disconnect();
+    } else {
+      await openaiRTC.connect(selectedVoice, systemPrompt);
     }
-    // Sauvegarder le mode dans localStorage pour synchroniser avec le bouton
-    localStorage.setItem('iasted-voice-mode', voiceMode);
-  }, [voiceMode]);
+  };
 
   if (!isOpen) return null;
 
@@ -958,35 +1058,46 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
               </button>
 
               <button
-                onClick={handleClearConversation}
+                onClick={() => handleClearConversation(true)}
                 className="neu-button-sm flex items-center gap-2 px-3 py-2 text-sm hover:bg-destructive/10 text-destructive transition-colors"
-                title="Effacer la conversation"
+                title="Supprimer tout l'historique"
               >
                 <Trash2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Effacer</span>
               </button>
 
-              {/* Mode selector */}
-              <div className="neu-inset rounded-lg p-1 flex items-center gap-1">
+              {/* Voice Selector */}
+              <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 border border-border/50">
                 <button
-                  onClick={() => setVoiceMode('elevenlabs')}
-                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${voiceMode === 'elevenlabs'
-                    ? 'neu-raised bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                  onClick={async () => {
+                    setSelectedVoice('ash');
+                    localStorage.setItem('iasted-voice-selection', 'ash');
+                    if (openaiRTC.isConnected) {
+                      await openaiRTC.disconnect();
+                      await openaiRTC.connect('ash');
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${selectedVoice === 'ash'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-background/80'
                     }`}
-                  title="ElevenLabs iAsted Pro - Voix de haute qualité"
                 >
-                  🎙️ iAsted Pro
+                  Homme
                 </button>
                 <button
-                  onClick={() => setVoiceMode('openai')}
-                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${voiceMode === 'openai'
-                    ? 'neu-raised bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                  onClick={async () => {
+                    setSelectedVoice('shimmer');
+                    localStorage.setItem('iasted-voice-selection', 'shimmer');
+                    if (openaiRTC.isConnected) {
+                      await openaiRTC.disconnect();
+                      await openaiRTC.connect('shimmer');
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${selectedVoice === 'shimmer'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-background/80'
                     }`}
-                  title="OpenAI Temps Réel - Latence ultra-faible"
                 >
-                  ⚡ OpenAI RT
+                  Femme
                 </button>
               </div>
 
@@ -998,10 +1109,10 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
               </button>
             </div>
           </div>
-        </div>
+        </div >
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        < div className="flex-1 overflow-y-auto p-4 space-y-2" >
           <AnimatePresence>
             {messages.map((message) => (
               <MessageBubble
@@ -1014,68 +1125,69 @@ export const IAstedChatModal: React.FC<IAstedChatModalProps> = ({ isOpen, onClos
             ))}
           </AnimatePresence>
 
-          {isProcessing && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center gap-2 text-muted-foreground"
-            >
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">iAsted réfléchit...</span>
-            </motion.div>
-          )}
+          {
+            isProcessing && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-2 text-muted-foreground"
+              >
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">iAsted réfléchit...</span>
+              </motion.div>
+            )
+          }
 
           <div ref={messagesEndRef} />
-        </div>
+        </div >
 
-        {/* Input */}
-        <div className="neu-card rounded-t-none rounded-b-2xl p-4">
-          <div className="flex items-end gap-3">
-            <button
-              onClick={toggleVoiceMode}
-              className={`neu-raised p-4 rounded-xl hover:shadow-neo-lg transition-all ${isVoiceActive ? 'bg-primary text-primary-foreground' : ''
-                }`}
-              title={isVoiceActive ? 'Arrêter le mode vocal' : 'Activer le mode vocal'}
-            >
-              {isVoiceActive ? (
-                <Mic className="w-6 h-6" />
-              ) : (
-                <MicOff className="w-6 h-6" />
-              )}
-            </button>
+        {/* Input Area */}
+        < div className="p-4 border-t border-border bg-background/50 backdrop-blur-md flex items-end gap-2" >
+          <button
+            onClick={() => openaiRTC.toggleConversation(selectedVoice)}
+            className={`neu-raised p-4 rounded-xl hover:shadow-neo-lg transition-all ${openaiRTC.isConnected ? 'bg-primary text-primary-foreground' : ''
+              }`}
+            title={openaiRTC.isConnected ? 'Arrêter le mode vocal' : 'Activer le mode vocal'}
+          >
+            {openaiRTC.isConnected ? (
+              <MicOff className="w-6 h-6" />
+            ) : (
+              <Mic className="w-6 h-6 text-primary" />
+            )}
+          </button>
 
-            <div className="flex-1">
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Posez votre question à iAsted..."
-                className="w-full p-3 neu-inset rounded-xl resize-none focus:ring-2 focus:ring-primary"
-                rows={2}
-                disabled={isProcessing || isVoiceActive}
-              />
-            </div>
-
+          <div className="flex-1 relative">
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder={
+                openaiRTC.isConnected ? `🎙️ Mode vocal actif (${selectedVoice === 'echo' ? 'Standard' : 'Africain'})` :
+                  "Posez votre question à iAsted..."
+              }
+              className="w-full neu-inset rounded-xl p-4 pr-12 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[60px] max-h-[120px]"
+              rows={1}
+              disabled={isProcessing || openaiRTC.isConnected}
+            />
             <button
               onClick={handleSendMessage}
-              disabled={!inputText.trim() || isProcessing || isVoiceActive}
-              className="neu-raised p-4 bg-primary text-white rounded-xl hover:bg-primary/90 hover:shadow-neo-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!inputText.trim() || isProcessing || openaiRTC.isConnected}
+              className="absolute right-2 bottom-2 p-2 rounded-lg hover:bg-primary/10 text-primary disabled:opacity-50 transition-colors"
             >
               {isProcessing ? (
-                <Loader2 className="w-6 h-6 animate-spin text-white" />
+                <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <Send className="w-6 h-6 text-white" />
+                <Send className="w-5 h-5" />
               )}
             </button>
           </div>
-
-          <div className="text-center text-sm text-muted-foreground mt-3">
-            {isProcessing ? '🧠 iAsted analyse...' :
-              isVoiceActive ? `🎙️ Mode vocal actif (${voiceMode === 'elevenlabs' ? 'iAsted Pro' : 'OpenAI RT'})` :
-                '💬 Conversation stratégique'}
-          </div>
+        </div >
+        <div className="text-center text-sm text-muted-foreground mt-3">
+          {isProcessing ? '🧠 iAsted analyse...' :
+            openaiRTC.isConnected ? `🎙️ Mode vocal actif (${selectedVoice === 'echo' ? 'Standard' : 'Africain'})` :
+              '💬 Conversation stratégique'}
         </div>
-      </motion.div>
-    </div>
+      </motion.div >
+    </div >
   );
 };

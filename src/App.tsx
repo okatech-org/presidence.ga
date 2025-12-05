@@ -6,13 +6,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import React, { Suspense, lazy } from "react";
 import { ThemeProvider } from "next-themes";
 import { LoadingScreen } from "@/components/ErrorBoundary";
+import { SuperAdminProvider } from "@/contexts/SuperAdminContext";
 
 // Lazy load all routes for better performance
 const IndexFallback = lazy(() => import("./pages/IndexFallback"));
 const Auth = lazy(() => import("./pages/Auth"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Demo = lazy(() => import("./pages/Demo"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const PresidentSpace = lazy(() => import("./pages/PresidentSpace"));
 const CabinetDirectorSpace = lazy(() => import("./pages/CabinetDirectorSpace"));
 const PrivateCabinetDirectorSpace = lazy(() => import("./pages/PrivateCabinetDirectorSpace"));
@@ -21,10 +20,15 @@ const ServiceCourriersSpace = lazy(() => import("./pages/ServiceCourriersSpace")
 const ServiceReceptionSpace = lazy(() => import("./pages/ServiceReceptionSpace"));
 const ProtocolDirectorSpace = lazy(() => import("./pages/ProtocolDirectorSpace"));
 const DgssSpace = lazy(() => import("./pages/DgssSpace"));
-const IAstedConfig = lazy(() => import("./pages/IAstedConfig"));
+const AdminSpace = lazy(() => import("./pages/AdminSpace"));
+const AdminSystemSettings = lazy(() => import("./pages/AdminSystemSettings"));
+const DocumentGeneratorDemo = lazy(() => import("./pages/DocumentGeneratorDemo"));
 const IAstedPage = lazy(() => import("./pages/IAstedPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const IAstedConfigWizard = lazy(() => import("./pages/IAstedConfigWizard"));
+const UserSpaceLayout = lazy(() => import("./components/layout/UserSpaceLayout"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Settings = lazy(() => import("./pages/Settings"));
 
 // Configuration optimisée de React Query avec cache intelligent
 const queryClient = new QueryClient({
@@ -56,29 +60,42 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<LoadingScreen />}>
-            <Routes>
-              <Route path="/" element={<IndexFallback />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/demo" element={<Demo />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              <Route path="/president-space" element={<PresidentSpace />} />
-              <Route path="/cabinet-director-space" element={<CabinetDirectorSpace />} />
-              <Route path="/private-cabinet-director-space" element={<PrivateCabinetDirectorSpace />} />
-              <Route path="/secretariat-general-space" element={<SecretariatGeneralSpace />} />
-              <Route path="/service-courriers-space" element={<ServiceCourriersSpace />} />
-              <Route path="/service-reception-space" element={<ServiceReceptionSpace />} />
-              <Route path="/protocol-director-space" element={<ProtocolDirectorSpace />} />
-              <Route path="/dgss-space" element={<DgssSpace />} />
-              <Route path="/iasted-config" element={<IAstedConfig />} />
-              <Route path="/iasted-setup" element={<IAstedConfigWizard />} />
-              <Route path="/iasted" element={<IAstedPage />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+        <BrowserRouter future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}>
+          <SuperAdminProvider>
+            <Suspense fallback={<LoadingScreen />}>
+              <Routes>
+                <Route path="/" element={<IndexFallback />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/demo" element={<Demo />} />
+                <Route path="/president-space" element={<PresidentSpace />} />
+                <Route path="/cabinet-director-space" element={<CabinetDirectorSpace />} />
+                <Route path="/private-cabinet-director-space" element={<PrivateCabinetDirectorSpace />} />
+                <Route path="/secretariat-general-space" element={<SecretariatGeneralSpace />} />
+                <Route path="/service-courriers-space" element={<ServiceCourriersSpace />} />
+                <Route path="/service-reception-space" element={<ServiceReceptionSpace />} />
+                <Route path="/protocol-director-space" element={<ProtocolDirectorSpace />} />
+                <Route path="/dgss-space" element={<DgssSpace />} />
+                <Route path="/admin-space" element={<AdminSpace />} />
+                <Route path="/admin-system-settings" element={<AdminSystemSettings />} />
+                <Route path="/document-generator" element={<DocumentGeneratorDemo />} />
+                <Route path="/iasted" element={<IAstedPage />} />
+
+
+                {/* User Space Routes */}
+                <Route element={<UserSpaceLayout />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
+
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </SuperAdminProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

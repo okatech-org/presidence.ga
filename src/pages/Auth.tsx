@@ -10,6 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { usePrefetch } from "@/hooks/usePrefetch";
 import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
+
+type AppRole = Database['public']['Enums']['app_role'];
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -58,16 +61,21 @@ const Auth = () => {
 
       // Déterminer la page de destination selon le rôle
       let destination = "/dashboard"; // Par défaut pour les utilisateurs standards
-      
+
       if (roles && roles.length > 0) {
-        const userRole = roles[0].role; // Prendre le premier rôle
+        // Hiérarchie des rôles: president > admin > autres
+        const roleHierarchy: AppRole[] = ['president', 'admin', 'dgss', 'dgr', 'cabinet_private', 'sec_gen', 'minister', 'protocol', 'courrier', 'reception', 'user'];
+        const userRoles = roles.map(r => r.role as AppRole);
         
+        // Trouver le rôle le plus élevé dans la hiérarchie
+        const userRole = roleHierarchy.find(role => userRoles.includes(role)) || 'user';
+
         switch (userRole) {
           case 'president':
             destination = "/president-space";
             break;
           case 'admin':
-            destination = "/admin-dashboard";
+            destination = "/admin-space";
             break;
           case 'dgss':
             destination = "/dgss-space";
@@ -106,7 +114,7 @@ const Auth = () => {
         title: "Connexion réussie",
         description: "Bienvenue dans l'application Présidence",
       });
-      
+
       // Redirection directe selon le rôle
       navigate(destination, { replace: true });
     } catch (error: any) {
@@ -122,28 +130,28 @@ const Auth = () => {
 
   const handleInitializeDemoAccounts = async () => {
     setInitializingDemo(true);
-    
+
     try {
       console.log('🚀 Initialisation des comptes de démonstration...');
-      
+
       const { data, error } = await supabase.functions.invoke('initialize-demo-accounts');
-      
+
       if (error) {
         console.error('❌ Erreur lors de l\'initialisation:', error);
         throw error;
       }
 
       console.log('✅ Réponse reçue:', data);
-      
+
       toast({
         title: "Comptes initialisés",
         description: `${data.results.created.length} comptes créés, ${data.results.existing.length} existants. Utilisez president@presidence.ga / President2025!`,
       });
-      
+
       // Pré-remplir les identifiants du président
       setEmail("president@presidence.ga");
       setPassword("President2025!");
-      
+
     } catch (error: any) {
       console.error('❌ Erreur complète:', error);
       toast({
@@ -172,9 +180,9 @@ const Auth = () => {
         {/* Header with Republic emblem */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white p-2 mb-4 shadow-xl">
-            <img 
-              src={emblemGabon} 
-              alt="Emblème de la République Gabonaise" 
+            <img
+              src={emblemGabon}
+              alt="Emblème de la République Gabonaise"
               className="w-full h-full object-contain"
             />
           </div>
@@ -233,7 +241,7 @@ const Auth = () => {
               >
                 {loading ? "Connexion..." : "Se connecter"}
               </Button>
-              
+
               <div className="space-y-2">
                 <Button
                   type="button"
@@ -245,7 +253,7 @@ const Auth = () => {
                   <Users className="mr-2 h-4 w-4" />
                   {initializingDemo ? "Initialisation..." : "Initialiser les comptes de démonstration"}
                 </Button>
-                
+
                 <Button
                   type="button"
                   variant="outline"

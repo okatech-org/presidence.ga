@@ -12,7 +12,7 @@ serve(async (req) => {
 
   try {
     const { text, voiceId, userRole } = await req.json();
-    
+
     if (!text) {
       throw new Error('Text is required');
     }
@@ -22,7 +22,7 @@ serve(async (req) => {
       throw new Error('ELEVENLABS_API_KEY not configured');
     }
 
-    // Déterminer la voix selon le rôle ou utiliser la voix iAsted Pro par défaut
+    // Déterminer la voix selon le rôle ou utiliser une voix par défaut
     let selectedVoiceId = voiceId;
     if (!selectedVoiceId) {
       if (userRole === 'president') {
@@ -31,7 +31,7 @@ serve(async (req) => {
         selectedVoiceId = 'EXAVITQu4vr4xnSDxMaL'; // Sarah
       } else {
         // Voix iAsted Pro par défaut (voix personnalisée professionnelle)
-        selectedVoiceId = 'EV6XgOdBELK29O2b4qyM';
+        selectedVoiceId = 'AWbzS1CRVezWHfMSsL69';
       }
     }
 
@@ -71,27 +71,27 @@ serve(async (req) => {
     // Récupérer l'audio complet
     const audioBuffer = await response.arrayBuffer();
     console.log('✅ [text-to-speech] Audio reçu, taille:', audioBuffer.byteLength, 'bytes');
-    
+
     // Convertir en base64 en traitant par chunks pour éviter le dépassement de pile
     const audioArray = new Uint8Array(audioBuffer);
     const chunkSize = 8192;
     let binaryString = '';
-    
+
     for (let i = 0; i < audioArray.length; i += chunkSize) {
       const chunk = audioArray.slice(i, i + chunkSize);
       binaryString += String.fromCharCode.apply(null, Array.from(chunk));
     }
-    
+
     const base64Audio = btoa(binaryString);
     console.log('✅ [text-to-speech] Audio encodé en base64, longueur:', base64Audio.length);
-    
+
     // Retourner le JSON avec audioContent
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         audioContent: base64Audio,
         voiceId: selectedVoiceId,
-        text: text 
-      }), 
+        text: text
+      }),
       {
         headers: {
           ...corsHeaders,
@@ -105,7 +105,7 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       }

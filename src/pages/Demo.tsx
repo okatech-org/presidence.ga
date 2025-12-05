@@ -9,6 +9,9 @@ import { RoleFeedbackModal } from "@/components/RoleFeedbackModal";
 import emblemGabon from "@/assets/emblem_gabon.png";
 import { usePrefetch } from "@/hooks/usePrefetch";
 import { useTheme } from "next-themes";
+import type { Database } from "@/integrations/supabase/types";
+
+type AppRole = Database['public']['Enums']['app_role'];
 import {
   Dialog,
   DialogContent,
@@ -48,6 +51,31 @@ const Demo = () => {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Auto-initialize demo accounts on page load
+    const initializeAccounts = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin');
+
+        if (roles && roles.length > 0) {
+          await supabase.functions.invoke('initialize-demo-accounts', {
+            body: {},
+          });
+          console.log('Demo accounts auto-initialized');
+        }
+      } catch (error) {
+        console.error('Auto-initialization failed:', error);
+      }
+    };
+    
+    initializeAccounts();
   }, []);
 
   const toggleTheme = () => {
@@ -156,14 +184,19 @@ const Demo = () => {
         let destination = "/dashboard";
 
         if (roles && roles.length > 0) {
-          const userRole = roles[0].role;
+          // Hiérarchie des rôles: president > admin > autres
+          const roleHierarchy: AppRole[] = ['president', 'admin', 'dgss', 'dgr', 'cabinet_private', 'sec_gen', 'minister', 'protocol', 'courrier', 'reception', 'user'];
+          const userRoles = roles.map(r => r.role as AppRole);
+          
+          // Trouver le rôle le plus élevé dans la hiérarchie
+          const userRole = roleHierarchy.find(role => userRoles.includes(role)) || 'user';
 
           switch (userRole) {
             case 'president':
               destination = "/president-space";
               break;
             case 'admin':
-              destination = "/admin-dashboard";
+              destination = "/admin-space";
               break;
             case 'dgss':
               destination = "/dgss-space";
@@ -307,29 +340,71 @@ const Demo = () => {
     }, 2000);
   };
 
-  const handleAdminCodeChange = (value: string) => {
+  const handleAdminCodeChange = async (value: string) => {
     setAdminCode(value);
 
     if (value.length === 6) {
-      if (value === "011282") {
-        toast({
-          title: "Accès autorisé",
-          description: "Bienvenue Administrateur Système",
-        });
-        setShowAdminDialog(false);
-        setAdminCode("");
-        navigate("/admin-dashboard");
-      } else {
+      if (value !== "011282") {
         toast({
           title: "Code incorrect",
-          description: "Le code saisi est invalide",
+          description: "Le code maître est invalide",
+          variant: "destructive",
+        });
+        setAdminCode("");
+        return;
+      }
+
+      try {
+        // 1) Connexion automatique avec le compte Président (compte technique)
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: "president@presidence.ga",
+          password: "President2025!",
+        });
+
+        if (authError) {
+          console.error("Erreur de connexion auto admin:", authError);
+          toast({
+            title: "Erreur de connexion",
+            description: "Impossible de se connecter au compte administrateur.",
+            variant: "destructive",
+          });
+          setAdminCode("");
+          return;
+        }
+
+        // 2) Appel de la fonction sécurisée qui attribue le rôle admin
+        const { data, error } = await supabase.functions.invoke("secure-admin-access", {
+          body: { password: value },
+        });
+
+        if (error) {
+          console.error("Erreur secure-admin-access:", error);
+          throw error;
+        }
+
+        toast({
+          title: "✅ Accès Admin Système",
+          description: (data as any)?.message ?? "Bienvenue Administrateur",
+          duration: 2000,
+        });
+
+        setShowAdminDialog(false);
+        setAdminCode("");
+
+        setTimeout(() => {
+          navigate("/admin-space");
+        }, 500);
+      } catch (err: any) {
+        console.error("Erreur lors de la validation du code admin:", err);
+        toast({
+          title: "Code incorrect",
+          description: "Le code maître est invalide",
           variant: "destructive",
         });
         setAdminCode("");
       }
     }
   };
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 transition-colors duration-300">
       {/* Header */}
@@ -393,14 +468,6 @@ const Demo = () => {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={handleInitializeDemoAccounts}
-              disabled={initializingAccounts}
-              className="neu-raised hover:shadow-neo-md transition-all gap-2"
-            >
-              <Shield className="h-4 w-4" />
-              {initializingAccounts ? "Initialisation..." : "Initialiser les comptes démo"}
-            </Button>
           </div>
         </div>
 

@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 
 interface Message {
   role: 'user' | 'assistant';
-  text: string;
-  timestamp?: Date;
+  content: string;
+  timestamp?: Date | string;
 }
 
 interface ChatDockProps {
@@ -23,7 +23,7 @@ export function ChatDock({ messages, className }: ChatDockProps) {
           Historique de la conversation avec iAsted
         </p>
       </div>
-      
+
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.length === 0 ? (
@@ -40,8 +40,8 @@ export function ChatDock({ messages, className }: ChatDockProps) {
                 key={i}
                 className={cn(
                   "flex gap-3 p-3 rounded-lg",
-                  msg.role === 'user' 
-                    ? "bg-primary/10 ml-4" 
+                  msg.role === 'user'
+                    ? "bg-primary/10 ml-4"
                     : "bg-muted mr-4"
                 )}
               >
@@ -55,7 +55,7 @@ export function ChatDock({ messages, className }: ChatDockProps) {
                     <Bot className="h-4 w-4 text-secondary-foreground" />
                   )}
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2 mb-1">
                     <span className="text-sm font-medium">
@@ -63,15 +63,15 @@ export function ChatDock({ messages, className }: ChatDockProps) {
                     </span>
                     {msg.timestamp && (
                       <span className="text-xs text-muted-foreground">
-                        {msg.timestamp.toLocaleTimeString('fr-FR', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
+                        {new Date(msg.timestamp).toLocaleTimeString('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit'
                         })}
                       </span>
                     )}
                   </div>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {msg.text}
+                    {msg.content}
                   </p>
                 </div>
               </div>

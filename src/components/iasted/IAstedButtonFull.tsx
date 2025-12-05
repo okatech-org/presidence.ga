@@ -2,15 +2,18 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, MessageCircle, Brain } from 'lucide-react';
 
 interface IAstedButtonProps {
-  onSingleClick: () => void; // Simple clic : activer mode vocal pur OU basculer vocal si modal ouvert
-  onDoubleClick: () => void; // Double clic : ouvrir modal en mode texte
-  className?: string;
-  size?: 'sm' | 'md' | 'lg';
   voiceListening?: boolean;
   voiceSpeaking?: boolean;
   voiceProcessing?: boolean;
+  pulsing?: boolean; // Visual feedback for sound events
+  onClick?: () => void;
+  onSingleClick?: () => void;
+  onDoubleClick?: () => void;
+  className?: string;
+  audioLevel?: number; // 0 to 1
+  size?: 'sm' | 'md' | 'lg'; // Button size variant
   isInterfaceOpen?: boolean;
-  isVoiceModeActive?: boolean; // Indique si le mode vocal est actuellement actif
+  embedded?: boolean; // If true, button is relative and not draggable
 }
 
 interface Shockwave {
@@ -28,6 +31,17 @@ const styles = `
   perspective: 1500px;
   position: fixed;
   z-index: 9999;
+}
+
+.perspective-container.embedded-mode {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .perspective-container.grabbing {
@@ -320,6 +334,18 @@ const styles = `
     filter: brightness(1.6) saturate(3) drop-shadow(0 0 40px rgba(0, 170, 255, 0.9));
   }
 }
+
+/* Pulsation pour feedback sonore */
+.thick-matter-button.pulsing {
+  animation: gentle-pulse-feedback 1s ease-in-out 3;
+}
+
+@keyframes gentle-pulse-feedback {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  50% { transform: scale(1.08); box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185,129, 0); }
+}
+
 
 .organic-membrane {
   position: absolute; inset: -5%; border-radius: 50%;
@@ -1010,129 +1036,169 @@ const styles = `
 .thick-matter-button.md { width: 128px; height: 128px; }
 .thick-matter-button.lg { width: 160px; height: 160px; }
 
-/* Responsive mobile - adaptation des tailles et optimisations */
-@media (max-width: 640px) {
+/* Responsive mobile - adaptation des tailles et optimisations AGRESSIVES */
+@media (max-width: 768px) {
   .perspective-container {
     display: flex;
     justify-content: center;
     align-items: center;
+    perspective: none !important; /* Désactiver la 3D coûteuse */
   }
   
-  /* Tailles réduites pour mobile */
-  .thick-matter-button.sm { width: 64px; height: 64px; }
-  .thick-matter-button.md { width: 96px; height: 96px; }
-  .thick-matter-button.lg { width: 120px; height: 120px; }
-  
-  /* Optimisation des animations pour mobile */
-  .thick-matter-button {
-    animation-duration: 3s, 3s, 20s, 5s, 25s;
+  .perspective {
+    perspective: none !important;
+    transform-style: flat !important;
   }
-  
-  .thick-matter-button:hover {
-    animation-duration: 1.6s, 1.6s, 20s, 1.6s, 2.5s;
+
+  /* 1. Réduction drastique des couches de rendu */
+  .vortex-container,
+  .organic-veins,
+  .particle-container,
+  .breathing-bubble,
+  .organic-texture,
+  .satellite-particle,
+  .highlight-layer,
+  .depth-layer,
+  .inner-fluid-layer,
+  .organic-membrane-secondary,
+  .wave-2, 
+  .wave-3 {
+    display: none !important; /* Désactiver les couches coûteuses */
   }
-  
-  /* Réduction de l'intensité des effets pour performance */
-  .wave-layer-1, .wave-layer-2, .wave-layer-3 {
-    opacity: 0.3;
-  }
-  
-  .organic-membrane, .organic-membrane-secondary {
-    opacity: 0.5;
-  }
-  
-  .satellite-particle {
-    width: 6px;
-    height: 6px;
-  }
-  
-  /* Simplification des gradients et ombres */
+
+  /* 2. Simplification du background morphing (le plus lourd) MAIS avec couleurs VIVES et CONTRASTÉES (Identique Desktop) */
   .morphing-bg {
-    filter: saturate(1.8) brightness(1.1);
-  }
-  
-  .thick-matter-button:hover .morphing-bg {
-    filter: saturate(2.5) brightness(1.3) contrast(1.2);
+    /* Reconstruction de l'aspect "Vibrant" (Image 1) */
+    background: 
+      /* Lumière centrale intense */
+      radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.8) 0%, transparent 40%),
+      /* Bleu électrique (Haut-Gauche) */
+      radial-gradient(circle at 20% 20%, rgba(0, 102, 255, 0.95) 0%, transparent 50%),
+      /* Or intense (Milieu-Droit) */
+      radial-gradient(circle at 80% 40%, rgba(255, 204, 0, 0.95) 0%, transparent 50%),
+      /* Cyan lumineux (Bas-Gauche) */
+      radial-gradient(circle at 20% 80%, rgba(0, 255, 255, 0.9) 0%, transparent 50%),
+      /* Magenta vibrant (Bas-Droit) */
+      radial-gradient(circle at 80% 80%, rgba(255, 0, 255, 0.9) 0%, transparent 50%),
+      /* Fond riche et saturé */
+      linear-gradient(135deg, #0066ff 0%, #9400d3 100%);
+      
+    background-size: 200% 200%;
+    animation: mobile-cloud-shift 8s ease-in-out infinite alternate !important;
+    /* Rétablissement du filtre de saturation pour l'éclat */
+    filter: saturate(1.8) brightness(1.2) contrast(1.1) !important;
+    mix-blend-mode: normal !important;
+    opacity: 1 !important; /* Opacité maximale */
+    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.4);
   }
 
-  /* Badge plus petit sur mobile */
+  /* Animation douce de déplacement des couleurs */
+  @keyframes mobile-cloud-shift {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+  }
+
+  /* 3. Simplification des ombres et de la forme */
+  .thick-matter-button {
+    box-shadow: 0 8px 20px rgba(0, 102, 255, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.3) !important;
+    animation: mobile-breathing 4s ease-in-out infinite !important;
+    transform: translateZ(0); /* Force GPU acceleration without 3D overhead */
+    will-change: transform;
+  }
+
+  .thick-matter-button:hover {
+    box-shadow: 0 12px 25px rgba(0, 102, 255, 0.6), inset 0 0 25px rgba(255, 255, 255, 0.4) !important;
+    transform: scale(1.05);
+  }
+
+  @keyframes mobile-breathing {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+
+  /* 4. Simplification des membranes (garder une seule pour l'effet de vie) */
+  .organic-membrane {
+    animation: mobile-membrane 3s ease-in-out infinite !important;
+    background: radial-gradient(circle, transparent 40%, rgba(0, 170, 255, 0.2) 80%);
+    opacity: 0.6;
+  }
+
+  @keyframes mobile-membrane {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+  }
+
+  /* 5. Optimisation des émissions d'ondes */
+  .wave-emission {
+    background: rgba(0, 170, 255, 0.2);
+    border: 1px solid rgba(0, 170, 255, 0.3);
+    animation: mobile-wave 2s infinite !important;
+  }
+
+  @keyframes mobile-wave {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  /* 6. Gestion des états (Listening/Speaking) simplifiée */
+  .thick-matter-button.voice-listening {
+    box-shadow: 0 0 0 4px rgba(0, 170, 255, 0.4), 0 0 20px rgba(0, 170, 255, 0.4) !important;
+    animation: mobile-pulse-fast 1s infinite !important;
+  }
+
+  .thick-matter-button.voice-speaking {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.4) !important;
+    animation: mobile-pulse-fast 0.5s infinite !important;
+  }
+
+  @keyframes mobile-pulse-fast {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  /* 7. Tailles Responsive */
+  .thick-matter-button.sm { width: 60px; height: 60px; }
+  .thick-matter-button.md { width: 90px; height: 90px; }
+  .thick-matter-button.lg { width: 110px; height: 110px; }
+  
+  /* Badge */
   .voice-mode-badge {
-    width: 24px;
-    height: 24px;
-    top: -6px;
-    right: -6px;
-  }
-
-  .voice-mode-badge svg {
-    width: 12px;
-    height: 12px;
-  }
-}
-
-/* Adaptation pour tablette */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .perspective-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: 22px; height: 22px;
+    top: 0; right: 0;
+    animation: none !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   }
   
-  /* Tailles intermédiaires pour tablette */
-  .thick-matter-button.sm { width: 72px; height: 72px; }
-  .thick-matter-button.md { width: 112px; height: 112px; }
-  .thick-matter-button.lg { width: 140px; height: 140px; }
-}
-
-/* Desktop */
-@media (min-width: 1025px) {
-  .perspective-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  .voice-mode-badge svg {
+    width: 12px; height: 12px;
+    animation: none !important;
   }
 }
 
-/* Adaptation pour très petits écrans */
+/* Adaptation pour très petits écrans (ajustements de taille uniquement) */
 @media (max-width: 380px) {
-  .perspective-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+  .thick-matter-button.sm { width: 50px; height: 50px; }
+  .thick-matter-button.md { width: 75px; height: 75px; }
+  .thick-matter-button.lg { width: 90px; height: 90px; }
   
-  .thick-matter-button.sm { width: 56px; height: 56px; }
-  .thick-matter-button.md { width: 80px; height: 80px; }
-  .thick-matter-button.lg { width: 100px; height: 100px; }
-  
-  .satellite-particle {
-    display: none;
-  }
-
-  /* Badge encore plus petit sur très petits écrans */
   .voice-mode-badge {
-    width: 20px;
-    height: 20px;
-    top: -5px;
-    right: -5px;
-  }
-
-  .voice-mode-badge svg {
-    width: 10px;
-    height: 10px;
+    width: 18px; height: 18px;
+    top: -2px; right: -2px;
   }
 }
 `;
 
-export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({ 
-  onSingleClick, 
+export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
+  onClick,
   onDoubleClick,
-  className = '', 
-  size = 'md', 
-  voiceListening = false, 
-  voiceSpeaking = false, 
-  voiceProcessing = false, 
-  isInterfaceOpen = false,
-  isVoiceModeActive = false
+  className = '',
+  voiceListening = false,
+  voiceSpeaking = false,
+  voiceProcessing = false,
+  pulsing = false,
+  audioLevel = 0,
+  size = 'md', // Default size
+  embedded = false
 }) => {
   const [shockwaves, setShockwaves] = useState<Shockwave[]>([]);
   const [isClicked, setIsClicked] = useState(false);
@@ -1140,7 +1206,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartPos = useRef<Position>({ x: 0, y: 0 });
   const buttonPosition = useRef<Position>({ x: 0, y: 0 });
@@ -1148,6 +1214,8 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   const clickCount = useRef(0);
 
   useEffect(() => {
+    if (embedded) return; // Skip positioning logic if embedded
+
     // Restaurer la position sauvegardée ou utiliser la position par défaut
     const savedPosition = localStorage.getItem('iasted-button-position');
     if (savedPosition) {
@@ -1166,11 +1234,11 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
         }
         return size === 'sm' ? 80 : size === 'lg' ? 160 : 128;
       };
-      
+
       const btnSize = getSize();
-      const defaultPos = { 
-        x: window.innerWidth - btnSize - 40, 
-        y: window.innerHeight - btnSize - 40 
+      const defaultPos = {
+        x: window.innerWidth - btnSize - 40,
+        y: window.innerHeight - btnSize - 40
       };
       setPosition(defaultPos);
       buttonPosition.current = defaultPos;
@@ -1178,45 +1246,46 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   }, []);
 
   useEffect(() => {
+    if (embedded) return;
     if (containerRef.current) {
       containerRef.current.style.left = `${position.x}px`;
       containerRef.current.style.top = `${position.y}px`;
     }
-  }, [position]);
+  }, [position, embedded]);
 
   const voiceStateClass = voiceListening ? 'voice-listening' : voiceSpeaking ? 'voice-speaking' : '';
 
   const handleClick = (e: React.MouseEvent) => {
-    if (isDragging) {
+    if (isDragging && !embedded) {
       return;
     }
-    
+
     const shockwaveId = Date.now();
     setShockwaves([...shockwaves, { id: shockwaveId }]);
     setIsClicked(true);
-    
+
     setIsProcessing(true);
-    
+
     setTimeout(() => {
       setShockwaves(prev => prev.filter(r => r.id !== shockwaveId));
     }, 1000);
-    
+
     setTimeout(() => {
       setIsClicked(false);
     }, 1500);
-    
+
     setTimeout(() => {
       setIsProcessing(false);
     }, 3000);
-    
+
     // Gestion des clics simples vs doubles avec délai de 300ms
     clickCount.current += 1;
-    
+
     if (clickCount.current === 1) {
       // Premier clic - attendre pour voir s'il y a un double clic
       clickTimer.current = setTimeout(() => {
         // Simple clic confirmé
-        onSingleClick();
+        onClick();
         clickCount.current = 0;
       }, 300); // Délai de 300ms pour détecter le double clic
     } else if (clickCount.current === 2) {
@@ -1230,8 +1299,9 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (embedded) return;
     setIsActive(true);
-    
+
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       dragStartPos.current = {
@@ -1244,7 +1314,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   const handleMouseUp = () => {
     setIsActive(false);
     setIsDragging(false);
-    
+
     if (containerRef.current) {
       const pos = buttonPosition.current;
       localStorage.setItem('iasted-button-position', JSON.stringify(pos));
@@ -1254,7 +1324,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   const handleMouseLeave = () => {
     setIsActive(false);
     setIsDragging(false);
-    
+
     if (containerRef.current) {
       const pos = buttonPosition.current;
       localStorage.setItem('iasted-button-position', JSON.stringify(pos));
@@ -1263,25 +1333,25 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isActive) return;
-    
+
     const deltaX = e.movementX;
     const deltaY = e.movementY;
-    
+
     if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
       setIsDragging(true);
     }
-    
+
     if (isDragging && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const newX = e.clientX - dragStartPos.current.x;
       const newY = e.clientY - dragStartPos.current.y;
-      
+
       const maxX = window.innerWidth - rect.width;
       const maxY = window.innerHeight - rect.height;
-      
+
       const constrainedX = Math.max(0, Math.min(newX, maxX));
       const constrainedY = Math.max(0, Math.min(newY, maxY));
-      
+
       setPosition({ x: constrainedX, y: constrainedY });
       buttonPosition.current = { x: constrainedX, y: constrainedY };
     }
@@ -1290,10 +1360,10 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
   return (
     <>
       <style>{styles}</style>
-      
-      <div 
+
+      <div
         ref={containerRef}
-        className={`perspective-container ${isDragging ? 'grabbing' : ''}`}
+        className={`perspective-container ${isDragging ? 'grabbing' : ''} ${embedded ? 'embedded-mode' : ''}`}
         onMouseMove={handleMouseMove}
       >
         <div className="perspective">
@@ -1302,7 +1372,7 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
-            className={`thick-matter-button living-matter ${size} ${isClicked ? 'color-shift' : ''} ${isActive ? 'active' : ''} ${isProcessing ? 'processing' : ''} ${isDragging ? 'grabbing' : ''} ${voiceStateClass} relative cursor-grab focus:outline-none overflow-hidden border-0 ${className}`}
+            className={`thick-matter-button living-matter ${size} ${isClicked ? 'color-shift' : ''} ${isActive ? 'active' : ''} ${isProcessing ? 'processing' : ''} ${isDragging ? 'grabbing' : ''} ${pulsing ? 'pulsing' : ''} ${voiceStateClass} relative cursor-grab focus:outline-none overflow-hidden border-0 ${className}`}
             style={{
               '--iasted-icon-size': size === 'sm' ? 'clamp(24px, 5vw, 32px)' : size === 'lg' ? 'clamp(48px, 10vw, 64px)' : 'clamp(36px, 7vw, 48px)',
               '--iasted-text-size': size === 'sm' ? 'clamp(12px, 2.5vw, 14px)' : size === 'lg' ? 'clamp(20px, 4vw, 28px)' : 'clamp(16px, 3vw, 20px)',
@@ -1310,90 +1380,85 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
           >
             {/* Couche de profondeur */}
             <div className="depth-layer"></div>
-            
+
             {/* Petite sphère satellite */}
             <div className="satellite-particle"></div>
-            
+
             {/* Couche cellulaire respirante */}
             <div className="cellular-layer"></div>
-            
+
             {/* Vagues de fluide organique */}
             <div className="fluid-waves">
               <div className="wave-layer wave-layer-1"></div>
               <div className="wave-layer wave-layer-2"></div>
               <div className="wave-layer wave-layer-3"></div>
             </div>
-            
+
             {/* Membrane organique palpitante */}
             <div className="organic-membrane"></div>
-            
+
             {/* Membrane secondaire pour plus de profondeur */}
             <div className="organic-membrane-secondary"></div>
-            
+
             {/* Background morphing */}
             <div className="absolute inset-0 morphing-bg rounded-full"></div>
-            
+
             {/* Reflets mobiles */}
             <div className="moving-highlights">
               <div className="highlight-1"></div>
               <div className="highlight-2"></div>
               <div className="highlight-3"></div>
             </div>
-            
+
             {/* Effet de brillance mobile */}
             <div className="shine-effect"></div>
-            
+
             {/* Effet de substance épaisse */}
             <div className="substance-effect"></div>
-            
+
             {/* Couches de fluide interne */}
             <div className="inner-fluid-layer layer-1"></div>
             <div className="inner-fluid-layer layer-2"></div>
             <div className="inner-fluid-layer layer-3"></div>
-            
+
             {/* Effet de tourbillons */}
             <div className="vortex-container">
               <div className="vortex vortex-1"></div>
               <div className="vortex vortex-2"></div>
             </div>
-            
+
             {/* Particules additionnelles */}
             <div className="particle-container">
               <div className="floating-particle particle-float-1"></div>
               <div className="floating-particle particle-float-2"></div>
             </div>
-            
+
             {/* Veines organiques */}
             <div className="organic-veins"></div>
-            
+
             {/* Émissions d'ondes synchronisées avec le battement */}
             <div className="wave-emission wave-1"></div>
             <div className="wave-emission wave-2"></div>
             <div className="wave-emission wave-3"></div>
-            
+
             {/* Texture organique de surface */}
             <div className="organic-texture"></div>
-            
+
             {/* Couche de brillance */}
             <div className="highlight-layer"></div>
-            
+
             {/* Bulles respiratoires */}
             <div className="breathing-bubble bubble-1"></div>
             <div className="breathing-bubble bubble-2"></div>
             <div className="breathing-bubble bubble-3"></div>
-            
+
             {/* Effets d'onde de choc au clic */}
             {shockwaves.map(shockwave => (
               <div key={shockwave.id} className="shockwave-effect"></div>
             ))}
-            
+
             {/* Badge de mode vocal actif */}
-            {isVoiceModeActive && (
-              <div className="voice-mode-badge">
-                <Mic />
-              </div>
-            )}
-            
+
             {/* Conteneur des icônes au centre - À l'intérieur du bouton */}
             <div className="fixed-icons-container">
               <div className="icon-container">
@@ -1405,8 +1470,6 @@ export const IAstedButtonFull: React.FC<IAstedButtonProps> = ({
                   </span>
                 ) : voiceProcessing ? (
                   <Brain className="text-white icon-svg" style={{ opacity: 1, transform: 'scale(1.2)' }} />
-                ) : isInterfaceOpen ? (
-                  <MessageCircle className="text-white icon-svg" style={{ opacity: 1 }} />
                 ) : (
                   <>
                     <span className="alternating-element text-element text-white iasted-text">

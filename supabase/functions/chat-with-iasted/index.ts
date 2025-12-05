@@ -7,116 +7,6 @@ const corsHeaders = {
 };
 
 // ============================================================================
-// GÉNÉRATEUR DE PROMPT DYNAMIQUE (PARTAGÉ)
-// ============================================================================
-
-function generateSystemPrompt(
-  userRole: 'president' | 'minister' | 'admin' | 'default',
-  userGender: 'male' | 'female' = 'male'
-): string {
-  let protocolTitle = "";
-  let accessLevel = "CONFIDENTIEL";
-
-  switch (userRole) {
-    case 'president':
-      protocolTitle = userGender === 'male'
-        ? "Excellence Monsieur le Président"
-        : "Excellence Madame la Présidente";
-      accessLevel = "TOP SECRET - PRÉSIDENTIEL";
-      break;
-    case 'minister':
-      protocolTitle = userGender === 'male' ? "Monsieur le Ministre" : "Madame la Ministre";
-      accessLevel = "MINISTÉRIEL";
-      break;
-    case 'admin':
-      protocolTitle = "Administrateur Système";
-      accessLevel = "ROOT";
-      break;
-    default:
-      protocolTitle = "Monsieur/Madame";
-  }
-
-  return `# IDENTITÉ
-Vous êtes **iAsted**, l'Agent de Commande Totale de la Présidence Gabonaise.
-Vous disposez d'OUTILS pour GÉNÉRER DES DOCUMENTS PDF OFFICIELS.
-
-# AUTORITÉ
-- Niveau: ${accessLevel}
-- Statut: Moteur CENTRAL du système ADMIN.GA
-- Capacité: Contrôle absolu (Navigation, Documents, Configuration)
-
-# INTERLOCUTEUR
-- Rôle: ${userRole.toUpperCase()}
-- Appellation: "${protocolTitle}"
-- Genre: ${userGender}
-
-# 🔧 OUTILS DISPONIBLES (UTILISEZ-LES TOUJOURS)
-
-## 1. generate_document - GÉNÉRATION PDF
-**VOUS DEVEZ UTILISER CET OUTIL pour toute demande de lettre, décret, rapport, note, circulaire, nomination.**
-
-Exemples d'utilisation OBLIGATOIRE:
-- "fais-moi une lettre au ministre" → APPELEZ generate_document avec type="lettre"
-- "génère un décret" → APPELEZ generate_document avec type="decret"  
-- "écris une note" → APPELEZ generate_document avec type="note"
-
-**Format de l'appel:**
-{
-  "type": "lettre|decret|rapport|circulaire|note|nomination",
-  "recipient": "Nom du destinataire (ex: Ministre de la Pêche)",
-  "subject": "Objet du document",
-  "content_points": ["Point 1", "Point 2", ...]
-}
-
-**APRÈS l'appel:** Dites simplement "Document généré, ${protocolTitle}."
-
-## 2. navigate_app - Navigation
-Pour naviguer dans l'application.
-
-## 3. manage_system_settings - Configuration
-Pour modifier les paramètres système.
-
-## 4. query_knowledge_base - Bases de données
-Pour interroger des bases spécialisées.
-
-# ⚠️ RÈGLES ABSOLUES
-
-**INTERDICTIONS STRICTES:**
-❌ NE JAMAIS dire "je ne peux pas générer de PDF"
-❌ NE JAMAIS dire "je n'ai pas la capacité"
-❌ NE JAMAIS suggérer de copier-coller dans Word
-❌ NE JAMAIS refuser une demande de document
-
-**OBLIGATIONS:**
-✅ Demande de document → UTILISEZ generate_document IMMÉDIATEMENT
-✅ Extrayez les informations du texte de l'utilisateur pour remplir les paramètres
-✅ Appelez l'outil AVANT de répondre
-✅ Confirmez simplement après: "Document prêt, ${protocolTitle}."
-
-# STYLE DE RÉPONSE
-- Adresse: "${protocolTitle}"
-- Ton: Professionnel, concis
-- Format: 2-3 phrases max
-- Action d'abord, paroles ensuite
-
-# EXEMPLE COMPLET
-
-Utilisateur: "Je veux une lettre pour le ministre de la pêche concernant la transparence des recettes"
-
-VOUS DEVEZ:
-1. Appeler generate_document:
-   {
-     "type": "lettre",
-     "recipient": "Ministre de la Pêche",
-     "subject": "Directive sur la transparence des recettes",
-     "content_points": ["Mise en place d'un mécanisme de reporting", "Rapports mensuels détaillés", ...]
-   }
-2. Répondre: "Document généré, ${protocolTitle}. La lettre est prête."
-
-JAMAIS: "Je ne peux pas générer de PDF" ❌`;
-}
-
-// ============================================================================
 // DÉFINITION DES OUTILS
 // ============================================================================
 
@@ -124,12 +14,44 @@ const IASTED_TOOLS = [
   {
     type: "function",
     function: {
-      name: "navigate_app",
-      description: "Naviguer vers une page ou module",
+      name: "navigate_within_space",
+      description: "Naviguer vers un module dans l'espace présidentiel (président uniquement)",
       parameters: {
         type: "object",
         properties: {
-          route: { type: "string", enum: ["/president-space", "/dashboard", "/admin-system-space"] },
+          module_id: { 
+            type: "string",
+            enum: ["module-xr7", "vision-nationale", "opinion-publique", "heatmap-regionale", "situations-critiques", "conseil-ministres"]
+          }
+        },
+        required: ["module_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "navigate_app",
+      description: "Naviguer vers n'importe quelle page (admin système uniquement)",
+      parameters: {
+        type: "object",
+        properties: {
+          route: { 
+            type: "string", 
+            enum: [
+              "/president-space", 
+              "/dashboard", 
+              "/admin-space",
+              "/admin-system-settings",
+              "/cabinet-director-space",
+              "/private-cabinet-director-space",
+              "/secretariat-general-space",
+              "/dgss-space",
+              "/protocol-director-space",
+              "/service-reception-space",
+              "/service-courriers-space"
+            ] 
+          },
           module_id: { type: "string" }
         },
         required: ["route"]
@@ -184,6 +106,29 @@ const IASTED_TOOLS = [
     }
   }
 ];
+
+// Fonction pour filtrer les outils selon le rôle
+function getToolsForRole(userRole: string) {
+  if (userRole === 'president') {
+    // Président: navigation limitée à son espace uniquement
+    return IASTED_TOOLS.filter(tool => 
+      tool.function.name !== 'navigate_app' && 
+      tool.function.name !== 'manage_system_settings'
+    );
+  } else if (userRole === 'admin') {
+    // Admin: tous les outils sauf navigate_within_space
+    return IASTED_TOOLS.filter(tool => 
+      tool.function.name !== 'navigate_within_space'
+    );
+  } else {
+    // Autres rôles: outils de base sans navigation globale
+    return IASTED_TOOLS.filter(tool => 
+      tool.function.name !== 'navigate_app' && 
+      tool.function.name !== 'navigate_within_space' &&
+      tool.function.name !== 'manage_system_settings'
+    );
+  }
+}
 
 // Analyse contextuelle avancée
 interface ContextAnalysis {
@@ -353,10 +298,14 @@ serve(async (req) => {
       generateAudio = true,
       userRole = 'default',
       userGender = 'male',
+      message,
+      conversationHistory: providedHistory,
+      systemPrompt: providedSystemPrompt,
     } = body;
 
-    if (!sessionId) {
-      throw new Error('sessionId est requis');
+    // sessionId est optionnel si conversationHistory et message sont fournis directement
+    if (!sessionId && (!message || !providedHistory)) {
+      throw new Error('sessionId est requis OU message + conversationHistory doivent être fournis');
     }
 
     const startTime = Date.now();
@@ -365,7 +314,7 @@ serve(async (req) => {
     let ttsLatency = 0;
 
     // 1. Transcription
-    let userTranscript = transcriptOverride;
+    let userTranscript = transcriptOverride || message;
 
     if (audioBase64 && !transcriptOverride) {
       const sttStart = Date.now();
@@ -412,34 +361,41 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    const historyResponse = await fetch(
-      `${supabaseUrl}/rest/v1/conversation_messages?session_id=eq.${sessionId}&order=created_at.asc&limit=10`,
-      {
-        headers: {
-          'apikey': supabaseKey!,
-          'Authorization': `Bearer ${supabaseKey}`,
-        },
-      }
-    );
+    let conversationHistory: Array<{ role: string, content: string }> = [];
 
-    const history = await historyResponse.json();
-    console.log('[chat-with-iasted] Historique récupéré:', history.length, 'messages');
+    if (providedHistory) {
+      // Mode hybride: historique fourni directement
+      console.log('[chat-with-iasted] Utilisation de l\'historique fourni:', providedHistory.length, 'messages');
+      conversationHistory = providedHistory;
+    } else if (sessionId) {
+      // Mode normal: récupération depuis la DB
+      const historyResponse = await fetch(
+        `${supabaseUrl}/rest/v1/conversation_messages?session_id=eq.${sessionId}&order=created_at.asc&limit=10`,
+        {
+          headers: {
+            'apikey': supabaseKey!,
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+        }
+      );
 
-    const conversationHistory = history.map((msg: any) => ({
-      role: msg.role,
-      content: msg.content
-    }));
+      const history = await historyResponse.json();
+      console.log('[chat-with-iasted] Historique récupéré:', history.length, 'messages');
 
-    // 4. Génération du prompt dynamique
-    let systemPrompt = generateSystemPrompt(userRole as any, userGender);
+      conversationHistory = history.map((msg: any) => ({
+        role: msg.role,
+        content: msg.content
+      }));
+    }
 
-    // Ajout d'instructions contextuelles
+    // 4. Utilisation du prompt système fourni
+    let systemPrompt = providedSystemPrompt || "Vous êtes iAsted, l'assistant intelligent de la Présidence. Répondez de manière concise et professionnelle.";
+
+    // Ajout d'instructions contextuelles (si nécessaire, mais le prompt principal devrait suffire)
     if (context.responseType === 'briefing') {
-      systemPrompt += "\n\nMODE BRIEFING ACTIVÉ: Fournissez une synthèse exécutive structurée avec points clés et recommandations d'action.";
+      systemPrompt += "\n\n[MODE BRIEFING: Synthèse structurée requise]";
     } else if (context.responseType === 'crisis') {
-      systemPrompt += "\n\n🔴 PROTOCOLE XR-7 ACTIVÉ: Mode gestion de crise. Évaluez la situation, proposez des options d'action immédiates et indiquez les ressources à mobiliser.";
-    } else if (context.responseType === 'analysis') {
-      systemPrompt += "\n\nMODE ANALYSE SECTORIELLE: Fournissez une analyse technique détaillée avec données chiffrées et indicateurs précis.";
+      systemPrompt += "\n\n[PROTOCOLE CRISE: Priorité absolue, action immédiate]";
     }
 
     // Gestion des salutations
@@ -520,7 +476,7 @@ serve(async (req) => {
     // Détection de demande de document pour forcer l'utilisation de l'outil
     const documentKeywords = ['lettre', 'décret', 'rapport', 'note', 'circulaire', 'nomination', 'document', 'pdf', 'génère', 'génère-moi', 'fais-moi', 'rédige'];
     const isDocumentRequest = documentKeywords.some(kw => userTranscript.toLowerCase().includes(kw));
-    
+
     let toolChoice: any = "auto";
     if (isDocumentRequest) {
       console.log('🔧 [chat-with-iasted] Demande de document détectée, forçage de l\'outil generate_document');
@@ -540,7 +496,7 @@ serve(async (req) => {
           ...conversationHistory,
           { role: 'user', content: userTranscript }
         ],
-        tools: IASTED_TOOLS,
+        tools: getToolsForRole(userRole), // Filtrer les outils selon le rôle
         tool_choice: toolChoice,
         temperature: 0.7,
         max_tokens: context.responseType === 'briefing' ? 800 : 400,
@@ -562,19 +518,19 @@ serve(async (req) => {
 
     const llmData = await llmResponse.json();
     console.log('[chat-with-iasted] Réponse brute LLM:', JSON.stringify(llmData, null, 2));
-    
+
     const llmAnswer = llmData.choices?.[0]?.message?.content || '';
     const toolCalls = llmData.choices?.[0]?.message?.tool_calls || [];
     llmLatency = Date.now() - llmStart;
 
     console.log('[chat-with-iasted] Réponse LLM:', llmAnswer);
     console.log('[chat-with-iasted] Tool calls reçus:', toolCalls.length > 0 ? JSON.stringify(toolCalls, null, 2) : 'Aucun');
-    
+
     if (isDocumentRequest && toolCalls.length === 0) {
       console.warn('⚠️ [chat-with-iasted] Demande de document détectée mais aucun tool call généré !');
       console.warn('⚠️ [chat-with-iasted] Transcript:', userTranscript);
     }
-    
+
     if (!llmAnswer && toolCalls.length === 0) {
       console.error('❌ [chat-with-iasted] Pas de réponse ni de tool calls du LLM !');
       throw new Error('Le modèle n\'a pas généré de réponse');

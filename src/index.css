@@ -9,30 +9,30 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* === DESIGN NEOMORPHIQUE ASTED === */
-    /* Arrière-plans neomorphiques - Nuances de gris clairs avec plus de contraste */
-    --background: 0 0% 85%;
-    --foreground: 0 0% 8%;
+    /* Arrière-plans neomorphiques - Optimisés pour le contraste */
+    --background: 0 0% 88%;
+    --foreground: 0 0% 5%;
     
-    --card: 0 0% 95%;
-    --card-foreground: 0 0% 8%;
+    --card: 0 0% 96%;
+    --card-foreground: 0 0% 5%;
     
-    --popover: 0 0% 95%;
-    --popover-foreground: 0 0% 8%;
+    --popover: 0 0% 98%;
+    --popover-foreground: 0 0% 5%;
     
-    /* Gris moyen-foncé pour couleur principale - plus de contraste */
-    --primary: 0 0% 35%;
-    --primary-foreground: 0 0% 100%;
+    /* Couleurs principales avec meilleur contraste */
+    --primary: 0 0% 20%;
+    --primary-foreground: 0 0% 98%;
     
-    /* Gris foncé pour secondaire - plus de contraste */
-    --secondary: 0 0% 25%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondaire avec texte foncé pour meilleur contraste */
+    --secondary: 0 0% 75%;
+    --secondary-foreground: 0 0% 10%;
     
-    /* Gris moyen pour accent - plus de contraste */
-    --accent: 0 0% 45%;
+    /* Accent avec texte foncé */
+    --accent: 0 0% 70%;
     --accent-foreground: 0 0% 8%;
     
-    --muted: 0 0% 75%;
-    --muted-foreground: 0 0% 35%;
+    --muted: 0 0% 80%;
+    --muted-foreground: 0 0% 25%;
     
     /* Rouge pour alertes critiques */
     --destructive: 0 84% 60%;
@@ -46,36 +46,36 @@ All colors MUST be HSL.
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     
-    --border: 0 0% 70%;
-    --input: 0 0% 78%;
-    --ring: 0 0% 35%;
+    --border: 0 0% 68%;
+    --input: 0 0% 92%;
+    --ring: 0 0% 25%;
     
     --radius: 1rem;
     
-    /* === OMBRES NEOMORPHIQUES - Plus de contraste === */
-    --neo-shadow-sm: 4px 4px 8px rgba(150, 150, 150, 0.5), -4px -4px 8px rgba(255, 255, 255, 1);
-    --neo-shadow-md: 8px 8px 16px rgba(140, 140, 140, 0.6), -8px -8px 16px rgba(255, 255, 255, 1);
-    --neo-shadow-lg: 12px 12px 24px rgba(130, 130, 130, 0.7), -12px -12px 24px rgba(255, 255, 255, 1);
-    --neo-shadow-inset: inset 4px 4px 8px rgba(150, 150, 150, 0.5), inset -4px -4px 8px rgba(255, 255, 255, 1);
-    --neo-shadow-inset-lg: inset 8px 8px 16px rgba(140, 140, 140, 0.6), inset -8px -8px 16px rgba(255, 255, 255, 1);
+    /* === OMBRES NEOMORPHIQUES - Inspirées du mode sombre === */
+    --neo-shadow-sm: 6px 6px 12px rgba(130, 130, 130, 0.4), -6px -6px 12px rgba(255, 255, 255, 0.9);
+    --neo-shadow-md: 10px 10px 20px rgba(120, 120, 120, 0.45), -10px -10px 20px rgba(255, 255, 255, 0.95);
+    --neo-shadow-lg: 15px 15px 30px rgba(110, 110, 110, 0.5), -15px -15px 30px rgba(255, 255, 255, 1);
+    --neo-shadow-inset: inset 6px 6px 12px rgba(130, 130, 130, 0.35), inset -6px -6px 12px rgba(255, 255, 255, 0.8);
+    --neo-shadow-inset-lg: inset 10px 10px 20px rgba(120, 120, 120, 0.4), inset -10px -10px 20px rgba(255, 255, 255, 0.85);
     
     /* Gradients en nuances de gris avec plus de contraste */
-    --gradient-primary: linear-gradient(135deg, hsl(0 0% 35%), hsl(0 0% 50%));
-    --gradient-secondary: linear-gradient(135deg, hsl(0 0% 25%), hsl(0 0% 40%));
-    --gradient-gold: linear-gradient(135deg, hsl(0 0% 45%), hsl(0 0% 60%));
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 20%), hsl(0 0% 35%));
+    --gradient-secondary: linear-gradient(135deg, hsl(0 0% 70%), hsl(0 0% 85%));
+    --gradient-gold: linear-gradient(135deg, hsl(0 0% 40%), hsl(0 0% 55%));
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     
-    --sidebar-background: 0 0% 80%;
+    --sidebar-background: 0 0% 82%;
     --sidebar-foreground: 0 0% 8%;
-    --sidebar-primary: 0 0% 35%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 75%;
+    --sidebar-primary: 0 0% 20%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 78%;
     --sidebar-accent-foreground: 0 0% 8%;
     --sidebar-border: 0 0% 65%;
-    --sidebar-ring: 0 0% 45%;
+    --sidebar-ring: 0 0% 30%;
   }
 
   .dark {
