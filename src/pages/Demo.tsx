@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, LogIn, Shield, Users, Lock, FileText, Calendar, Mail, UserCheck, Lightbulb, Moon, Sun } from "lucide-react";
@@ -10,6 +10,17 @@ import emblemGabon from "@/assets/emblem_gabon.png";
 import { usePrefetch } from "@/hooks/usePrefetch";
 import { useTheme } from "next-themes";
 import type { Database } from "@/integrations/supabase/types";
+
+// Simple markdown parser for bold text
+const parseMarkdown = (text: string): React.ReactNode[] => {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+};
 
 type AppRole = Database['public']['Enums']['app_role'];
 import {
@@ -453,21 +464,17 @@ const Demo = () => {
 
       <main className="container mx-auto px-6 pb-12">
         {/* Introduction */}
-        <div className="max-w-4xl mx-auto mb-12 text-center">
-          <h2 className="text-4xl font-bold mb-4">Comptes de Démonstration</h2>
-          <p className="text-lg text-muted-foreground mb-6">
+        <div className="max-w-4xl mx-auto mb-10 text-center mt-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-3 text-foreground">Comptes de Démonstration</h2>
+          <p className="text-base text-muted-foreground mb-4 max-w-2xl mx-auto">
             Explorez l'application avec différents rôles et niveaux d'accès. Chaque compte offre
             une vue et des fonctionnalités spécifiques selon les responsabilités du poste.
           </p>
-          <div className="flex flex-col gap-3 items-center">
-            <div className="neu-inset px-6 py-3 rounded-xl">
-              <div className="inline-flex items-center gap-2 text-warning">
-                <Lock className="h-4 w-4" />
-                <p className="text-sm font-medium">
-                  Ces comptes sont uniquement pour la démonstration. Les données sont fictives.
-                </p>
-              </div>
-            </div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-warning/10 border border-warning/30">
+            <Lock className="h-4 w-4 text-warning" />
+            <p className="text-sm font-medium text-warning">
+              Mode démonstration • Données fictives
+            </p>
           </div>
         </div>
 
@@ -480,19 +487,19 @@ const Demo = () => {
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="flex items-start gap-4 mb-4">
-                <div className={`neu-raised p-3 rounded-xl bg-gradient-to-br ${account.color} text-white`}>
-                  {account.icon}
+                <div className={`p-3 rounded-xl bg-gradient-to-br ${account.color} shadow-lg`}>
+                  <span className="text-white">{account.icon}</span>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-1">{account.role}</h3>
-                  <Badge variant="secondary" className="neu-raised text-xs">
+                  <h3 className="text-lg font-bold mb-1 text-foreground">{account.role}</h3>
+                  <Badge variant="secondary" className="text-xs bg-muted/50 text-muted-foreground border-0">
                     {account.level}
                   </Badge>
                 </div>
               </div>
 
-              <div className="mb-6 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
-                {account.description}
+              <div className="mb-5 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+                {parseMarkdown(account.description)}
               </div>
 
               <div className="flex gap-2">
