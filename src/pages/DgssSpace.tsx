@@ -41,6 +41,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { IntelligenceReport, SurveillanceTarget, ThreatIndicator } from "@/types/dgss";
 import { ThreatHeatmap } from "@/components/dgss/ThreatHeatmap";
 import { ThreatTrends } from "@/components/dgss/ThreatTrends";
+import { OperationsSummary } from "@/components/dgss/OperationsSummary";
+import { SecurityAlertBanner } from "@/components/dgss/SecurityAlertBanner";
 import { NavItem } from '@/components/layout/MobileBottomNav';
 import { AdminSpaceLayout } from '@/components/layout/AdminSpaceLayout';
 import { useSuperAdmin } from "@/contexts/SuperAdminContext";
@@ -536,6 +538,9 @@ const DgssSpace = () => {
             {/* Dashboard */}
             {activeSection === "dashboard" && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {/* Security Alert Banner */}
+                    <SecurityAlertBanner threats={threats} />
+
                     {/* KPIs */}
                     <div className="neu-card p-6 mb-8">
                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-0 lg:divide-x lg:divide-border">
@@ -564,6 +569,11 @@ const DgssSpace = () => {
                                 <div className="text-xs text-muted-foreground">À valider</div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Operations Summary */}
+                    <div className="mb-8">
+                        <OperationsSummary reports={reports} targets={targets} threats={threats} />
                     </div>
 
                     {/* Visualisations */}
