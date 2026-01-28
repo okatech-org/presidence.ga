@@ -161,13 +161,13 @@ export const NAVIGATION_SECTIONS: Record<string, SectionDefinition[]> = {
             description: "Configuration globale du système."
         }
     ],
-    // Add mappings for other roles if needed, defaulting to a subset or similar structure
+    // Directeur de Cabinet
     dgr: [
         {
             id: "dashboard",
             label: "Tableau de Bord",
             keywords: ["tableau de bord", "accueil", "résumé"],
-            description: "Vue principale."
+            description: "Vue principale du Cabinet."
         },
         {
             id: "documents",
@@ -175,7 +175,45 @@ export const NAVIGATION_SECTIONS: Record<string, SectionDefinition[]> = {
             keywords: ["documents", "ged", "fichiers"],
             description: "Gestion électronique des documents."
         },
-        // ... add others as needed
+    ],
+    // Direction Générale de la Sécurité d'État (DGSS)
+    dgss: [
+        {
+            id: "dashboard",
+            label: "Tableau de Bord",
+            keywords: ["tableau de bord", "accueil", "résumé", "vue d'ensemble", "dashboard", "synthèse"],
+            description: "Vue principale avec bannière d'alerte sécuritaire (DEFCON), indicateurs clés (alertes récentes, menaces critiques, cibles actives, rapports en attente), indice de préparation opérationnelle, graphiques de tendances sur 30 jours, carte de chaleur géographique des menaces, et aperçu des derniers rapports."
+        },
+        {
+            id: "reports",
+            label: "Rapports de Renseignement",
+            keywords: ["rapports", "intelligence", "renseignement", "analyses", "briefings", "humint", "sigint", "osint"],
+            description: "Gestion des rapports d'intelligence classifiés (TOP SECRET, SECRET, CONFIDENTIEL, RESTREINT). Sources: HUMINT, SIGINT, OSINT, FININT. Création, suivi et archivage des analyses."
+        },
+        {
+            id: "threats",
+            label: "Indicateurs de Menaces",
+            keywords: ["menaces", "threats", "alertes", "dangers", "risques", "terrorisme", "cyber", "espionnage"],
+            description: "Suivi des indicateurs de menaces par type (Terrorisme, Espionnage, Cyber, Troubles civils, Économique) et niveau (Critique, Élevé, Modéré, Surveillé, Faible). Signalement de nouvelles menaces avec localisation géographique."
+        },
+        {
+            id: "targets",
+            label: "Cibles de Surveillance",
+            keywords: ["cibles", "surveillance", "targets", "monitoring", "observation", "suivi"],
+            description: "Gestion des cibles de surveillance: individus, organisations, lieux, cyber. Statuts: Actif, Inactif, En révision, Neutralisé. Priorités assignées et historique des mises à jour."
+        },
+        {
+            id: "heatmap",
+            label: "Carte de Chaleur",
+            keywords: ["carte", "heatmap", "géographique", "localisation", "régions", "zones"],
+            description: "Visualisation géographique de la distribution des menaces par localisation avec intensité colorée selon le niveau de danger."
+        },
+        {
+            id: "trends",
+            label: "Tendances",
+            keywords: ["tendances", "trends", "évolution", "graphiques", "statistiques", "analyse"],
+            description: "Graphiques d'évolution des menaces sur 30 jours, distribution par type et niveau, statut des cibles de surveillance."
+        }
     ]
 };
 

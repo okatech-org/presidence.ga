@@ -106,19 +106,70 @@ export const ROLE_CONTEXTS: Record<AppRole, RoleContext | null> = {
     dgss: {
         role: 'dgss',
         defaultTitle: {
-            male: 'Monsieur le Directeur',
-            female: 'Madame la Directrice'
+            male: 'Monsieur le Directeur Général',
+            female: 'Madame la Directrice Générale'
         },
         tone: 'professional',
         accessLevel: 'high',
         availableTools: [
             'control_ui',
-            'navigate_app',
+            'navigate_to_section',
             'generate_document',
             'access_intelligence',
-            'manage_security_reports'
+            'manage_security_reports',
+            'analyze_threats',
+            'manage_surveillance',
+            'query_intelligence_base'
         ],
-        contextDescription: 'Vous assistez le Directeur Général de la Sécurité et du Contre-Espionnage'
+        contextDescription: `Vous assistez le Directeur Général de la Sécurité de l'État (DGSS) - Service de Renseignement.
+
+**MISSION DGSS:**
+La Direction Générale de la Sécurité d'État est l'organe central de renseignement de la République Gabonaise, chargé de:
+- La protection des intérêts fondamentaux de la Nation
+- Le contre-espionnage et la lutte contre les menaces intérieures/extérieures
+- L'analyse des risques sécuritaires (terrorisme, cyber, troubles civils, espionnage économique)
+- La surveillance des cibles prioritaires identifiées
+
+**STRUCTURE DE L'ESPACE DGSS:**
+
+📊 **TABLEAU DE BORD (dashboard):**
+- Bannière d'alerte sécuritaire dynamique (DEFCON 1-5)
+- Indicateurs clés: alertes récentes, menaces critiques, cibles actives, rapports en attente
+- Indice de Préparation Opérationnelle (calculé en temps réel)
+- Graphiques de tendances sur 30 jours
+- Carte de chaleur géographique des menaces
+- Derniers rapports et menaces prioritaires
+
+📄 **RAPPORTS DE RENSEIGNEMENT (reports):**
+- Classification: TOP SECRET, SECRET, CONFIDENTIEL, RESTREINT
+- Sources: HUMINT (renseignement humain), SIGINT (signaux), OSINT (sources ouvertes), FININT (financier)
+- Statuts: Brouillon, Soumis, Validé, Archivé
+- Création et suivi des rapports d'analyse
+
+⚠️ **INDICATEURS DE MENACES (threats):**
+- Types: Terrorisme, Espionnage, Cyber, Troubles civils, Économique
+- Niveaux: Critique (rouge), Élevé (orange), Modéré (jaune), Surveillé (bleu), Faible (vert)
+- Localisation géographique des menaces
+- Signalement de nouvelles menaces
+
+🎯 **CIBLES DE SURVEILLANCE (targets):**
+- Types: Individu, Organisation, Lieu, Cyber
+- Statuts: Actif, Inactif, En révision, Neutralisé
+- Priorités: Critique, Haute, Moyenne, Faible
+- Historique des mises à jour
+
+**DONNÉES ACTUELLES:**
+- 22 indicateurs de menaces enregistrés
+- 13 cibles de surveillance actives
+- 12 rapports d'intelligence (dont plusieurs TOP SECRET)
+- Localisations surveillées: Libreville, Port-Gentil, Franceville, Oyem, Moanda, National
+
+**VOCABULAIRE SPÉCIALISÉ:**
+- HUMINT: Human Intelligence (sources humaines)
+- SIGINT: Signals Intelligence (interception)
+- OSINT: Open Source Intelligence (sources ouvertes)
+- FININT: Financial Intelligence (flux financiers)
+- DEFCON: Defence Readiness Condition (niveau d'alerte)`
     },
     protocol: {
         role: 'protocol',
@@ -195,10 +246,10 @@ export const SPACE_CONTEXTS: Record<string, SpaceContext> = {
         displayName: 'Secrétariat Général',
         description: 'le secrétariat général de la Présidence'
     },
-    DGSSSpace: {
-        spaceName: 'DGSSSpace',
-        displayName: 'DGSS - Renseignement',
-        description: 'la direction du renseignement'
+    DgssSpace: {
+        spaceName: 'DgssSpace',
+        displayName: 'Espace DGSS - Renseignement',
+        description: `la Direction Générale de la Sécurité d'État (DGSS), le service central de renseignement et de contre-espionnage de la République Gabonaise. Cet espace permet de gérer les rapports d'intelligence classifiés (TOP SECRET à RESTREINT), suivre les indicateurs de menaces (terrorisme, cyber, espionnage, troubles civils, économiques), superviser les cibles de surveillance, et analyser les tendances sécuritaires via des tableaux de bord avancés incluant carte de chaleur géographique et graphiques d'évolution.`
     },
     ProtocolSpace: {
         spaceName: 'ProtocolSpace',
