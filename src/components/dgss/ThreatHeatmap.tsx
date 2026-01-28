@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { ThreatIndicator } from "@/types/dgss";
-import { MapPin } from "lucide-react";
+import { MapPin, AlertTriangle, Shield, Activity } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface ThreatHeatmapProps {
   threats: ThreatIndicator[];
@@ -34,47 +35,103 @@ export const ThreatHeatmap = ({ threats }: ThreatHeatmapProps) => {
   }, [threats]);
 
   const getIntensityColor = (intensity: number) => {
-    if (intensity >= 3.5) return "bg-red-500/20 border-red-500 text-red-500";
-    if (intensity >= 2.5) return "bg-orange-500/20 border-orange-500 text-orange-500";
-    if (intensity >= 1.5) return "bg-yellow-500/20 border-yellow-500 text-yellow-500";
-    return "bg-green-500/20 border-green-500 text-green-500";
+    if (intensity >= 4) return "from-red-600 to-red-800 border-red-500";
+    if (intensity >= 3) return "from-orange-500 to-orange-700 border-orange-400";
+    if (intensity >= 2) return "from-yellow-500 to-yellow-700 border-yellow-400";
+    return "from-green-500 to-green-700 border-green-400";
   };
 
-  const getIntensitySize = (intensity: number) => {
-    if (intensity >= 3.5) return "text-2xl";
-    if (intensity >= 2.5) return "text-xl";
-    if (intensity >= 1.5) return "text-lg";
-    return "text-base";
+  const getIntensityIcon = (intensity: number) => {
+    if (intensity >= 4) return <AlertTriangle className="w-5 h-5 text-white animate-pulse" />;
+    if (intensity >= 3) return <Shield className="w-5 h-5 text-white" />;
+    return <Activity className="w-5 h-5 text-white" />;
   };
+
+  const totalThreats = threats.length;
+  const criticalLocations = locationData.filter(l => l.intensity >= 4).length;
 
   return (
     <div className="neu-card p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="neu-raised w-10 h-10 rounded-lg flex items-center justify-center">
-          <MapPin className="w-5 h-5 text-primary" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="neu-raised w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+            <MapPin className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold">Carte de Chaleur des Menaces</h3>
+            <p className="text-sm text-muted-foreground">Distribution géographique par intensité</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-lg font-semibold">Carte de Chaleur des Menaces</h3>
-          <p className="text-sm text-muted-foreground">Distribution géographique par intensité</p>
+        <div className="flex gap-2">
+          <Badge variant="outline" className="border-red-500 text-red-500">
+            {criticalLocations} zones critiques
+          </Badge>
+          <Badge variant="secondary">
+            {totalThreats} menaces totales
+          </Badge>
         </div>
       </div>
 
+      {/* Heatmap Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {locationData.map(({ location, count, critical, high, elevated, guarded, low, intensity }) => (
           <div
             key={location}
-            className={`neu-inset p-4 rounded-lg border-2 transition-all hover:scale-105 ${getIntensityColor(intensity)}`}
+            className={`relative overflow-hidden rounded-xl border-2 transition-all duration-300 hover:scale-105 hover:shadow-xl ${getIntensityColor(intensity)} group`}
           >
-            <div className="flex flex-col items-center text-center gap-2">
-              <MapPin className={`${getIntensitySize(intensity)} opacity-80`} />
-              <div className="font-semibold text-sm truncate w-full">{location}</div>
-              <div className="text-2xl font-bold">{count}</div>
-              <div className="text-xs opacity-70 space-y-1 w-full">
-                {critical > 0 && <div>🔴 {critical} critique{critical > 1 ? 's' : ''}</div>}
-                {high > 0 && <div>🟠 {high} élevée{high > 1 ? 's' : ''}</div>}
-                {elevated > 0 && <div>🟡 {elevated} modérée{elevated > 1 ? 's' : ''}</div>}
-                {guarded > 0 && <div>🔵 {guarded} surveillée{guarded > 1 ? 's' : ''}</div>}
-                {low > 0 && <div>🟢 {low} faible{low > 1 ? 's' : ''}</div>}
+            {/* Background gradient */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${getIntensityColor(intensity)} opacity-20`} />
+            
+            {/* Content */}
+            <div className="relative p-4">
+              <div className="flex items-center justify-between mb-3">
+                {getIntensityIcon(intensity)}
+                <span className="text-3xl font-bold text-foreground">{count}</span>
+              </div>
+              
+              <div className="font-semibold text-sm truncate mb-2 text-foreground">
+                {location}
+              </div>
+              
+              {/* Threat breakdown */}
+              <div className="space-y-1 text-xs">
+                {critical > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <span className="text-muted-foreground">{critical} critique{critical > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {high > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-orange-500" />
+                    <span className="text-muted-foreground">{high} élevée{high > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {elevated > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                    <span className="text-muted-foreground">{elevated} modérée{elevated > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {(guarded > 0 || low > 0) && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-muted-foreground">{guarded + low} faible{guarded + low > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Intensity bar */}
+              <div className="mt-3 h-1.5 bg-black/20 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full bg-gradient-to-r ${
+                    intensity >= 4 ? 'from-red-400 to-red-600' :
+                    intensity >= 3 ? 'from-orange-400 to-orange-600' :
+                    intensity >= 2 ? 'from-yellow-400 to-yellow-600' :
+                    'from-green-400 to-green-600'
+                  } transition-all duration-500`}
+                  style={{ width: `${(intensity / 5) * 100}%` }}
+                />
               </div>
             </div>
           </div>
@@ -83,27 +140,31 @@ export const ThreatHeatmap = ({ threats }: ThreatHeatmapProps) => {
 
       {locationData.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <MapPin className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p>Aucune donnée de localisation disponible</p>
+          <MapPin className="w-16 h-16 mx-auto mb-4 opacity-20" />
+          <p className="text-lg font-medium">Aucune donnée de localisation disponible</p>
+          <p className="text-sm">Les menaces signalées apparaîtront ici</p>
         </div>
       )}
 
-      <div className="mt-6 flex items-center justify-center gap-6 text-xs">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500" />
-          <span>Critique</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-orange-500" />
-          <span>Élevé</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-yellow-500" />
-          <span>Moyen</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-green-500" />
-          <span>Faible</span>
+      {/* Legend */}
+      <div className="mt-6 pt-4 border-t border-border">
+        <div className="flex items-center justify-center gap-8 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-red-500 to-red-700 animate-pulse" />
+            <span className="font-medium">Critique (4-5)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-orange-500 to-orange-700" />
+            <span className="font-medium">Élevé (3-4)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-700" />
+            <span className="font-medium">Modéré (2-3)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-green-500 to-green-700" />
+            <span className="font-medium">Faible (1-2)</span>
+          </div>
         </div>
       </div>
     </div>
