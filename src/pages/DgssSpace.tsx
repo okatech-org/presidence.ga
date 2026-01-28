@@ -572,8 +572,10 @@ const DgssSpace = () => {
                                                 <p className="font-medium text-sm line-clamp-1">{report.title}</p>
                                             </div>
                                         </div>
-                                        <div className="mt-2 text-xs text-muted-foreground flex items-center justify-between">
-                                            <span>Source: {report.source}</span>
+                                        <div className="mt-2 text-xs flex items-center justify-between">
+                                            <Badge variant="outline" className="text-xs font-medium bg-primary/10 text-primary border-primary/30">
+                                                Source: {report.source}
+                                            </Badge>
                                             <span>{new Date(report.created_at).toLocaleDateString('fr-FR')}</span>
                                         </div>
                                     </div>
@@ -623,7 +625,7 @@ const DgssSpace = () => {
                         </div>
                         <Dialog>
                             <DialogTrigger asChild>
-                                <Button className="neu-raised hover:shadow-neo-md transition-all">
+                                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg">
                                     <Plus className="h-4 w-4 mr-2" />
                                     Nouveau Rapport
                                 </Button>
@@ -716,7 +718,7 @@ const DgssSpace = () => {
                         </div>
                         <Dialog>
                             <DialogTrigger asChild>
-                                <Button className="neu-raised hover:shadow-neo-md transition-all">
+                                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg">
                                     <Plus className="h-4 w-4 mr-2" />
                                     Ajouter une cible
                                 </Button>
@@ -799,6 +801,188 @@ const DgssSpace = () => {
                             </div>
                         ))}
                     </div>
+                </div>
+            )}
+
+            {/* Threats Section */}
+            {activeSection === "threats" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold">Indicateurs de Menaces</h2>
+                            <p className="text-muted-foreground">Surveillance des menaces à la sécurité nationale</p>
+                        </div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Signaler une menace
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                    <DialogTitle className="flex items-center gap-2">
+                                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                                        Signaler un indicateur de menace
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <form
+                                    onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        const formData = new FormData(e.currentTarget);
+                                        try {
+                                            const { data: { user } } = await supabase.auth.getUser();
+                                            if (!user) throw new Error('Non authentifié');
+
+                                            const { error } = await supabase
+                                                .from('threat_indicators')
+                                                .insert({
+                                                    type: formData.get("type") as string,
+                                                    level: formData.get("level") as string,
+                                                    description: formData.get("description") as string,
+                                                    location: formData.get("location") as string || null,
+                                                    timestamp: new Date().toISOString(),
+                                                    created_by: user.id,
+                                                });
+
+                                            if (error) throw error;
+
+                                            queryClient.invalidateQueries({ queryKey: ["threat_indicators"] });
+                                            toast({ title: "Menace signalée", description: "L'indicateur a été enregistré" });
+                                        } catch (err: any) {
+                                            toast({ title: "Erreur", description: err.message, variant: "destructive" });
+                                        }
+                                    }}
+                                    className="space-y-4 py-4"
+                                >
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="type">Type de menace</Label>
+                                            <Select name="type" required>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Catégorie" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="terrorism">Terrorisme</SelectItem>
+                                                    <SelectItem value="espionage">Espionnage</SelectItem>
+                                                    <SelectItem value="cyber">Cyberattaque</SelectItem>
+                                                    <SelectItem value="civil_unrest">Troubles civils</SelectItem>
+                                                    <SelectItem value="economic">Menace économique</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="level">Niveau de criticité</Label>
+                                            <Select name="level" required>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Niveau" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="critical">🔴 Critique</SelectItem>
+                                                    <SelectItem value="high">🟠 Élevé</SelectItem>
+                                                    <SelectItem value="elevated">🟡 Modéré</SelectItem>
+                                                    <SelectItem value="guarded">🔵 Surveillé</SelectItem>
+                                                    <SelectItem value="low">🟢 Faible</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="location">Localisation</Label>
+                                        <Input id="location" name="location" placeholder="Ex: Libreville, Port-Gentil..." />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description">Description détaillée</Label>
+                                        <Textarea
+                                            id="description"
+                                            name="description"
+                                            className="min-h-[120px]"
+                                            placeholder="Décrivez la nature de la menace, les éléments observés, les sources..."
+                                            required
+                                        />
+                                    </div>
+                                    <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                        <AlertTriangle className="h-4 w-4 mr-2" />
+                                        Enregistrer l'indicateur
+                                    </Button>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+
+                    {/* Threats Grid */}
+                    {threats.length === 0 ? (
+                        <div className="neu-card p-12 text-center">
+                            <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                            <h3 className="text-xl font-semibold mb-2">Aucune menace signalée</h3>
+                            <p className="text-muted-foreground mb-6">
+                                Le système ne détecte actuellement aucun indicateur de menace active.
+                            </p>
+                            <Button variant="outline">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Signaler une menace
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4">
+                            {threats.map((threat) => {
+                                const levelConfig: Record<string, { color: string; label: string; border: string }> = {
+                                    critical: { color: "bg-red-500", label: "CRITIQUE", border: "border-l-red-500" },
+                                    high: { color: "bg-orange-500", label: "ÉLEVÉ", border: "border-l-orange-500" },
+                                    elevated: { color: "bg-yellow-500", label: "MODÉRÉ", border: "border-l-yellow-500" },
+                                    guarded: { color: "bg-blue-500", label: "SURVEILLÉ", border: "border-l-blue-500" },
+                                    low: { color: "bg-green-500", label: "FAIBLE", border: "border-l-green-500" },
+                                };
+                                const typeLabels: Record<string, string> = {
+                                    terrorism: "Terrorisme",
+                                    espionage: "Espionnage",
+                                    cyber: "Cyberattaque",
+                                    civil_unrest: "Troubles civils",
+                                    economic: "Menace économique",
+                                };
+                                const config = levelConfig[threat.level] || levelConfig.low;
+
+                                return (
+                                    <div
+                                        key={threat.id}
+                                        className={`neu-card p-6 border-l-4 ${config.border} hover:translate-y-[-2px] transition-all duration-300`}
+                                    >
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-3 h-3 rounded-full ${config.color} animate-pulse`} />
+                                                <div>
+                                                    <h3 className="font-bold text-lg">{typeLabels[threat.type] || threat.type}</h3>
+                                                    <p className="text-sm text-muted-foreground">{threat.location || "Localisation inconnue"}</p>
+                                                </div>
+                                            </div>
+                                            <Badge
+                                                variant={threat.level === 'critical' ? 'destructive' : 'outline'}
+                                                className={threat.level === 'critical' ? 'animate-pulse' : ''}
+                                            >
+                                                {config.label}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{threat.description}</p>
+                                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border">
+                                            <span>Signalé le {new Date(threat.timestamp).toLocaleDateString('fr-FR', {
+                                                day: '2-digit',
+                                                month: 'long',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}</span>
+                                            <div className="flex gap-2">
+                                                <Button variant="ghost" size="sm" className="h-7 text-xs">
+                                                    <Eye className="h-3 w-3 mr-1" />
+                                                    Détails
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 
