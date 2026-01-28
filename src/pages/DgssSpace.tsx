@@ -352,6 +352,32 @@ const DgssSpace = () => {
         },
     });
 
+    const addThreatMutation = useMutation({
+        mutationFn: async (newThreat: Omit<ThreatIndicator, "id" | "created_at">) => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const { data, error } = await supabase
+                .from('threat_indicators')
+                .insert({
+                    ...newThreat,
+                    created_by: user.id,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["threat_indicators"] });
+            toast({ title: "Succès", description: "Indicateur de menace ajouté" });
+        },
+        onError: (error) => {
+            toast({ title: "Erreur", description: error.message, variant: "destructive" });
+        },
+    });
+
 
 
     // Helper functions
@@ -798,6 +824,159 @@ const DgssSpace = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Threats Section */}
+            {activeSection === "threats" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold">Indicateurs de Menaces</h2>
+                            <p className="text-muted-foreground">Surveillance et analyse des menaces actives</p>
+                        </div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button className="neu-raised hover:shadow-neo-md transition-all">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Signaler une menace
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                    <DialogTitle>Nouvel indicateur de menace</DialogTitle>
+                                </DialogHeader>
+                                <form
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const formData = new FormData(e.currentTarget);
+                                        addThreatMutation.mutate({
+                                            type: formData.get("type") as any,
+                                            level: formData.get("level") as any,
+                                            description: formData.get("description") as string,
+                                            location: formData.get("location") as string || undefined,
+                                            timestamp: new Date().toISOString(),
+                                        });
+                                    }}
+                                    className="space-y-4 py-4"
+                                >
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="type">Type de menace</Label>
+                                            <Select name="type" required>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Sélectionner le type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="terrorism">Terrorisme</SelectItem>
+                                                    <SelectItem value="espionage">Espionnage</SelectItem>
+                                                    <SelectItem value="cyber">Cyber</SelectItem>
+                                                    <SelectItem value="civil_unrest">Troubles civils</SelectItem>
+                                                    <SelectItem value="economic">Économique</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="level">Niveau de menace</Label>
+                                            <Select name="level" required>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Niveau d'alerte" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="critical">🔴 Critique</SelectItem>
+                                                    <SelectItem value="high">🟠 Élevé</SelectItem>
+                                                    <SelectItem value="elevated">🟡 Modéré</SelectItem>
+                                                    <SelectItem value="guarded">🔵 Surveillé</SelectItem>
+                                                    <SelectItem value="low">🟢 Faible</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="location">Localisation</Label>
+                                        <Input id="location" name="location" placeholder="Ex: Libreville, Port-Gentil, Frontière Nord..." />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="description">Description détaillée</Label>
+                                        <Textarea id="description" name="description" className="min-h-[120px]" placeholder="Décrivez la nature de la menace, les éléments observés..." required />
+                                    </div>
+                                    <Button type="submit" className="w-full">Enregistrer l'indicateur</Button>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+
+                    {/* Threat Level Summary */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        {[
+                            { level: "critical", label: "Critique", color: "bg-red-500", count: threats.filter(t => t.level === "critical").length },
+                            { level: "high", label: "Élevé", color: "bg-orange-500", count: threats.filter(t => t.level === "high").length },
+                            { level: "elevated", label: "Modéré", color: "bg-yellow-500", count: threats.filter(t => t.level === "elevated").length },
+                            { level: "guarded", label: "Surveillé", color: "bg-blue-500", count: threats.filter(t => t.level === "guarded").length },
+                            { level: "low", label: "Faible", color: "bg-green-500", count: threats.filter(t => t.level === "low").length },
+                        ].map((item) => (
+                            <div key={item.level} className="neu-card p-4 text-center">
+                                <div className={`w-4 h-4 rounded-full ${item.color} mx-auto mb-2`} />
+                                <div className="text-2xl font-bold">{item.count}</div>
+                                <div className="text-xs text-muted-foreground">{item.label}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Threats List */}
+                    <div className="space-y-4">
+                        {threats.length === 0 ? (
+                            <div className="neu-inset p-12 text-center">
+                                <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                <p className="text-muted-foreground">Aucun indicateur de menace enregistré</p>
+                                <p className="text-sm text-muted-foreground mt-2">Cliquez sur "Signaler une menace" pour en ajouter</p>
+                            </div>
+                        ) : (
+                            threats.map((threat) => {
+                                const levelConfig: Record<string, { color: string; border: string; label: string }> = {
+                                    critical: { color: "bg-red-500", border: "border-l-red-500", label: "CRITIQUE" },
+                                    high: { color: "bg-orange-500", border: "border-l-orange-500", label: "ÉLEVÉ" },
+                                    elevated: { color: "bg-yellow-500", border: "border-l-yellow-500", label: "MODÉRÉ" },
+                                    guarded: { color: "bg-blue-500", border: "border-l-blue-500", label: "SURVEILLÉ" },
+                                    low: { color: "bg-green-500", border: "border-l-green-500", label: "FAIBLE" },
+                                };
+                                const typeLabels: Record<string, string> = {
+                                    terrorism: "Terrorisme",
+                                    espionage: "Espionnage",
+                                    cyber: "Cyber",
+                                    civil_unrest: "Troubles civils",
+                                    economic: "Économique",
+                                };
+                                const config = levelConfig[threat.level] || { color: "bg-gray-500", border: "border-l-gray-500", label: threat.level };
+
+                                return (
+                                    <div key={threat.id} className={`neu-card p-6 border-l-4 ${config.border} hover:translate-y-[-2px] transition-all duration-300`}>
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-3 h-3 rounded-full ${config.color} animate-pulse`} />
+                                                <div>
+                                                    <h3 className="font-semibold">{typeLabels[threat.type] || threat.type}</h3>
+                                                    {threat.location && (
+                                                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                                            <Globe className="w-3 h-3" /> {threat.location}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Badge variant={threat.level === 'critical' || threat.level === 'high' ? 'destructive' : 'secondary'}>
+                                                {config.label}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground mb-4">{threat.description}</p>
+                                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border">
+                                            <span>Signalé le {new Date(threat.timestamp).toLocaleDateString('fr-FR')}</span>
+                                            <span>à {new Date(threat.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
             )}
