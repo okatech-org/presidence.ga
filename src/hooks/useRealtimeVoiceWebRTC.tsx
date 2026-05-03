@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { mergeRoleContexts } from '@/utils/contextMerger';
 import { ROLE_CONTEXTS, type AppRole } from '@/config/role-contexts';
 import { getRouteKnowledgePrompt } from '@/utils/route-mapping';
+import gabonKnowledge from '@/config/gabon-digital-knowledge.json';
 
 type VoiceState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
 
@@ -533,8 +534,18 @@ Vous avez accès à plusieurs outils pour interagir avec l'interface :
                 // Obtenir la cartographie des routes disponibles
                 const routeKnowledge = getRouteKnowledgePrompt();
 
-                // Combiner tout : contexte utilisateur + routes + outils
+                // Base de connaissances du Gabon (2026)
+                const gabonContext = `
+# BASE DE CONNAISSANCES DU GABON (2026)
+Utilise ces informations pour répondre de manière pertinente sur le contexte numérique du pays.
+${gabonKnowledge.title}
+${gabonKnowledge.sections.map(s => `\n## ${s.category}\n${s.points.map(p => `- ${p}`).join('\n')}`).join('\n')}
+`;
+
+                // Combiner tout : contexte utilisateur + routes + outils + connaissances
                 const finalInstructions = `${baseInstructions}
+
+${gabonContext}
 
 ${routeKnowledge}
 
